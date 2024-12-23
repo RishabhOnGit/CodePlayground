@@ -1,0 +1,323 @@
+/* Global Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Welcome Overlay Styles */
+#welcome-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(30, 30, 30, 0.8); /* Make background translucent */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  opacity: 1;
+  animation: fadeOut 3s ease forwards;
+}
+
+#welcome-overlay h1 {
+  color: #f0db4f;
+  font-size: 3rem;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  animation: fadeIn 1.5s ease forwards;
+}
+
+/* Keyframes for fading in the text */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Keyframes for fading out the overlay */
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Dark Mode (default) */
+body {
+  background-color: #1e1e1e;
+  color: #f0f0f0;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Header with gradient background */
+header {
+  background: linear-gradient(135deg, #4a148c, #6a1b9a);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  font-weight: bold;
+}
+
+/* Stylish Heading Text */
+header h1 {
+  font-size: 3rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #f093fb, #f5576c);
+  background-clip: text;
+  color: transparent;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: bold;
+}
+
+/* Code icon with scale and rotation on hover */
+header h1 i.fas.fa-code {
+  color: #f093fb;
+  margin-right: 10px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+header h1 i.fas.fa-code:hover {
+  transform: rotate(360deg) scale(1.2);
+  color: #f5576c;
+}
+
+/* Editor Labels Styling */
+.editor-header {
+  background-color: #6a1b9a;
+  padding: 0.8rem;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #4a148c;
+}
+
+.editor-header h2 {
+  font-size: 1.4rem;
+  margin-left: 0.5rem;
+  color: white;
+}
+
+/* Updated Colors for HTML, CSS, and JS Labels */
+[data-editor="html"] h2 {
+  color: #ff5722;
+}
+
+[data-editor="css"] h2 {
+  color: #3c99dc;
+}
+
+[data-editor="js"] h2 {
+  color: #f0db4f;
+}
+
+[data-editor="html"] i {
+  color: #ff5722;
+}
+
+[data-editor="css"] i {
+  color: #3c99dc;
+}
+
+[data-editor="js"] i {
+  color: #f0db4f;
+}
+
+/* Fullscreen Button Styling */
+.fullscreen-btn {
+  margin-left: auto;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #f0f0f0;
+  transition: color 0.3s ease;
+}
+
+.fullscreen-btn:hover {
+  color: #f5576c;
+}
+
+/* Main Grid Container */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-gap: 5px;
+  height: calc(100vh - 200px);
+}
+
+.grid-item {
+  background-color: #292929;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* CodeMirror Fixes */
+.CodeMirror {
+  height: 100%;
+  width: 100%;
+  background-color: #292929 !important;
+  color: #f0f0f0;
+}
+
+.CodeMirror-gutters {
+  background-color: #292929 !important;
+  border-right: 1px solid #4a148c;
+}
+
+.CodeMirror-cursor {
+  border-left: 1px solid #f0f0f0 !important;
+}
+
+.CodeMirror-selected {
+  background-color: rgba(128, 128, 128, 0.3);
+}
+
+textarea {
+  height: 100%;
+}
+
+#output {
+  background-color: #ffffff;
+  border: none;
+  width: 100%;
+  height: 100%;
+  border-top: 3px solid #6a1b9a;
+}
+
+/* Footer styling */
+footer {
+  background-color: #333;
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+button {
+  background-color: #6a1b9a;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  margin: 0.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+button:hover {
+  background-color: #8e24aa;
+  transform: scale(1.05);
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+  transform: scale(1);
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Font size slider styling */
+#font-size-slider {
+  width: 150px;
+  margin-left: 10px;
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Popup Message Styling */
+.notification-popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  display: none;
+}
+
+.notification-popup.show {
+  opacity: 1;
+  display: block;
+}
+
+.notification-popup.hide {
+  opacity: 0;
+  display: none;
+}
+
+/* Responsive Design for Tablets */
+@media (max-width: 1024px) {
+  .grid-container {
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 5px;
+    height: auto;
+  }
+
+  .grid-item {
+    height: 300px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+  }
+
+  footer {
+    flex-direction: column;
+  }
+}
+
+/* Responsive Design for Mobile */
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    grid-gap: 5px;
+    height: auto;
+  }
+
+  .grid-item {
+    height: auto;
+  }
+
+  .editor-header {
+    padding: 0.5rem;
+  }
+
+  .editor-header h2 {
+    font-size: 1.2rem;
+  }
+
+  footer {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  button {
+    width: 100%;
+  }
+}
