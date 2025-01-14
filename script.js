@@ -133,21 +133,42 @@ document.getElementById('load-button').addEventListener('click', () => {
   }
 });
 
-// Share code by generating a URL
+// Share code by generating a URL and shortening it with TinyURL
 document.getElementById('share-button').addEventListener('click', () => {
   const code = {
     html: htmlEditor.getValue(),
     css: cssEditor.getValue(),
     js: jsEditor.getValue(),
   };
+
   try {
+    // Create the long URL with the shared code
     const encodedCode = encodeURIComponent(JSON.stringify(code));
     const shareUrl = `${window.location.origin}${window.location.pathname}?code=${encodedCode}`;
-    navigator.clipboard.writeText(shareUrl).then(() => showNotification('Share URL copied to clipboard!'));
+
+    // Now shorten the URL using TinyURL API
+    shortenUrl(shareUrl);
   } catch (error) {
     showNotification('Failed to share code!');
   }
 });
+
+// Function to shorten the URL using TinyURL API
+function shortenUrl(longUrl) {
+  const apiUrl = `https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`;
+
+  // Call TinyURL API to shorten the URL
+  fetch(apiUrl)
+    .then(response => response.text())  // The response will be the shortened URL
+    .then(shortUrl => {
+      console.log('Shortened URL:', shortUrl);  // Log the shortened URL (optional)
+      navigator.clipboard.writeText(shortUrl).then(() => showNotification('Shortened URL copied to clipboard!'));
+    })
+    .catch(error => {
+      console.error('Error shortening URL:', error);
+      showNotification('Failed to shorten URL.');
+    });
+}
 
 // Function to toggle fullscreen for a specific element
 function toggleFullScreen(element) {
