@@ -250,26 +250,26 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendButton = document.getElementById("send-button");
     const closeButton = document.getElementById("close-chat");
 
-    // API Key for Gemini AI (Replace with your valid key)
+    // Replace "YOUR_VALID_KEY_HERE" with your key 
+    // If you don't have Gemini access, use text-bison:
+    // const API_URL = "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=YOUR_VALID_KEY_HERE";
     const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
-    // If you do not have Gemini access, use: 
-    // const API_URL = `https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${API_KEY}`;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
     // Toggle Chatbox Visibility & Position Above the Button
     chatButton.addEventListener("click", function () {
         chatContainer.classList.toggle("show");
         if (chatContainer.classList.contains("show")) {
-            // Show chat container so .offsetHeight can be measured
+            // Ensure chat container is visible so we can measure offsetHeight
             chatContainer.style.display = "block";
 
-            // Calculate where the button is
+            // Calculate where the button is on screen
             let buttonRect = chatButton.getBoundingClientRect();
 
-            // Measure chat container height
+            // Measure the container’s height
             let containerHeight = chatContainer.offsetHeight;
 
-            // Position chat so its bottom edge is above the button
+            // Position the chat so its bottom is above the button
             chatContainer.style.top  = (buttonRect.top - containerHeight - 8) + "px";
             chatContainer.style.left = buttonRect.left + "px";
         } else {
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const userInput = chatInput.value.trim();
         if (userInput === "") return;
 
-        // Show user's message
+        // Show user message
         appendMessage("user", userInput);
         chatInput.value = "";
 
@@ -313,16 +313,14 @@ document.addEventListener("DOMContentLoaded", function () {
         chatBody.appendChild(thinkingMessage);
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Call Gemini (or PaLM) API
+        // Call the PaLM/Gemini API
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [
                     {
-                        parts: [
-                            { text: userInput }
-                        ]
+                        parts: [{ text: userInput }]
                     }
                 ]
             })
@@ -349,10 +347,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Send Message on Button Click
+    // Send on Button Click
     sendButton.addEventListener("click", sendMessage);
 
-    // Send Message on Enter Key
+    // Send on Enter Key
     chatInput.addEventListener("keypress", function (event) {
         if (event.key === "Enter") {
             sendMessage();
