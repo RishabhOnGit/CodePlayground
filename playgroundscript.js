@@ -250,21 +250,40 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendButton = document.getElementById("send-button");
     const closeButton = document.getElementById("close-chat");
 
-    // API Key for Gemini AI (Replace with your valid key or use text-bison)
-    const API_KEY = "AIzaSyAORqFn8vpS9Z655pneoWj3skFmFUEqlXI";
+    // API Key for Gemini AI (Replace with your valid key)
+    const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
+    // If you do not have Gemini access, use: 
+    // const API_URL = `https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${API_KEY}`;
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
-    // Toggle Chatbox Visibility with Animation
+    // Toggle Chatbox Visibility & Position Above the Button
     chatButton.addEventListener("click", function () {
         chatContainer.classList.toggle("show");
+        if (chatContainer.classList.contains("show")) {
+            // Show chat container so .offsetHeight can be measured
+            chatContainer.style.display = "block";
+
+            // Calculate where the button is
+            let buttonRect = chatButton.getBoundingClientRect();
+
+            // Measure chat container height
+            let containerHeight = chatContainer.offsetHeight;
+
+            // Position chat so its bottom edge is above the button
+            chatContainer.style.top  = (buttonRect.top - containerHeight - 8) + "px";
+            chatContainer.style.left = buttonRect.left + "px";
+        } else {
+            chatContainer.style.display = "none";
+        }
     });
 
     // Close Chat
     closeButton.addEventListener("click", function () {
         chatContainer.classList.remove("show");
+        chatContainer.style.display = "none";
     });
 
-    // Append Messages Function
+    // Append Messages
     function appendMessage(sender, text) {
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${sender}`;
@@ -278,29 +297,29 @@ document.addEventListener("DOMContentLoaded", function () {
         chatBody.scrollTop = chatBody.scrollHeight;
     }
 
-    // Send Message Function
+    // Send Message
     function sendMessage() {
         const userInput = chatInput.value.trim();
         if (userInput === "") return;
 
-        // User's message
+        // Show user's message
         appendMessage("user", userInput);
-        chatInput.value = ""; // Clear input field
+        chatInput.value = "";
 
-        // Show Bot "Thinking..." Message
+        // Show bot "Thinking..."
         const thinkingMessage = document.createElement("div");
         thinkingMessage.className = "message bot";
         thinkingMessage.textContent = "🤔 Thinking...";
         chatBody.appendChild(thinkingMessage);
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Call Gemini API (take inspiration from your working snippet)
+        // Call Gemini (or PaLM) API
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [
-                    { 
+                    {
                         parts: [
                             { text: userInput }
                         ]
@@ -310,10 +329,7 @@ document.addEventListener("DOMContentLoaded", function () {
         })
         .then(response => response.json())
         .then(data => {
-            // Remove the thinking message
             thinkingMessage.remove();
-
-            // Check if the model returned any text
             if (
                 data.candidates &&
                 data.candidates[0].content &&
