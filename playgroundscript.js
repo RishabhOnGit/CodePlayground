@@ -242,7 +242,6 @@ window.addEventListener('load', () => {
 
 
 // chat bot code
-<script>
 document.addEventListener("DOMContentLoaded", function () {
     const chatButton = document.getElementById("chat-toggle");
     const chatContainer = document.getElementById("chat-container");
@@ -344,4 +343,3 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
-</script>
