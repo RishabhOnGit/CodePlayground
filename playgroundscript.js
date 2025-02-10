@@ -250,40 +250,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendButton = document.getElementById("send-button");
     const closeButton = document.getElementById("close-chat");
 
-    // Replace "YOUR_VALID_KEY_HERE" with your key 
-    // If you don't have Gemini access, use text-bison:
-    // const API_URL = "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=YOUR_VALID_KEY_HERE";
+    // API Key for Gemini AI (Replace with your valid key if you have access)
     const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
 
-    // Toggle Chatbox Visibility & Position Above the Button
+    // Toggle Chatbox Visibility
     chatButton.addEventListener("click", function () {
         chatContainer.classList.toggle("show");
-        if (chatContainer.classList.contains("show")) {
-            // Ensure chat container is visible so we can measure offsetHeight
-            chatContainer.style.display = "block";
 
-            // Calculate where the button is on screen
+        if (chatContainer.classList.contains("show")) {
+            // Get button position relative to viewport
             let buttonRect = chatButton.getBoundingClientRect();
 
-            // Measure the container’s height
-            let containerHeight = chatContainer.offsetHeight;
-
-            // Position the chat so its bottom is above the button
-            chatContainer.style.top  = (buttonRect.top - containerHeight - 8) + "px";
-            chatContainer.style.left = buttonRect.left + "px";
-        } else {
-            chatContainer.style.display = "none";
+            // Adjust chatbox position relative to button (unchanged)
+            chatContainer.style.bottom = `${window.innerHeight - buttonRect.bottom + 50}px`; // Adjusted offset
+            chatContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
         }
     });
 
     // Close Chat
     closeButton.addEventListener("click", function () {
         chatContainer.classList.remove("show");
-        chatContainer.style.display = "none";
     });
 
-    // Append Messages
+    // Append Messages Function
     function appendMessage(sender, text) {
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${sender}`;
@@ -295,46 +285,52 @@ document.addEventListener("DOMContentLoaded", function () {
 
         chatBody.appendChild(messageDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
+        return messageDiv; // Kept as in original
     }
 
-    // Send Message
+    // Send Message Function
     function sendMessage() {
         const userInput = chatInput.value.trim();
         if (userInput === "") return;
 
-        // Show user message
+        // User's message
         appendMessage("user", userInput);
-        chatInput.value = "";
+        chatInput.value = ""; // Clear input field
 
-        // Show bot "Thinking..."
+        // Show Bot "Thinking..." Message
         const thinkingMessage = document.createElement("div");
         thinkingMessage.className = "message bot";
         thinkingMessage.textContent = "🤔 Thinking...";
         chatBody.appendChild(thinkingMessage);
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Call the PaLM/Gemini API
+        // Call Gemini API (using the "contents" approach for a valid response)
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [
                     {
-                        parts: [{ text: userInput }]
+                        parts: [
+                            { text: userInput }
+                        ]
                     }
                 ]
             })
         })
         .then(response => response.json())
         .then(data => {
+            // Remove thinking message
             thinkingMessage.remove();
+
+            // Check if the model returned text
             if (
                 data.candidates &&
                 data.candidates[0].content &&
                 data.candidates[0].content.parts &&
                 data.candidates[0].content.parts[0].text
             ) {
-                const botResponse = data.candidates[0].content.parts[0].text;
+                let botResponse = data.candidates[0].content.parts[0].text;
                 appendMessage("bot", botResponse);
             } else {
                 appendMessage("bot", "❌ Error: No response from AI.");
@@ -347,10 +343,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // Send on Button Click
+    // Send Message on Button Click
     sendButton.addEventListener("click", sendMessage);
 
-    // Send on Enter Key
+    // Send Message on Enter Key
     chatInput.addEventListener("keypress", function (event) {
         if (event.key === "Enter") {
             sendMessage();
