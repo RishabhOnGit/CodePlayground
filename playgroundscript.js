@@ -308,13 +308,20 @@ document.addEventListener("DOMContentLoaded", function () {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                prompt: userInput, // Corrected API request format
-                max_tokens: 100 // Limits response size
+                prompt: {
+                    text: userInput
+                },
+                maxOutputTokens: 100 // Use Google's field name
             })
         })
         .then(response => response.json())
         .then(data => {
             thinkingMessage.remove(); // Remove thinking message
+
+            // Convert the PaLM response (candidates) to choices
+            if (data.candidates) {
+                data.choices = data.candidates.map(c => ({ text: c.output }));
+            }
 
             if (data.choices && data.choices[0].text) {
                 let botResponse = data.choices[0].text.trim();
