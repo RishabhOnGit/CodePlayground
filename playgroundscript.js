@@ -251,7 +251,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const closeButton = document.getElementById("close-chat");
 
     // API Key for Gemini AI (Replace with your valid key)
-    const API_KEY = "AIzaSyAORqFn8vpS9Z655pneoWj3skFmFUEqlXI";
+    const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
     const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
 
     // Toggle Chatbox Visibility
