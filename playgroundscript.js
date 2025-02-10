@@ -250,9 +250,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendButton = document.getElementById("send-button");
     const closeButton = document.getElementById("close-chat");
 
-    // API Key for Gemini AI (Replace with your valid key)
-    const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    // API Key for PaLM (Replace with your valid key)
+    const API_KEY = "AIzaSyAORqFn8vpS9Z655pneoWj3skFmFUEqlXI";
+    // Changed the endpoint to text-bison-001:generateText
+    const API_URL =
+      "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=" + API_KEY;
 
     // Toggle Chatbox Visibility
     chatButton.addEventListener("click", function () {
@@ -303,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
         chatBody.appendChild(thinkingMessage);
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Call Gemini API
+        // Call the PaLM API (text-bison-001)
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -311,14 +313,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 prompt: {
                     text: userInput
                 },
-                maxOutputTokens: 100 // Use Google's field name
+                // The official name is maxOutputTokens, not max_tokens
+                maxOutputTokens: 100
             })
         })
         .then(response => response.json())
         .then(data => {
             thinkingMessage.remove(); // Remove thinking message
 
-            // Convert the PaLM response (candidates) to choices
+            // Convert PaLM's "candidates" array into the same "choices" format
             if (data.candidates) {
                 data.choices = data.candidates.map(c => ({ text: c.output }));
             }
