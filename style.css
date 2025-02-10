@@ -1,0 +1,217 @@
+/* 🔹 Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 🔹 Fullscreen Landing Page */
+.landing-container {
+    width: 100%;
+    height: 100vh;
+    background: radial-gradient(circle at top, #6a1b9a, #4a148c);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* 🔹 Floating Background Elements */
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* 🔹 Shapes */
+.circle {
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    top: 8%;
+    left: 5%;
+    position: absolute;
+    animation: float 6s infinite ease-in-out;
+}
+
+.triangle {
+    width: 0;
+    height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 90px solid rgba(255, 255, 255, 0.15);
+    bottom: 15%;
+    right: 10%;
+    position: absolute;
+    animation: float 7s infinite ease-in-out;
+}
+
+.square {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.15);
+    bottom: 30%;
+    left: 40%;
+    position: absolute;
+    animation: float 8s infinite ease-in-out;
+}
+
+/* 🔹 Code Elements */
+.angle-brackets {
+    top: 10%;
+    left: 5%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 9s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.curly-braces {
+    bottom: 20%;
+    left: 15%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 7s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.binary-code {
+    top: 40%;
+    right: 10%;
+    font-size: 2.5rem;
+    position: absolute;
+    animation: float 11s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.slash {
+    bottom: 15%;
+    right: 30%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 12s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* 🔹 Floating Animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* 🔹 Title Styling */
+.landing-container h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #f093fb, #f5576c);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* 🔹 Typing Effect */
+#typing-text {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: white;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    max-width: 500px;
+    border-right: 3px solid white;
+    animation: blink-caret 0.8s infinite;
+}
+
+/* 🔹 Blinking Cursor */
+@keyframes blink-caret {
+    50% { border-color: transparent; }
+}
+
+/* 🔹 Feature Cards - Ensure Proper Alignment */
+.cards-container {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 25px;
+    margin: 40px 0;
+    width: 80%;
+    max-width: 900px;
+}
+
+/* 🔹 Feature Cards */
+.card {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    width: 200px;
+    border-radius: 12px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 🔹 Feature Card Logos */
+.card-logo {
+    width: 60px;
+    height: auto;
+    margin-bottom: 10px;
+}
+
+/* ✅ Hover Effects */
+.card:hover {
+    transform: scale(1.1);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+}
+
+/* 🔹 Start Button */
+#start-button {
+    padding: 14px 35px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #ff5722, #ff784e);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ✅ Hover Effects */
+#start-button:hover {
+    background: linear-gradient(45deg, #ff784e, #ff8e53);
+    transform: scale(1.05);
+}
+
+/* 🔹 Transition Overlay */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    opacity: 0;
+    z-index: 9999;
+    pointer-events: none;
+    transition: opacity 1s ease-in-out;
+}
+
+.fade-out {
+    opacity: 1;
+    pointer-events: all;
+}
