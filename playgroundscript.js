@@ -256,17 +256,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Toggle Chatbox Visibility
     chatButton.addEventListener("click", function () {
-    chatContainer.classList.toggle("show");
+        chatContainer.classList.toggle("show");
 
-    if (chatContainer.classList.contains("show")) {
-        // Get button position
-        let buttonRect = chatButton.getBoundingClientRect();
-        
-        // Adjust chatbox position relative to button
-        chatContainer.style.bottom = `${window.innerHeight - buttonRect.top + 10}px`; // 10px gap
-        chatContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
-    }
-});
+        if (chatContainer.classList.contains("show")) {
+            // Get button position relative to viewport
+            let buttonRect = chatButton.getBoundingClientRect();
+
+            // Adjust chatbox position relative to button
+            chatContainer.style.bottom = `${window.innerHeight - buttonRect.bottom + 50}px`; // Adjusted offset
+            chatContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
+        }
+    });
 
     // Close Chat
     closeButton.addEventListener("click", function () {
@@ -285,6 +285,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         chatBody.appendChild(messageDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
+        return messageDiv;
     }
 
     // Send Message Function
@@ -296,31 +297,35 @@ document.addEventListener("DOMContentLoaded", function () {
         chatInput.value = ""; // Clear input field
 
         // Show Bot "Thinking..." Message
-        const thinkingMessage = appendMessage("bot", "🤔 Thinking...");
+        const thinkingMessage = document.createElement("div");
+        thinkingMessage.className = "message bot";
+        thinkingMessage.textContent = "🤔 Thinking...";
+        chatBody.appendChild(thinkingMessage);
+        chatBody.scrollTop = chatBody.scrollHeight;
 
         // Call Gemini API
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: userInput }] }]
+                prompt: userInput, // Corrected API request format
+                max_tokens: 100 // Limits response size
             })
         })
         .then(response => response.json())
         .then(data => {
-            chatBody.removeChild(thinkingMessage); // Remove thinking message
+            thinkingMessage.remove(); // Remove thinking message
 
-            if (data.candidates && data.candidates[0].content.parts[0].text) {
-                let botResponse = data.candidates[0].content.parts[0].text;
+            if (data.choices && data.choices[0].text) {
+                let botResponse = data.choices[0].text.trim();
                 appendMessage("bot", botResponse);
             } else {
                 appendMessage("bot", "❌ Error: No response from AI.");
             }
         })
-        .catch(() => {
-          if (thinkingMessage) {
-        thinkingMessage.remove();
-    }
+        .catch(error => {
+            console.error("API Error:", error);
+            thinkingMessage.remove();
             appendMessage("bot", "❌ Network Error: Failed to connect.");
         });
     }
