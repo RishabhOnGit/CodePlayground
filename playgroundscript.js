@@ -242,6 +242,7 @@ window.addEventListener('load', () => {
 
 
 // chat bot code
+<script>
 document.addEventListener("DOMContentLoaded", function () {
     const chatButton = document.getElementById("chat-toggle");
     const chatContainer = document.getElementById("chat-container");
@@ -250,24 +251,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const sendButton = document.getElementById("send-button");
     const closeButton = document.getElementById("close-chat");
 
-    // API Key for PaLM (Replace with your valid key)
+    // API Key for Gemini AI (Replace with your valid key or use text-bison)
     const API_KEY = "AIzaSyAORqFn8vpS9Z655pneoWj3skFmFUEqlXI";
-    // Changed the endpoint to text-bison-001:generateText
-    const API_URL =
-      "https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=" + API_KEY;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`;
 
-    // Toggle Chatbox Visibility
+    // Toggle Chatbox Visibility with Animation
     chatButton.addEventListener("click", function () {
         chatContainer.classList.toggle("show");
-
-        if (chatContainer.classList.contains("show")) {
-            // Get button position relative to viewport
-            let buttonRect = chatButton.getBoundingClientRect();
-
-            // Adjust chatbox position relative to button
-            chatContainer.style.bottom = `${window.innerHeight - buttonRect.bottom + 50}px`; // Adjusted offset
-            chatContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
-        }
     });
 
     // Close Chat
@@ -287,7 +277,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         chatBody.appendChild(messageDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
-        return messageDiv;
     }
 
     // Send Message Function
@@ -295,6 +284,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const userInput = chatInput.value.trim();
         if (userInput === "") return;
 
+        // User's message
         appendMessage("user", userInput);
         chatInput.value = ""; // Clear input field
 
@@ -305,29 +295,33 @@ document.addEventListener("DOMContentLoaded", function () {
         chatBody.appendChild(thinkingMessage);
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // Call the PaLM API (text-bison-001)
+        // Call Gemini API (take inspiration from your working snippet)
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                prompt: {
-                    text: userInput
-                },
-                // The official name is maxOutputTokens, not max_tokens
-                maxOutputTokens: 100
+                contents: [
+                    { 
+                        parts: [
+                            { text: userInput }
+                        ]
+                    }
+                ]
             })
         })
         .then(response => response.json())
         .then(data => {
-            thinkingMessage.remove(); // Remove thinking message
+            // Remove the thinking message
+            thinkingMessage.remove();
 
-            // Convert PaLM's "candidates" array into the same "choices" format
-            if (data.candidates) {
-                data.choices = data.candidates.map(c => ({ text: c.output }));
-            }
-
-            if (data.choices && data.choices[0].text) {
-                let botResponse = data.choices[0].text.trim();
+            // Check if the model returned any text
+            if (
+                data.candidates &&
+                data.candidates[0].content &&
+                data.candidates[0].content.parts &&
+                data.candidates[0].content.parts[0].text
+            ) {
+                const botResponse = data.candidates[0].content.parts[0].text;
                 appendMessage("bot", botResponse);
             } else {
                 appendMessage("bot", "❌ Error: No response from AI.");
@@ -350,3 +344,4 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 });
+</script>
