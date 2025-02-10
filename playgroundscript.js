@@ -256,7 +256,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Toggle Chatbox Visibility
     chatButton.addEventListener("click", function () {
-        chatContainer.classList.toggle("show");
+    if (chatContainer.classList.contains("show")) {
+        chatContainer.classList.remove("show");
+    } else {
+        chatContainer.classList.add("show");
+        chatContainer.style.bottom = (chatButton.offsetTop - chatContainer.offsetHeight - 10) + "px";
+    }
     });
 
     // Close Chat
