@@ -328,7 +328,7 @@ button:active {
 /* Chat Container */
 .chat-container {
     position: fixed;
-    bottom: 100px; /* Adjust to spawn just above the button */
+    bottom: auto; /* Adjust to spawn just above the button */
     right: 20px;
     width: 320px;
     background: white;
