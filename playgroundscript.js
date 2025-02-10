@@ -239,3 +239,88 @@ window.addEventListener('load', () => {
     }
   }, 3000); // Matches the fadeOut animation time
 });
+
+
+// chat bot code
+document.addEventListener("DOMContentLoaded", function () {
+    const chatButton = document.getElementById("chat-button");
+    const chatContainer = document.getElementById("chat-container");
+    const chatBody = document.getElementById("chat-body");
+    const chatInput = document.getElementById("chat-input-field");
+    const sendButton = document.getElementById("send-button");
+    const closeButton = document.getElementById("close-chat");
+
+    // API Key for Gemini AI (Replace with your valid key)
+    const API_KEY = "AIzaSyBgxcpxrwjVu-u8MRaceyNdlUKq-QQ3WQA";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+
+    // Toggle Chatbox Visibility
+    chatButton.addEventListener("click", function () {
+        chatContainer.classList.toggle("show");
+    });
+
+    // Close Chat
+    closeButton.addEventListener("click", function () {
+        chatContainer.classList.remove("show");
+    });
+
+    // Append Messages Function
+    function appendMessage(sender, text) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${sender}`;
+        messageDiv.textContent = text;
+
+        if (sender === "user") {
+            messageDiv.style.alignSelf = "flex-end";
+        }
+
+        chatBody.appendChild(messageDiv);
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+
+    // Send Message Function
+    function sendMessage() {
+        const userInput = chatInput.value.trim();
+        if (userInput === "") return;
+
+        appendMessage("user", userInput);
+        chatInput.value = ""; // Clear input field
+
+        // Show Bot "Thinking..." Message
+        const thinkingMessage = appendMessage("bot", "🤔 Thinking...");
+
+        // Call Gemini API
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: userInput }] }]
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            chatBody.removeChild(thinkingMessage); // Remove thinking message
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                let botResponse = data.candidates[0].content.parts[0].text;
+                appendMessage("bot", botResponse);
+            } else {
+                appendMessage("bot", "❌ Error: No response from AI.");
+            }
+        })
+        .catch(() => {
+            chatBody.removeChild(thinkingMessage);
+            appendMessage("bot", "❌ Network Error: Failed to connect.");
+        });
+    }
+
+    // Send Message on Button Click
+    sendButton.addEventListener("click", sendMessage);
+
+    // Send Message on Enter Key
+    chatInput.addEventListener("keypress", function (event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    });
+});
