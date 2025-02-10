@@ -256,13 +256,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Toggle Chatbox Visibility
     chatButton.addEventListener("click", function () {
+    chatContainer.classList.toggle("show");
+
     if (chatContainer.classList.contains("show")) {
-        chatContainer.classList.remove("show");
-    } else {
-        chatContainer.classList.add("show");
-        chatContainer.style.bottom = (chatButton.offsetTop - chatContainer.offsetHeight - 10) + "px";
+        // Get button position
+        let buttonRect = chatButton.getBoundingClientRect();
+        
+        // Adjust chatbox position relative to button
+        chatContainer.style.bottom = `${window.innerHeight - buttonRect.top + 10}px`; // 10px gap
+        chatContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
     }
-    });
+});
 
     // Close Chat
     closeButton.addEventListener("click", function () {
