@@ -243,7 +243,7 @@ window.addEventListener('load', () => {
 
 // chat bot code
 document.addEventListener("DOMContentLoaded", function () {
-    const chatButton = document.getElementById("chat-button");
+    const chatButton = document.getElementById("chat-toggle");
     const chatContainer = document.getElementById("chat-container");
     const chatBody = document.getElementById("chat-body");
     const chatInput = document.getElementById("chat-input-field");
