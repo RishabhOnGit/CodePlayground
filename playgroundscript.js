@@ -314,7 +314,9 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         })
         .catch(() => {
-            chatBody.removeChild(thinkingMessage);
+          if (thinkingMessage) {
+        thinkingMessage.remove();
+    }
             appendMessage("bot", "❌ Network Error: Failed to connect.");
         });
     }
