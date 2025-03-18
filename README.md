@@ -60,11 +60,7 @@ yarn dev
 
 ## Technologies Used
 
-- **Frontend**: React.js, CodeMirror, Tailwind CSS
-- **Backend**: Node.js, Express
-- **Database**: MongoDB
-- **Authentication**: JWT, OAuth
-- **Cloud Storage**: AWS S3
+- **Frontend**: CodeMirror, Tailwind CSS
 - **AI Integration**: OpenAI API
 
 ## Roadmap
