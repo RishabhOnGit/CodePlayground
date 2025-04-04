@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="theme-color" content="#4a148c">
+    <title>Code Playground - Create & Experiment</title>
+    
+    <!-- Preconnect to external domains for better performance -->
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Landing Page Container -->
+    <div class="landing-container">
+
+        <!-- Background Elements (Now Properly Positioned) -->
+        <div class="floating-elements">
+            <div class="circle"></div>
+            <div class="triangle"></div>
+            <div class="square"></div>
+            <div class="code-element angle-brackets">&lt;/&gt;</div>
+            <div class="code-element curly-braces">{ }</div>
+            <div class="code-element binary-code">101010</div>
+            <div class="code-element slash">/</div>
+        </div>
+
+        <h1>🚀 Code Playground</h1>
+        <p id="typing-text"></p>
+
+        <!-- Feature Cards -->
+        <div class="cards-container">
+            <div class="card html-card">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg" alt="HTML Logo" class="card-logo">
+                <h2>HTML</h2>
+                <p>Structure your content with ease.</p>
+            </div>
+            <div class="card css-card">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg" alt="CSS Logo" class="card-logo">
+                <h2>CSS</h2>
+                <p>Style your elements beautifully.</p>
+            </div>
+            <div class="card js-card">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" alt="JavaScript Logo" class="card-logo">
+                <h2>JavaScript</h2>
+                <p>Add interactivity and power.</p>
+            </div>
+        </div>
+
+        <!-- Start Button -->
+        <button id="start-button">Start Building <i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <!-- Transition Overlay -->
+    <div class="transition-overlay"></div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>

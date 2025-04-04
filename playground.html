@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e1e1e">
+    <title>Code Playground</title>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CodeMirror Styles and Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material.min.css">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="playgroundstyle.css">
+</head>
+<body>
+
+    <!-- Notification Popup -->
+    <div id="notification-popup" class="notification-popup"></div>
+    
+    <!-- Live collaboration indicator -->
+    <div id="live-indicator" class="live-indicator">
+        <span>Live Session</span>
+    </div>
+
+    <!-- Welcome Overlay -->
+    <div id="welcome-overlay">
+        <h1>Welcome to Code Playground</h1>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <h1><i class="fas fa-code"></i> Code Playground</h1>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="grid-container">
+        <!-- HTML Section -->
+        <section class="grid-item" id="html-section">
+            <div class="editor-header" data-editor="html">
+                <i class="fab fa-html5"></i>
+                <h2>HTML</h2>
+                <i class="fas fa-expand fullscreen-btn" data-target="html-section"></i> <!-- Fullscreen button -->
+            </div>
+            <textarea id="html-editor"></textarea>
+            <div class="resizer" data-section="html"></div>
+        </section>
+        <!-- CSS Section -->
+        <section class="grid-item" id="css-section">
+            <div class="editor-header" data-editor="css">
+                <i class="fab fa-css3-alt"></i>
+                <h2>CSS</h2>
+                <i class="fas fa-expand fullscreen-btn" data-target="css-section"></i> <!-- Fullscreen button -->
+            </div>
+            <textarea id="css-editor"></textarea>
+            <div class="resizer" data-section="css"></div>
+        </section>
+        <!-- JavaScript Section -->
+        <section class="grid-item" id="js-section">
+            <div class="editor-header" data-editor="js">
+                <i class="fab fa-js"></i>
+                <h2>JavaScript</h2>
+                <i class="fas fa-expand fullscreen-btn" data-target="js-section"></i> <!-- Fullscreen button -->
+            </div>
+            <textarea id="js-editor"></textarea>
+            <div class="resizer" data-section="js"></div>
+        </section>
+        <!-- Output Section -->
+        <section class="grid-item output-area" id="output-section">
+            <div class="editor-header">
+                <i class="fas fa-play"></i>
+                <h2>Output</h2>
+                <i class="fas fa-expand fullscreen-btn" data-target="output-section"></i> <!-- Fullscreen button -->
+            </div>
+            <iframe id="output" sandbox="allow-scripts"></iframe>
+            <div class="resizer" data-section="output"></div>
+        </section>
+    </main>
+
+    <!-- Footer with Buttons -->
+    <footer>
+        <button id="save-button" title="Save Code">
+            <i class="fas fa-save"></i> <span>Save</span>
+        </button>
+        <button id="load-button" title="Load Code">
+            <i class="fas fa-folder-open"></i> <span>Load</span>
+        </button>
+        <button id="chat-toggle" title="Playground Bot">
+            <i class="fas fa-comments"></i> <span>PlayGround AI</span>
+        </button>
+        <div style="position: relative;">
+            <button id="share-button" title="Share Code">
+                <i class="fas fa-share-alt"></i> <span>Share</span>
+            </button>
+            <div id="share-dropdown" class="share-dropdown" style="position: absolute; top: -80px; left: 0; width: 150px; background: #333; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 1px solid #6a1b9a; z-index: 9999; display: none;">
+                <div id="share-copy" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-copy"></i> Copy Link
+                </div>
+                <div id="share-live" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-users"></i> Go Live
+                </div>
+            </div>
+        </div>
+        <button id="font-size-button" title="Adjust Font Size">
+            <i class="fas fa-text-height"></i> <span>Font Size</span>
+        </button>
+        <input type="range" id="font-size-slider" min="10" max="30" value="14" style="display: none;">
+    </footer>
+
+        <div id="chat-container" class="chat-container">
+        <div class="chat-header">
+            <span> PlayGround AI</span>
+            <i id="close-chat" class="fas fa-times"></i>
+        </div>
+        <div id="chat-body" class="chat-body">
+            <div class="message bot">Hello! How can I help you?</div>
+        </div>
+        <div class="chat-input">
+            <input id="chat-input-field" type="text" placeholder="Type a message...">
+            <button id="send-button">Send</button>
+        </div>
+    
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+    <script>
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDCxSjzHa0oqU-ktfnaN5sfmrD2fnEcvlE",
+        authDomain: "playground-f2d18.firebaseapp.com",
+        databaseURL: "https://playground-f2d18-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "playground-f2d18",
+        storageBucket: "playground-f2d18.firebasestorage.app",
+        messagingSenderId: "549060916225",
+        appId: "1:549060916225:web:c34080d58e0747c09afc00"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <!-- CodeMirror JS & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <!-- Add the CodeMirror comment addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/comment/comment.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="playgroundscript.js"></script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+/* 🔹 Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+/* 🔹 Fullscreen Landing Page */
+.landing-container {
+    width: 100%;
+    height: 100vh;
+    background: radial-gradient(circle at top, #6a1b9a, #4a148c);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* 🔹 Floating Background Elements */
+.floating-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* 🔹 Shapes */
+.circle {
+    width: 120px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50%;
+    top: 8%;
+    left: 5%;
+    position: absolute;
+    animation: float 6s infinite ease-in-out;
+}
+
+.triangle {
+    width: 0;
+    height: 0;
+    border-left: 50px solid transparent;
+    border-right: 50px solid transparent;
+    border-bottom: 90px solid rgba(255, 255, 255, 0.15);
+    bottom: 15%;
+    right: 10%;
+    position: absolute;
+    animation: float 7s infinite ease-in-out;
+}
+
+.square {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.15);
+    bottom: 30%;
+    left: 40%;
+    position: absolute;
+    animation: float 8s infinite ease-in-out;
+}
+
+/* 🔹 Code Elements */
+.angle-brackets {
+    top: 10%;
+    left: 5%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 9s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.curly-braces {
+    bottom: 20%;
+    left: 15%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 7s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.binary-code {
+    top: 40%;
+    right: 10%;
+    font-size: 2.5rem;
+    position: absolute;
+    animation: float 11s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.slash {
+    bottom: 15%;
+    right: 30%;
+    font-size: 3rem;
+    position: absolute;
+    animation: float 12s infinite ease-in-out;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* 🔹 Floating Animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* 🔹 Title Styling */
+.landing-container h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #f093fb, #f5576c);
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+/* 🔹 Typing Effect */
+#typing-text {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: white;
+    opacity: 0.9;
+    overflow: hidden;
+    display: inline-block;
+    max-width: 500px;
+    border-right: 3px solid white;
+    animation: blink-caret 0.8s infinite;
+    min-height: 2.5rem; /* Maintain consistent height */
+}
+
+/* 🔹 Blinking Cursor */
+@keyframes blink-caret {
+    50% { border-color: transparent; }
+}
+
+/* 🔹 Feature Cards */
+.card {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: 25px;
+    width: 200px;
+    border-radius: 12px;
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 🔹 Feature Cards - Ensure Proper Alignment */
+.cards-container {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 25px;
+    margin: 40px 0;
+    width: 80%;
+    max-width: 900px;
+}
+
+/* 🔹 Feature Card Logos */
+.card-logo {
+    width: 60px;
+    height: auto;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* ✅ Hover Effects */
+.card:hover, .card.touch-active {
+    transform: scale(1.1);
+    box-shadow: 0 10px 30px rgba(255, 255, 255, 0.3);
+}
+
+/* Touch feedback for better mobile experience */
+.card:active {
+    transform: scale(0.98);
+    box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
+}
+
+/* 🔹 Start Button */
+#start-button {
+    padding: 14px 35px;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: white;
+    background: linear-gradient(45deg, #ff5722, #ff784e);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ✅ Hover Effects */
+#start-button:hover {
+    background: linear-gradient(45deg, #ff784e, #ff8e53);
+    transform: scale(1.05);
+}
+
+/* 🔹 Transition Overlay - Improved */
+.transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #6a1b9a, #4a148c);
+    transform: translateY(100%);
+    opacity: 0;
+    z-index: 9999;
+    pointer-events: none;
+    transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1), 
+                opacity 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.transition-overlay::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="monospace" font-size="20" fill="rgba(255,255,255,0.1)">&lt;/&gt;</text></svg>');
+    background-size: 100px;
+    opacity: 0.2;
+}
+
+.transition-overlay::after {
+    content: 'Loading Playground...';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 500;
+    opacity: 0;
+    animation: fadeInText 0.5s ease forwards 0.3s;
+}
+
+@keyframes fadeInText {
+    from { opacity: 0; transform: translate(-50%, -40%); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+.fade-out {
+    opacity: 1;
+    transform: translateY(0%);
+    pointer-events: all;
+}
+
+/* Transition Symbols Animation */
+.transition-symbol {
+    position: absolute;
+    pointer-events: none;
+    opacity: 0;
+    animation: fadeFloat 4s ease-in-out infinite;
+}
+
+@keyframes fadeFloat {
+    0% { opacity: 0; transform: translateY(20px) rotate(0deg); }
+    30% { opacity: 0.7; }
+    70% { opacity: 0.7; }
+    100% { opacity: 0; transform: translateY(-20px) rotate(10deg); }
+}
+
+/* Responsive Styles */
+
+/* Large tablets and small desktops */
+@media (max-width: 1200px) {
+    .landing-container h1 {
+        font-size: 3.5rem;
+    }
+    
+    #typing-text {
+        font-size: 1.6rem;
+        max-width: 450px;
+    }
+    
+    .cards-container {
+        width: 90%;
+    }
+}
+
+/* Medium tablets */
+@media (max-width: 992px) {
+    .landing-container h1 {
+        font-size: 3rem;
+    }
+    
+    #typing-text {
+        font-size: 1.4rem;
+        max-width: 400px;
+    }
+    
+    .cards-container {
+        width: 95%;
+        gap: 15px;
+    }
+    
+    .card {
+        width: 180px;
+        padding: 20px;
+    }
+}
+
+/* Small tablets and large phones */
+@media (max-width: 768px) {
+    .landing-container {
+        padding: 20px;
+        justify-content: space-evenly;
+    }
+    
+    .landing-container h1 {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+    }
+    
+    #typing-text {
+        font-size: 1.2rem;
+        max-width: 350px;
+        white-space: normal;
+        min-height: 3.6rem; /* Allow for two lines */
+        text-align: center;
+    }
+    
+    .cards-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin: 30px 0;
+        width: 100%;
+    }
+    
+    .card {
+        width: 85%;
+        max-width: 280px;
+        padding: 20px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .card h2 {
+        margin: 8px 0;
+    }
+    
+    .card p {
+        margin-bottom: 5px;
+    }
+    
+    /* Space content more evenly */
+    .landing-container > * {
+        margin-bottom: 10px;
+    }
+    
+    #start-button {
+        padding: 12px 30px;
+        font-size: 1.2rem;
+    }
+    
+    /* Adjust floating elements for better appearance on smaller screens */
+    .circle {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .triangle {
+        border-left: 30px solid transparent;
+        border-right: 30px solid transparent;
+        border-bottom: 60px solid rgba(255, 255, 255, 0.15);
+    }
+    
+    .square {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .code-element {
+        font-size: 2rem !important;
+    }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+    .landing-container {
+        padding: 20px;
+        justify-content: space-between;
+        height: 100%;
+    }
+    
+    .landing-container h1 {
+        font-size: 2rem;
+    }
+    
+    #typing-text {
+        font-size: 1rem;
+        max-width: 280px;
+        min-height: 3rem;
+    }
+    
+    .cards-container {
+        margin: 20px 0;
+        gap: 15px;
+    }
+    
+    .card {
+        width: 90%;
+        max-width: 240px;
+        padding: 15px;
+    }
+    
+    .card-logo {
+        width: 50px;
+    }
+    
+    #start-button {
+        padding: 10px 25px;
+        font-size: 1.1rem;
+        margin-top: 15px;
+    }
+    
+    /* Further adjust floating elements */
+    .floating-elements > div:nth-child(odd) {
+        display: none; /* Hide some elements on very small screens to reduce clutter */
+    }
+}
+
+/* Handle very small screens and landscape mode on phones */
+@media (max-height: 500px) {
+    .landing-container {
+        height: auto;
+        min-height: 100vh;
+        padding: 50px 20px;
+    }
+    
+    .cards-container {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin: 20px 0;
+    }
+    
+    .card {
+        width: 150px;
+        padding: 15px 10px;
+    }
+    
+    .landing-container h1 {
+        font-size: 2rem;
+        margin-bottom: 5px;
+    }
+    
+    #typing-text {
+        font-size: 1rem;
+        margin-bottom: 15px;
+    }
+}
+
+/* Fix for white line at bottom of page */
+html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #4a148c;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+.landing-container {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Improved mobile styles for landing page */
+@media (max-width: 768px) {
+    html, body {
+        background-color: #4a148c;
+        overflow-x: hidden;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+    }
+    
+    .landing-container {
+        min-height: 100vh;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+}
+
+/* Ensure consistent spacing on very small phones */
+@media (max-width: 375px) {
+    .landing-container {
+        justify-content: space-around;
+        padding: 20px 10px;
+    }
+    
+    .landing-container h1 {
+        font-size: 1.8rem;
+    }
+    
+    .cards-container {
+        gap: 12px;
+        margin: 15px 0;
+    }
+    
+    .card {
+        width: 90%;
+        max-width: 220px;
+        padding: 12px;
+    }
+}
