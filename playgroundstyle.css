@@ -12,45 +12,103 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(30, 30, 30, 0.8); /* Make background translucent */
+  background-color: #1e1e1e;
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
   opacity: 1;
-  animation: fadeOut 3s ease forwards;
+  animation: fadeOut 2s cubic-bezier(0.4, 0, 0.2, 1) forwards 1.5s;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+#welcome-overlay::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at center, #6a1b9a, #4a148c, #1e1e1e);
+  opacity: 0.7;
+  animation: pulseGradient 3s ease-in-out infinite;
+  z-index: -1;
 }
 
 #welcome-overlay h1 {
-  color: #f5576c;
+  color: #fff;
   font-size: 3rem;
   font-family: 'Montserrat', sans-serif;
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 10px rgba(106, 27, 154, 0.8);
   text-transform: uppercase;
   letter-spacing: 2px;
-  animation: fadeIn 1.5s ease forwards;
+  animation: welcomeTextAnimation 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
+  opacity: 0;
+  transform: scale(0.8);
+  position: relative;
+  display: inline-block;
+  padding: 0 3rem;
 }
 
-/* Keyframes for fading in the text */
-@keyframes fadeIn {
+#welcome-overlay h1::before {
+  content: "<";
+  position: absolute;
+  left: 0;
+  color: #f093fb;
+  opacity: 0;
+  animation: bracketSlideIn 1s ease forwards 0.3s;
+}
+
+#welcome-overlay h1::after {
+  content: "/>";
+  position: absolute;
+  right: 0;
+  color: #f5576c;
+  opacity: 0;
+  animation: bracketSlideIn 1s ease forwards 0.3s;
+}
+
+/* Pulse gradient animation */
+@keyframes pulseGradient {
+  0% { transform: scale(1); opacity: 0.7; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 0.7; }
+}
+
+/* Improved text animation */
+@keyframes welcomeTextAnimation {
   0% {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.8) translateY(20px);
+    text-shadow: 0 0 10px rgba(106, 27, 154, 0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1) translateY(0);
+    text-shadow: 0 0 20px rgba(106, 27, 154, 0.9), 0 0 30px rgba(245, 87, 108, 0.7);
   }
   100% {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translateY(0);
+    text-shadow: 0 0 15px rgba(106, 27, 154, 0.9), 0 0 25px rgba(245, 87, 108, 0.6);
   }
 }
 
-/* Keyframes for fading out the overlay */
+/* Bracket slide-in animation */
+@keyframes bracketSlideIn {
+  0% { opacity: 0; transform: translateX(15px); }
+  100% { opacity: 0.8; transform: translateX(0); }
+}
+
+/* Smooth fadeout animation */
 @keyframes fadeOut {
-  0% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    visibility: hidden;
+  0% { opacity: 1; visibility: visible; }
+  100% { 
+    opacity: 0; 
+    visibility: hidden; 
+    transform: translateY(-20px);
   }
 }
 
@@ -62,6 +120,10 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* Header with gradient background */
@@ -72,6 +134,7 @@ header {
   padding: 1.5rem;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 /* Stylish Heading Text */
@@ -156,22 +219,65 @@ header h1 i.fas.fa-code:hover {
 /* Main Grid Container */
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: 1fr 1fr 1fr 1fr;
   grid-gap: 5px;
   height: calc(100vh - 200px);
+  position: relative;
+  flex: 1;
 }
 
 .grid-item {
   background-color: #292929;
+  position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding-bottom: 3px;
+  /* Ensure no browser default resize is active */
+  resize: none;
+  /* Make sure all resizer interactions use the col-resize cursor */
+  cursor: default;
+}
+
+/* Resizers */
+.resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
   height: 100%;
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background 0.2s ease;
+}
+
+.resizer:hover,
+.resizer.active {
+  background: rgba(106, 27, 154, 0.3);
+}
+
+.resizer::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 50px;
+  background-color: #6a1b9a;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.resizer:hover::after,
+.resizer.active::after {
+  opacity: 0.7;
 }
 
 /* CodeMirror Fixes */
 .CodeMirror {
-  height: 100%;
+  height: 100% !important;
   width: 100%;
   background-color: #292929 !important;
   color: #f0f0f0;
@@ -194,12 +300,45 @@ textarea {
   height: 100%;
 }
 
+/* Output section styling */
+.output-area {
+  position: relative;
+  overflow: hidden;
+}
+
 #output {
   background-color: #ffffff;
   border: none;
   width: 100%;
-  height: 100%;
+  height: 100% !important;
   border-top: 3px solid #6a1b9a;
+  display: block;
+  /* Prevent iframe from capturing mouse events during resize operations */
+  pointer-events: auto;
+}
+
+/* Add a special class that gets applied during resize operations */
+.resize-active #output {
+  pointer-events: none;
+}
+
+/* Ensure output container properly handles resizing */
+.grid-item.output-area {
+  position: relative;
+  overflow: hidden;
+  resize: none; /* Prevent browser's default resize behavior */
+}
+
+/* Make sure the output section's resizer is properly positioned and functioning */
+.output-area .resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 6px;
+  background: transparent;
+  cursor: col-resize;
+  z-index: 10;
 }
 
 /* Footer styling */
@@ -212,6 +351,10 @@ footer {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 button {
@@ -248,180 +391,739 @@ button:active {
 /* Popup Message Styling */
 .notification-popup {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  background-color: #333;
+  bottom: 80px; /* Position above the buttons */
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: linear-gradient(135deg, rgba(106, 27, 154, 0.95), rgba(74, 20, 140, 0.95));
   color: white;
-  padding: 10px 20px;
-  border-radius: 5px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-  z-index: 1000;
+  padding: 12px 30px;
+  border-radius: 50px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(106, 27, 154, 0.4);
+  z-index: 99999;
   opacity: 0;
-  transition: opacity 0.5s ease;
-  display: none;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 200px;
+  text-align: center;
+  justify-content: center;
+  visibility: hidden;
+}
+
+.notification-popup::before {
+  content: '🔗';
+  font-size: 16px;
+  margin-right: 5px;
 }
 
 .notification-popup.show {
   opacity: 1;
-  display: block;
-}
-
-.notification-popup.hide {
-  opacity: 0;
-  display: none;
+  transform: translateX(-50%) translateY(0);
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* Responsive Design for Tablets */
 @media (max-width: 1024px) {
+  body {
+    max-height: none;
+    overflow: auto;
+  }
+
   .grid-container {
     grid-template-columns: 1fr 1fr;
-    grid-gap: 5px;
+    grid-template-rows: auto auto;
+    height: auto;
+    min-height: calc(100vh - 200px);
+  }
+  
+  .grid-item {
+    min-height: 300px;
     height: auto;
   }
-
-  .grid-item {
-    height: 300px;
+  
+  /* Ensure consistent panel height */
+  .CodeMirror {
+    height: 300px !important;
   }
-
+  
+  #output {
+    height: 300px !important;
+  }
+  
+  /* Adjust resizer for tablet view */
+  .resizer {
+    height: 100%;
+    display: block;
+  }
+  
+  /* Hide horizontal resizers between rows */
+  .grid-item:nth-child(3) .resizer,
+  .grid-item:nth-child(4) .resizer {
+    display: none;
+  }
+  
   header h1 {
-    font-size: 1.8rem;
+    font-size: 2rem;
   }
-
+  
   footer {
-    flex-direction: column;
+    padding: 0.8rem;
+  }
+  
+  button {
+    padding: 0.7rem 1.2rem;
+    margin: 0.3rem;
+  }
+  
+  /* Adjust chat container for tablets */
+  .chat-container {
+    width: 340px;
+    height: 450px;
   }
 }
 
 /* Responsive Design for Mobile */
 @media (max-width: 768px) {
+  body {
+    max-height: none;
+    overflow: auto;
+    background-color: #1e1e1e;
+    min-height: 100vh;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  html {
+    background-color: #1e1e1e;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  
+  /* Fix font size for editors on mobile */
+  .CodeMirror {
+    font-size: 14px !important;
+  }
+  
+  /* Adjust grid layout for mobile */
   .grid-container {
     grid-template-columns: 1fr;
-    grid-gap: 5px;
+    grid-template-rows: repeat(4, 1fr);
     height: auto;
+    min-height: 100vh;
+    margin-bottom: 0;
   }
-
+  
+  /* Make each grid item have fixed height on mobile */
   .grid-item {
+    min-height: 200px;
     height: auto;
+    max-height: none;
   }
-
+  
+  /* Override fullscreen elements */
+  .grid-item.fullscreen {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 9999;
+  }
+  
+  /* Adjust the position of the live indicator when in landscape */
+  @media (orientation: landscape) {
+    .live-indicator {
+      top: auto;
+      bottom: 70px;
+      right: 10px;
+    }
+  }
+  
   .editor-header {
     padding: 0.5rem;
   }
-
+  
   .editor-header h2 {
     font-size: 1.2rem;
   }
-
-  footer {
-    flex-direction: column;
-    gap: 10px;
+  
+  header h1 {
+    font-size: 1.5rem;
   }
-
+  
+  footer {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    padding: 0.5rem;
+  }
+  
   button {
-    width: 100%;
+    padding: 0.6rem 1rem;
+    margin: 0.2rem;
+    font-size: 0.9rem;
+    width: auto;
+  }
+  
+  /* Adjust chat container for mobile */
+  .chat-container {
+    width: 90%;
+    max-width: 320px;
+    height: 400px;
+    bottom: 70px;
+  }
+  
+  .chat-header {
+    padding: 10px 15px;
+  }
+  
+  .chat-body {
+    padding: 15px;
+    height: calc(100% - 110px);
+  }
+  
+  .chat-input {
+    padding: 10px;
+  }
+  
+  .chat-input input {
+    padding: 8px 12px;
+  }
+  
+  .chat-input button {
+    padding: 8px 15px;
+  }
+  
+  /* Font size adjustment */
+  #font-size-slider {
+    width: 120px;
+  }
+  
+  /* Adjust the live indicator position on mobile */
+  .live-indicator {
+    top: auto;
+    bottom: 60px;
+    right: 10px;
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  
+  /* Make the Go Live button text shorter on small screens */
+  #live-collab-button span {
+    display: none;
+  }
+  
+  /* Make buttons smaller on mobile */
+  footer button {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
   }
 }
 
+/* Extra small devices */
+@media (max-width: 480px) {
+  header h1 {
+    font-size: 1.2rem;
+  }
+  
+  .grid-container {
+    grid-gap: 3px;
+    margin-bottom: 0;
+  }
+  
+  .grid-item {
+    min-height: 200px;
+  }
+  
+  footer {
+    padding: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+  }
+  
+  button {
+    padding: 0.5rem 0.8rem;
+    margin: 0.15rem;
+    font-size: 0.8rem;
+  }
+  
+  /* Notification popup adjustments for very small screens */
+  .notification-popup {
+    padding: 8px 15px;
+    min-width: 180px;
+    font-size: 12px;
+    bottom: 60px;
+  }
+  
+  /* Only show icons for buttons on very small screens */
+  footer button i {
+    margin-right: 0;
+  }
+  
+  footer button:not(#live-collab-button) span {
+    display: none;
+  }
+  
+  /* Adjust the editor headers */
+  .editor-header {
+    padding: 5px;
+  }
+  
+  .editor-header h2 {
+    font-size: 14px;
+  }
+  
+  /* Make sure the resize handles don't interfere with small screens */
+  .resizer {
+    display: none;
+  }
+  
+  /* Ensure CodeMirror is still usable on tiny screens */
+  .CodeMirror {
+    font-size: 12px !important;
+  }
+}
 
-
+/* Adjust for landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .grid-container {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(2, minmax(150px, 1fr));
+  }
+  
+  .grid-item {
+    min-height: 150px;
+  }
+  
+  header {
+    padding: 0.8rem;
+  }
+  
+  footer {
+    padding: 0.4rem;
+  }
+  
+  .chat-container {
+    height: 300px;
+    bottom: 60px;
+  }
+  
+  .chat-body {
+    height: calc(100% - 100px);
+  }
+}
 
 /* Chat Container */
 .chat-container {
     position: fixed;
-    bottom: 140px; /* Adjust to spawn just above the button */
-    right: 20px;
-    width: 350px;
-    z-index:10000;
-    background: white;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    overflow: hidden;
+    bottom: 80px;  /* Position above the buttons */
+    left: 50%;  /* Center horizontally */
+    transform: translateX(-50%) translateY(20px);  /* Center and initial position */
+    width: 380px;
+    height: 500px;
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    z-index: 10000;
     display: none;
     opacity: 0;
-    transform: translateY(20px) scale(0.9);
-    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(106, 27, 154, 0.2);
 }
 
 .chat-container.show {
     display: block;
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0);  /* Center and final position */
 }
 
 /* Chat Header */
 .chat-header {
-    background: #7D3C98;
-    color: white;
-    padding: 12px;
+    background: linear-gradient(135deg, #6a1b9a, #4a148c);
+    padding: 15px 20px;
+    border-radius: 15px 15px 0 0;
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    justify-content: space-between;
+    color: white;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chat-header span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+}
+
+.chat-header span::before {
+    content: '🤖';
+    font-size: 20px;
 }
 
 .chat-header i {
     cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background-color 0.3s ease;
+}
+
+.chat-header i:hover {
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Chat Body */
 .chat-body {
-    padding: 12px;
-    height: 250px;
+    padding: 20px;
+    height: calc(100% - 130px);
     overflow-y: auto;
-    background: #f9f9f9;
+    background: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: #6a1b9a rgba(255, 255, 255, 0.1);
+}
+
+.chat-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.chat-body::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.chat-body::-webkit-scrollbar-thumb {
+    background: #6a1b9a;
+    border-radius: 3px;
 }
 
 /* Messages */
 .message {
     padding: 10px 15px;
     margin: 8px 0;
-    max-width: 75%;
+    max-width: 80%;
     word-wrap: break-word;
-    font-size: 0.9rem;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
     border-radius: 15px;
 }
 
 /* Bot Messages */
 .message.bot {
-    background: #7D3C98;
+    background: linear-gradient(135deg, #6a1b9a, #4a148c);
     color: white;
-    text-align: left;
-    border-radius: 15px 15px 15px 0;
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
 }
 
 /* User Messages */
 .message.user {
-    background: #7D3C98;
+    background: linear-gradient(135deg, #8e24aa, #6a1b9a);
     color: white;
-    text-align: right;
-    align-self: flex-end;
-    border-radius: 15px 15px 0 15px;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
 }
 
 /* Chat Input */
 .chat-input {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
-    border-top: 1px solid #ddd;
-    padding: 10px;
-    background: white;
+    align-items: center;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(30, 30, 30, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0 0 15px 15px;
 }
 
 .chat-input input {
     flex: 1;
-    padding: 8px;
+    padding: 10px 15px;
     border: none;
+    border-radius: 25px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 14px;
     outline: none;
+    transition: all 0.3s ease;
+}
+
+.chat-input input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.chat-input input:focus {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 2px rgba(106, 27, 154, 0.4);
 }
 
 .chat-input button {
-    background: #FF5733;
+    background: linear-gradient(135deg, #9c27b0, #6a1b9a);
     color: white;
-    padding: 8px 12px;
     border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
     cursor: pointer;
-    border-radius: 5px;
-    transition: 0.3s;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .chat-input button:hover {
-    background: #FF6B48;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(135deg, #ab47bc, #8e24aa);
 }
+
+.chat-input button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+}
+
+/* Live collaboration button styling */
+#live-collab-button.active {
+  background-color: #ff5722;
+}
+
+#live-collab-button.active:hover {
+  background-color: #e64a19;
+}
+
+/* Live session indicator */
+.live-indicator {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #ff5722;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  z-index: 1000;
+}
+
+.live-indicator.active {
+  display: flex;
+}
+
+.live-indicator::before {
+  content: "●";
+  color: white;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+/* Better handle tablets in portrait mode */
+@media (min-width: 481px) and (max-width: 1024px) and (orientation: portrait) {
+  .grid-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(4, minmax(200px, auto));
+  }
+}
+
+/* Better handle tablets in landscape mode */
+@media (min-width: 481px) and (max-width: 1024px) and (orientation: landscape) {
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+}
+
+/* Share dropdown menu */
+.share-dropdown {
+  position: fixed;
+  background: #333;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9999;
+  border: 1px solid #6a1b9a;
+  width: 150px;
+  transition: opacity 0.2s ease;
+}
+
+.share-dropdown.show {
+  display: flex;
+}
+
+.share-dropdown-option {
+  padding: 10px 15px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.share-dropdown-option:hover {
+  background-color: #6a1b9a;
+}
+
+.share-dropdown-option i {
+  font-size: 14px;
+  width: 20px;
+}
+
+/* Responsive adjustments for share dropdown */
+@media (max-width: 768px) {
+  .share-dropdown {
+    bottom: 55px;
+    width: 140px;
+  }
+  
+  .share-dropdown-option {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .share-dropdown {
+    bottom: 50px;
+    width: 120px;
+  }
+  
+  .share-dropdown-option {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+}
+
+/* Share button active state (during live collaboration) */
+#share-button.active {
+  background-color: #ff5722 !important;
+}
+
+#share-button.active:hover {
+  background-color: #e64a19 !important;
+}
+
+/* Dynamically added End Live Session option */
+#share-end-live {
+  background-color: rgba(255, 87, 34, 0.5);
+}
+
+#share-end-live:hover {
+  background-color: #e64a19;
+}
+
+/* Welcome content animation */
+.welcome-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: scaleIn 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  text-align: center;
+}
+
+.welcome-content h1 {
+  font-size: 3.5rem;
+  background: linear-gradient(to right, #f093fb, #f5576c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin: 0;
+  position: relative;
+  display: inline-block;
+  padding: 0 4rem;
+}
+
+.welcome-content h1::before {
+  content: "<";
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 3.5rem;
+  color: #9c27b0;
+  opacity: 0.9;
+}
+
+.welcome-content h1::after {
+  content: "/>";
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 3.5rem;
+  color: #e91e63;
+  opacity: 0.9;
+}
+
+@keyframes scaleIn {
+  0% { opacity: 0; transform: scale(0.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes scaleOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* Glow effect for better visibility of code brackets */
+@keyframes glowPulse {
+  0% { text-shadow: 0 0 5px rgba(156, 39, 176, 0.7); }
+  50% { text-shadow: 0 0 15px rgba(233, 30, 99, 0.9), 0 0 5px rgba(156, 39, 176, 0.7); }
+  100% { text-shadow: 0 0 5px rgba(156, 39, 176, 0.7); }
+}
+
+.welcome-content h1::before,
+.welcome-content h1::after {
+  animation: glowPulse 2s infinite ease-in-out;
+}
+
+/* Neon text effect */
+.welcome-content h1 {
+  text-shadow: 0 0 10px rgba(156, 39, 176, 0.7), 0 0 20px rgba(233, 30, 99, 0.5);
+  letter-spacing: 2px;
+}
+
+/* Smooth scaling for welcome overlay */
+#welcome-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Last grid item's resizer - hide it completely */
+.grid-item:last-child .resizer {
+  display: none;
+}
+
