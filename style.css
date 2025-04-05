@@ -384,6 +384,62 @@
     .card p {
         font-size: clamp(0.8rem, 3vw, 1rem);
     }
+    
+    /* Header adjustments */
+    .header {
+        padding: 0.5rem;
+    }
+    
+    .header-title {
+        font-size: 1.2rem;
+    }
+    
+    .header-logo {
+        height: 28px;
+    }
+    
+    .header-actions {
+        gap: 0.5rem;
+    }
+    
+    .user-info {
+        max-width: 120px;
+    }
+    
+    .user-name {
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    /* Editor adjustments */
+    .editor-container {
+        height: calc(100vh - 110px);
+    }
+    
+    /* Footer adjustments */
+    .footer {
+        padding: 0.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .footer .toolbar-button {
+        padding: 0.3rem 0.5rem;
+    }
+    
+    /* Full-screen mode adjustments */
+    .fullscreen .editor-container {
+        height: calc(100vh - 60px);
+    }
+    
+    /* Ensure dialogs are properly sized */
+    .dialog-content {
+        width: 90vw;
+        max-width: 90vw;
+    }
 }
 
 /* Small phones */
@@ -424,6 +480,28 @@
     /* Adjust floating elements for better appearance on smaller screens */
     .floating-elements {
         opacity: 0.7;
+    }
+    
+    .header-actions .btn:not(.user-info-container, .btn-icon) {
+        display: none;
+    }
+    
+    .btn-icon {
+        width: 36px;
+        height: 36px;
+    }
+    
+    .language-selector {
+        max-width: 100px;
+    }
+    
+    .footer {
+        padding: 0.3rem;
+    }
+    
+    /* Make terminal/output area larger on small screens */
+    .output-container {
+        min-height: 120px;
     }
 }
 
