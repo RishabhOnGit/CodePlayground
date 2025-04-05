@@ -503,6 +503,77 @@
     .output-container {
         min-height: 120px;
     }
+    
+    .auth-section {
+        display: flex;
+        justify-content: center;
+        width: 90%;
+        max-width: 300px;
+    }
+    
+    .user-info {
+        padding: 5px 10px;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        max-width: 100%;
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .user-avatar {
+        width: 28px;
+        height: 28px;
+        min-width: 28px; /* Prevent shrinking */
+    }
+    
+    #user-name {
+        max-width: 80px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: 0.9rem;
+    }
+    
+    #logout-button {
+        padding: 3px 8px !important;
+        font-size: 0.75rem !important;
+        margin-left: 5px !important;
+    }
+    
+    #admin-panel-btn {
+        padding: 3px 8px !important;
+        font-size: 0.75rem !important;
+        margin: 0 3px !important;
+    }
+    
+    #admin-panel-btn i {
+        margin-right: 3px;
+    }
+    
+    /* Mobile and small screen media query refinements */
+    @media (max-width: 360px) {
+        #user-name {
+            display: none; /* Hide username on very small screens */
+        }
+        
+        .user-info {
+            gap: 5px;
+            padding: 3px 8px;
+        }
+        
+        #logout-button, #admin-panel-btn {
+            padding: 3px 6px !important;
+        }
+        
+        #admin-panel-btn span {
+            display: none; /* Hide text, keep only icon */
+        }
+        
+        #admin-panel-btn i {
+            margin-right: 0;
+        }
+    }
 }
 
 /* Handle very small screens and landscape mode */

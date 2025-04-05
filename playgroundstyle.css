@@ -473,8 +473,6 @@ footer button:active {
   
   .main-container {
     height: calc(100vh - 48px - 40px);
-    display: flex;
-    flex-direction: column;
   }
   
   .grid-container {
@@ -483,48 +481,39 @@ footer button:active {
     padding: 5px;
     gap: 5px;
     height: calc(100vh - 90px);
-    overflow-y: auto;
   }
   
   .grid-item {
     width: 100%;
     margin-bottom: 5px;
-    min-height: 200px;
   }
   
   #html-section {
     order: 1;
     height: 25vh;
-    min-height: 150px;
   }
   
   #css-section {
     order: 2;
     height: 20vh;
-    min-height: 150px;
   }
   
   #js-section {
     order: 3;
     height: 20vh;
-    min-height: 150px;
   }
   
   #output-section {
     order: 4;
     height: 25vh;
-    min-height: 150px;
   }
   
   .language-selector {
     height: auto;
-    min-height: 48px;
+    min-height: 40px;
     padding: 5px 8px;
     margin-bottom: 0;
     width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: 100;
   }
   
   .header-left {
@@ -539,23 +528,16 @@ footer button:active {
   }
   
   #home-button, #language-select {
-    height: 32px;
-    padding: 0 10px;
+    height: 26px;
+    padding: 0 8px;
     font-size: 0.85rem;
   }
   
   footer {
     height: 40px;
-    padding: 0 8px;
-    gap: 5px;
-    justify-content: space-between;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
-    background-color: #121212;
+    padding: 0;
+    gap: 0;
+    justify-content: space-around;
   }
   
   footer button {
@@ -569,9 +551,6 @@ footer button:active {
   .editor-header {
     padding: 5px 8px;
     min-height: 32px;
-    position: sticky;
-    top: 48px;
-    z-index: 90;
   }
   
   .editor-header h2 {
@@ -603,7 +582,6 @@ footer button:active {
     padding: 0;
     margin: 0;
     gap: 0;
-    overflow-y: auto;
   }
   
   .grid-item {
@@ -612,32 +590,31 @@ footer button:active {
     margin: 0;
     border-left: none;
     border-right: none;
-    min-height: 150px;
   }
   
   #html-section {
     order: 1;
     height: 30vh;
-    min-height: 150px;
+    min-height: 0;
     border-top: none;
   }
   
   #css-section {
     order: 2;
     height: 20vh;
-    min-height: 150px;
+    min-height: 0;
   }
   
   #js-section {
     order: 3;
     height: 20vh;
-    min-height: 150px;
+    min-height: 0;
   }
   
   #output-section {
     order: 4;
     height: 30vh;
-    min-height: 150px;
+    min-height: 0;
   }
   
   .language-selector {
@@ -648,9 +625,6 @@ footer button:active {
     background-color: #5900e6;
     height: 40px;
     width: 100%;
-    position: sticky;
-    top: 0;
-    z-index: 100;
   }
   
   .language-selector h1 {
@@ -667,8 +641,8 @@ footer button:active {
   
   #home-button {
     background-color: rgba(255, 255, 255, 0.1);
-    padding: 0 8px;
-    height: 30px;
+    padding: 0 6px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -688,39 +662,51 @@ footer button:active {
   
   .editor-header {
     padding: 4px 8px;
-    position: sticky;
-    top: 40px;
-    z-index: 90;
+    background-color: #202020;
+    height: 32px;
+    min-height: auto;
+  }
+  
+  .editor-header h2 {
+    font-size: 0.9rem;
+    margin-left: 5px;
+    color: #f5f5f5;
+  }
+  
+  /* Hide resizers on mobile */
+  .resizer {
+    display: none !important;
   }
   
   footer {
     height: 40px;
-    padding: 0 8px;
+    padding: 0;
+    border-top: 1px solid #333;
     position: fixed;
     bottom: 0;
     left: 0;
-    right: 0;
-    background-color: #121212;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    z-index: 100;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+    width: 100%;
   }
   
   footer button {
-    padding: 0 8px;
-    height: 30px;
-    font-size: 0.8rem;
-    margin: 0 2px;
+    padding: 0;
+    flex: 1;
+    border-radius: 0;
+    background: none;
+    font-size: 1.2rem;
+    height: 40px;
+    border-right: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  footer button:last-child {
+    border-right: none;
   }
   
   footer button span {
     display: none;
-  }
-  
-  footer button i {
-    margin-right: 0;
   }
   
   /* CodeMirror styles */
@@ -1373,5 +1359,67 @@ header h1 i.fas.fa-code:hover {
 
 #js-section .CodeMirror {
   border-top: 3px solid #f0db4f;
+}
+
+/* User profile styling */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 4px 8px;
+  border-radius: 20px;
+}
+
+#user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#user-name {
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+#logout-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: background-color 0.2s;
+}
+
+#logout-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Add this to your existing media queries for mobile */
+@media (max-width: 768px) {
+  #user-name {
+    display: none;
+  }
+  
+  .user-profile {
+    padding: 3px;
+    gap: 0;
+  }
+  
+  #logout-button {
+    font-size: 0.7rem;
+    padding: 3px 6px;
+  }
 }
 
