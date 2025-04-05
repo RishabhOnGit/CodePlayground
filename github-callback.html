@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Authentication</title>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .spinner {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid #ffffff;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+        .error {
+            color: #ff5252;
+        }
+        .success {
+            color: #4caf50;
+        }
+        .return-link {
+            color: #ffffff;
+            margin-top: 20px;
+            text-decoration: none;
+            padding: 10px 20px;
+            background-color: #24292e;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+        }
+        .return-link:hover {
+            background-color: #2c3238;
+        }
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            max-width: 90%;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading">
+        <div class="spinner"></div>
+        <div class="message">Completing authentication...</div>
+    </div>
+
+    <!-- Include GitHub config -->
+    <script src="github-config.js"></script>
+    
+    <script>
+        // API Base URL - Updated to use Render backend URL
+        const API_BASE_URL = 'https://try-j2gk.onrender.com/api';
+        // Define the main playground URL for reference
+        const PLAYGROUND_URL = 'https://playgroundcode.vercel.app';
+        
+        // Function to get URL parameters
+        function getUrlParam(param) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(param);
+        }
+
+        // Function to exchange code for token using our backend
+        async function exchangeCodeForToken(code) {
+            let retries = 0;
+            const maxRetries = 3;
+            
+            const attemptExchange = async () => {
+                try {
+                    console.log(`Sending code to ${API_BASE_URL}/github/token (attempt ${retries + 1}/${maxRetries})`);
+                    
+                    // Update debug info
+                    let debugElem = document.querySelector('.debug-info');
+                    if (!debugElem) {
+                        debugElem = document.createElement('div');
+                        debugElem.className = 'debug-info';
+                        document.querySelector('.loading').appendChild(debugElem);
+                    }
+                    
+                    debugElem.innerHTML = `Attempting to connect to: ${API_BASE_URL}/github/token (attempt ${retries + 1}/${maxRetries})<br>Code: ${code.substring(0, 5)}...`;
+                    
+                    // Add timeout to fetch requests
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                    
+                    const response = await fetch(`${API_BASE_URL}/github/token`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ code }),
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (!response.ok) {
+                        let errorMessage = 'Failed to exchange code for token';
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.error || errorMessage;
+                        } catch (e) {
+                            errorMessage += ` (Status: ${response.status})`;
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Store the token and user info
+                    localStorage.setItem('github_access_token', data.access_token);
+                    localStorage.setItem('github_login_time', Date.now());
+                    localStorage.setItem('github_user_name', data.user.name || data.user.login);
+                    localStorage.setItem('github_user_avatar', data.user.avatar_url);
+                    
+                    return data;
+                } catch (error) {
+                    console.error(`Error exchanging code (attempt ${retries + 1}/${maxRetries}):`, error);
+                    
+                    // Update debug info with error
+                    const debugElem = document.querySelector('.debug-info');
+                    if (debugElem) {
+                        debugElem.innerHTML += `<br><br>Error (attempt ${retries + 1}/${maxRetries}): ${error.message}`;
+                    }
+                    
+                    retries++;
+                    if (retries < maxRetries) {
+                        debugElem.innerHTML += `<br>Retrying in 3 seconds...`;
+                        // Wait 3 seconds before retrying
+                        await new Promise(resolve => setTimeout(resolve, 3000));
+                        return attemptExchange();
+                    }
+                    
+                    throw error;
+                }
+            };
+            
+            return attemptExchange();
+        }
+
+        // Function to create GitHub repo with folders
+        async function createGitHubRepo(accessToken) {
+            try {
+                console.log(`Creating repo via ${API_BASE_URL}/github/create-repo`);
+                
+                // Update debug info
+                const debugElem = document.querySelector('.debug-info');
+                if (debugElem) {
+                    debugElem.innerHTML += `<br><br>Creating repository...`;
+                }
+                
+                const response = await fetch(`${API_BASE_URL}/github/create-repo`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ access_token: accessToken })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create repository');
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error creating repo:', error);
+                
+                // Update debug info with error
+                const debugElem = document.querySelector('.debug-info');
+                if (debugElem) {
+                    debugElem.innerHTML += `<br>Error: ${error.message}`;
+                }
+                
+                throw error;
+            }
+        }
+
+        // Handle authentication callback
+        async function handleAuthCallback() {
+            try {
+                const code = getUrlParam('code');
+                const error = getUrlParam('error');
+                
+                if (error) {
+                    throw new Error(`GitHub authentication error: ${error}`);
+                }
+                
+                if (!code) {
+                    throw new Error('No authorization code received from GitHub');
+                }
+
+                // Exchange code for token
+                const authData = await exchangeCodeForToken(code);
+                
+                if (!authData || !authData.access_token) {
+                    throw new Error('Failed to obtain access token');
+                }
+                
+                // Update UI during repo creation
+                document.querySelector('.message').textContent = 'Creating GitHub repository...';
+                
+                // Create GitHub repository and folders
+                const repoData = await createGitHubRepo(authData.access_token);
+                
+                // Update UI to show success
+                document.querySelector('.spinner').style.display = 'none';
+                document.querySelector('.message').textContent = 'Authentication successful!';
+                document.querySelector('.message').classList.add('success');
+                
+                // Add repo info
+                const repoElem = document.createElement('div');
+                repoElem.className = 'message';
+                repoElem.innerHTML = `Created repository: <a href="${repoData.repo.html_url}" target="_blank" style="color: #4caf50;">${repoData.repo.full_name}</a>`;
+                document.querySelector('.loading').appendChild(repoElem);
+                
+                // Add a return link
+                const linkElem = document.createElement('a');
+                linkElem.href = window.location.origin + '/index.html';
+                linkElem.textContent = 'Return to homepage';
+                linkElem.className = 'return-link';
+                document.querySelector('.loading').appendChild(linkElem);
+                
+            } catch (error) {
+                console.error('Authentication error:', error);
+                
+                // Update UI to show error
+                document.querySelector('.spinner').style.display = 'none';
+                document.querySelector('.message').textContent = 'Authentication failed';
+                document.querySelector('.message').classList.add('error');
+                
+                // Add specific error message
+                const errorElem = document.createElement('div');
+                errorElem.className = 'message error';
+                errorElem.textContent = error.message || 'Unknown error occurred';
+                document.querySelector('.loading').appendChild(errorElem);
+                
+                // Add a return link
+                const linkElem = document.createElement('a');
+                linkElem.href = window.location.origin + '/index.html';
+                linkElem.textContent = 'Return to homepage';
+                linkElem.className = 'return-link';
+                document.querySelector('.loading').appendChild(linkElem);
+            }
+        }
+
+        // Start the authentication process when page loads
+        window.onload = handleAuthCallback;
+    </script>
+</body>
+</html> 
