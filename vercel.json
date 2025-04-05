@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "routes": [
+    { "src": "/admin-panel", "dest": "/admin-panel.html" },
+    { "src": "/github-callback", "dest": "/github-callback.html" },
+    { "src": "/playground", "dest": "/playground.html" },
+    { "src": "/language", "dest": "/language.html" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+} 

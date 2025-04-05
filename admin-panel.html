@@ -11,6 +11,16 @@
     
     <!-- Chart.js for Data Visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <!-- GitHub utils -->
+    <script src="github-utils.js"></script>
+    
+    <!-- Admin script -->
+    <script src="admin-script.js"></script>
 
     <style>
         :root {
@@ -326,19 +336,17 @@
     <!-- Header -->
     <header>
         <div class="header-title">
-            <i class="fas fa-chart-line"></i>
+            <i class="fas fa-cogs" style="color: #0366d6;"></i>
             <h1>Code Playground Admin</h1>
             <a href="index.html" class="home-button">
-                <i class="fas fa-home"></i> Home
+                <i class="fas fa-home"></i>
+                Home
             </a>
         </div>
-        <div class="user-account" id="user-account">
-            <img id="user-avatar" src="" alt="Admin avatar" class="user-avatar">
-            <div>
-                <span id="user-name">Admin</span>
-                <div><small id="admin-status">Admin</small></div>
-            </div>
-            <button id="logout-button" class="logout-button">Logout</button>
+        <div class="user-account">
+            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="User avatar" class="user-avatar" id="user-avatar">
+            <span id="user-name">Admin</span>
+            <button class="logout-button" id="logout-button">Logout</button>
         </div>
     </header>
     
@@ -568,17 +576,6 @@
     <div class="sidebar-toggle" id="sidebar-toggle" style="display: none;">
         <i class="fas fa-bars"></i>
     </div>
-    
-    <!-- GitHub Utilities -->
-    <script src="github-utils.js"></script>
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
-    
-    <!-- Admin Panel JavaScript -->
-    <script src="admin-script.js"></script>
     
     <script>
         document.addEventListener('DOMContentLoaded', function() {

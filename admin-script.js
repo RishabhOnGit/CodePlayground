@@ -15,6 +15,8 @@ const database = firebase.database();
 
 // DOM Elements
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("Admin panel loaded");
+    
     // Check if user is logged in as admin
     checkAdminAuth();
     
@@ -33,13 +35,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Admin Authentication
 function checkAdminAuth() {
-    if (window.githubUtils && window.githubUtils.isGithubAuthenticated()) {
+    console.log("Checking admin authentication");
+    console.log("GitHub utils available:", !!window.githubUtils);
+    
+    // Check if GitHub utils is loaded and user is authenticated
+    if (localStorage.getItem('github_access_token')) {
         const username = localStorage.getItem('github_user_name');
         const avatarUrl = localStorage.getItem('github_user_avatar');
         
+        console.log("User authenticated:", username);
+        
         // Update header info
         document.getElementById('user-name').textContent = username || 'Admin';
-        document.getElementById('user-avatar').src = avatarUrl || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+        
+        if (avatarUrl) {
+            document.getElementById('user-avatar').src = avatarUrl;
+        }
         
         // Check if user has admin privileges
         checkAdminStatus(username);
@@ -47,8 +58,14 @@ function checkAdminAuth() {
         // Add logout handler
         document.getElementById('logout-button').addEventListener('click', logoutAdmin);
     } else {
-        // Redirect to login if not authenticated
-        window.location.href = 'index.html';
+        console.log("User not authenticated, redirecting to login");
+        // Show notification
+        showNotification('Please log in to access admin panel');
+        
+        // Redirect to login after a short delay
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 2000);
     }
 }
 
