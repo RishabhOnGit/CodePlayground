@@ -2,9 +2,9 @@
   "name": "code-playground",
   "version": "1.0.0",
   "description": "Code Playground with GitHub integration",
-  "main": "index.js",
+  "main": "server/server.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server/server.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
