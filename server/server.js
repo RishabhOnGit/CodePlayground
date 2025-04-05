@@ -6,9 +6,9 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS configuration - Update to allow only Vercel frontend
+// CORS configuration - Update for production
 app.use(cors({
-    origin: ['https://trial-playground.vercel.app', 'https://playgroundcode.vercel.app'],
+    origin: 'https://playgroundcode.vercel.app',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
