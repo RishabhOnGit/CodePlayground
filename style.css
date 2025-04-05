@@ -10,6 +10,7 @@
 .landing-container {
     width: 100%;
     height: 100vh;
+    min-height: 100vh;
     background: radial-gradient(circle at top, #6a1b9a, #4a148c);
     color: white;
     display: flex;
@@ -20,6 +21,8 @@
     position: relative;
     z-index: 1;
     overflow: hidden;
+    padding: 1rem;
+    gap: clamp(10px, 2vh, 20px);
 }
 
 /* 🔹 Floating Background Elements */
@@ -111,38 +114,71 @@
 
 /* 🔹 Title Styling */
 .landing-container h1 {
-    font-size: 4rem;
+    font-size: clamp(2rem, 5vw, 4rem);
     font-weight: 700;
     background: linear-gradient(to right, #f093fb, #f5576c);
     -webkit-background-clip: text;
     color: transparent;
+    margin-bottom: clamp(5px, 1vh, 10px);
 }
 
 /* 🔹 Typing Effect */
 #typing-text {
-    font-size: 1.8rem;
+    font-size: clamp(1rem, 2.5vw, 1.8rem);
     font-weight: 500;
     color: white;
     opacity: 0.9;
     overflow: hidden;
+    display: inline;
+    min-height: clamp(1.5rem, 4vh, 2.5rem);
+    margin-bottom: 0;
+    white-space: nowrap;
+    position: relative;
+    vertical-align: bottom;
+    padding-bottom: 2px;
+}
+
+/* Text wrapper for fixed width */
+#typing-text-wrapper {
     display: inline-block;
-    max-width: 500px;
-    border-right: 3px solid white;
+    text-align: center;
+    min-width: clamp(280px, 80vw, 500px);
+    margin: 0 auto;
+}
+
+/* 🔹 Typing Container - Added for stability */
+.typing-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: clamp(2rem, 6vh, 3rem);
+    margin-bottom: clamp(15px, 2vh, 20px);
+    width: 100%;
+    text-align: center;
+}
+
+/* 🔹 Blinking Cursor - Separated from text */
+.typing-cursor {
+    display: inline-block;
+    color: white;
+    font-size: 1.2em;
+    line-height: 1;
+    margin-left: 2px;
     animation: blink-caret 0.8s infinite;
-    min-height: 2.5rem; /* Maintain consistent height */
 }
 
 /* 🔹 Blinking Cursor */
 @keyframes blink-caret {
-    50% { border-color: transparent; }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
 }
 
 /* 🔹 Feature Cards */
 .card {
     background: rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
-    padding: 25px;
-    width: 200px;
+    padding: clamp(15px, 3vw, 25px);
+    width: clamp(150px, 20vw, 200px);
     border-radius: 12px;
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -155,17 +191,17 @@
 /* 🔹 Feature Cards - Ensure Proper Alignment */
 .cards-container {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 25px;
-    margin: 40px 0;
-    width: 80%;
-    max-width: 900px;
+    gap: clamp(10px, 2vw, 25px);
+    margin: clamp(10px, 2vh, 20px) 0;
+    width: 90%;
+    max-width: 1000px;
 }
 
 /* 🔹 Feature Card Logos */
 .card-logo {
-    width: 60px;
+    width: clamp(40px, 7vw, 60px);
     height: auto;
     margin-bottom: 10px;
     display: block;
@@ -183,26 +219,60 @@
     box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
 }
 
-/* 🔹 Start Button */
-#start-button {
-    padding: 14px 35px;
-    font-size: 1.3rem;
+/* 🔹 Buttons Container */
+.buttons-container {
+    display: flex;
+    gap: clamp(10px, 2vw, 20px);
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 90%;
+    max-width: 600px;
+    margin-top: clamp(10px, 2vh, 20px);
+}
+
+/* 🔹 Common Button Styles */
+#start-button, #language-button {
+    padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
     font-weight: bold;
     color: white;
-    background: linear-gradient(45deg, #ff5722, #ff784e);
     border: none;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.3s ease-in-out;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
+    width: clamp(180px, 40vw, 250px);
+    text-align: center;
+}
+
+/* 🔹 Start Button */
+#start-button {
+    background: linear-gradient(45deg, #ff5722, #ff784e);
+}
+
+/* 🔹 Language Button */
+#language-button {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+}
+
+/* 🔹 Language Card Styling */
+.language-card {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* ✅ Hover Effects */
 #start-button:hover {
-    background: linear-gradient(45deg, #ff784e, #ff8e53);
-    transform: scale(1.05);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+#language-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* 🔹 Transition Overlay - Improved */
@@ -276,193 +346,181 @@
 
 /* Large tablets and small desktops */
 @media (max-width: 1200px) {
-    .landing-container h1 {
-        font-size: 3.5rem;
-    }
-    
-    #typing-text {
-        font-size: 1.6rem;
-        max-width: 450px;
-    }
-    
     .cards-container {
-        width: 90%;
+        width: 95%;
     }
 }
 
 /* Medium tablets */
 @media (max-width: 992px) {
-    .landing-container h1 {
-        font-size: 3rem;
-    }
-    
-    #typing-text {
-        font-size: 1.4rem;
-        max-width: 400px;
-    }
-    
-    .cards-container {
-        width: 95%;
-        gap: 15px;
-    }
-    
     .card {
-        width: 180px;
-        padding: 20px;
+        width: clamp(140px, 23vw, 180px);
     }
 }
 
 /* Small tablets and large phones */
 @media (max-width: 768px) {
     .landing-container {
-        padding: 20px;
         justify-content: space-evenly;
     }
     
-    .landing-container h1 {
-        font-size: 2.5rem;
-        margin-bottom: 10px;
-    }
-    
-    #typing-text {
-        font-size: 1.2rem;
-        max-width: 350px;
-        white-space: normal;
-        min-height: 3.6rem; /* Allow for two lines */
-        text-align: center;
-    }
-    
     .cards-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 20px;
-        margin: 30px 0;
-        width: 100%;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+        width: 90%;
+        max-width: 500px;
     }
     
     .card {
-        width: 85%;
-        max-width: 280px;
-        padding: 20px;
-        margin-left: auto;
-        margin-right: auto;
+        width: 100%;
+        margin: 0 auto;
     }
     
     .card h2 {
-        margin: 8px 0;
+        font-size: clamp(1.1rem, 4vw, 1.5rem);
     }
     
     .card p {
-        margin-bottom: 5px;
-    }
-    
-    /* Space content more evenly */
-    .landing-container > * {
-        margin-bottom: 10px;
-    }
-    
-    #start-button {
-        padding: 12px 30px;
-        font-size: 1.2rem;
-    }
-    
-    /* Adjust floating elements for better appearance on smaller screens */
-    .circle {
-        width: 80px;
-        height: 80px;
-    }
-    
-    .triangle {
-        border-left: 30px solid transparent;
-        border-right: 30px solid transparent;
-        border-bottom: 60px solid rgba(255, 255, 255, 0.15);
-    }
-    
-    .square {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .code-element {
-        font-size: 2rem !important;
+        font-size: clamp(0.8rem, 3vw, 1rem);
     }
 }
 
 /* Small phones */
 @media (max-width: 480px) {
     .landing-container {
-        padding: 20px;
-        justify-content: space-between;
-        height: 100%;
+        padding: 1rem;
+        height: 100vh;
+        justify-content: flex-start;
+        padding-top: clamp(40px, 10vh, 60px);
     }
     
     .landing-container h1 {
-        font-size: 2rem;
-    }
-    
-    #typing-text {
-        font-size: 1rem;
-        max-width: 280px;
-        min-height: 3rem;
-    }
-    
-    .cards-container {
-        margin: 20px 0;
-        gap: 15px;
-    }
-    
-    .card {
-        width: 90%;
-        max-width: 240px;
-        padding: 15px;
-    }
-    
-    .card-logo {
-        width: 50px;
-    }
-    
-    #start-button {
-        padding: 10px 25px;
-        font-size: 1.1rem;
-        margin-top: 15px;
-    }
-    
-    /* Further adjust floating elements */
-    .floating-elements > div:nth-child(odd) {
-        display: none; /* Hide some elements on very small screens to reduce clutter */
-    }
-}
-
-/* Handle very small screens and landscape mode on phones */
-@media (max-height: 500px) {
-    .landing-container {
-        height: auto;
-        min-height: 100vh;
-        padding: 50px 20px;
-    }
-    
-    .cards-container {
-        flex-direction: row;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin: 20px 0;
-    }
-    
-    .card {
-        width: 150px;
-        padding: 15px 10px;
-    }
-    
-    .landing-container h1 {
-        font-size: 2rem;
         margin-bottom: 5px;
     }
     
     #typing-text {
-        font-size: 1rem;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
+        min-height: 1.5rem;
+    }
+    
+    .cards-container {
+        margin: 15px 0;
+    }
+    
+    .buttons-container {
+        flex-direction: column;
+        width: 90%;
+        align-items: center;
+        margin-top: 15px;
+    }
+    
+    #start-button, #language-button {
+        width: 90%;
+        max-width: 280px;
+        margin-bottom: 10px;
+    }
+    
+    /* Adjust floating elements for better appearance on smaller screens */
+    .floating-elements {
+        opacity: 0.7;
+    }
+}
+
+/* Handle very small screens and landscape mode */
+@media (max-height: 600px) {
+    .landing-container {
+        height: auto;
+        min-height: 100vh;
+        padding: 1rem;
+    }
+    
+    .cards-container {
+        margin: 10px 0;
+    }
+    
+    .card {
+        padding: 10px;
+    }
+    
+    .card-logo {
+        width: clamp(30px, 5vw, 40px);
+        margin-bottom: 5px;
+    }
+    
+    .card h2 {
+        margin: 5px 0;
+        font-size: clamp(1rem, 3vw, 1.2rem);
+    }
+    
+    .card p {
+        font-size: clamp(0.7rem, 2vw, 0.9rem);
+        margin-bottom: 0;
+    }
+    
+    #start-button, #language-button {
+        padding: 8px 15px;
+    }
+}
+
+/* Handle landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .landing-container {
+        padding: 0.5rem;
+        justify-content: center;
+        gap: 10px;
+    }
+    
+    .landing-container h1 {
+        margin-top: 5px;
+        margin-bottom: 0;
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+    }
+    
+    #typing-text {
+        margin-bottom: 5px;
+        min-height: auto;
+        font-size: clamp(0.8rem, 2vw, 1.2rem);
+    }
+    
+    .cards-container {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 5px 0;
+    }
+    
+    .card {
+        width: clamp(120px, 20vw, 160px);
+        padding: 8px;
+        margin: 0;
+    }
+    
+    .card-logo {
+        width: clamp(25px, 5vw, 40px);
+        margin-bottom: 5px;
+    }
+    
+    .card h2 {
+        font-size: clamp(0.9rem, 2vw, 1.1rem);
+        margin: 3px 0;
+    }
+    
+    .card p {
+        font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+        margin: 0;
+    }
+    
+    .buttons-container {
+        flex-direction: row;
+        margin-top: 5px;
+    }
+    
+    #start-button, #language-button {
+        padding: 6px 12px;
+        font-size: clamp(0.8rem, 1.8vw, 1rem);
+        width: clamp(160px, 30vw, 200px);
     }
 }
 
@@ -472,52 +530,5 @@ html, body {
     padding: 0;
     background-color: #4a148c;
     height: 100%;
-    overflow-x: hidden;
-}
-
-.landing-container {
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
     overflow: hidden;
-}
-
-/* Improved mobile styles for landing page */
-@media (max-width: 768px) {
-    html, body {
-        background-color: #4a148c;
-        overflow-x: hidden;
-        margin: 0;
-        padding: 0;
-        min-height: 100vh;
-    }
-    
-    .landing-container {
-        min-height: 100vh;
-        padding-bottom: 0;
-        margin-bottom: 0;
-    }
-}
-
-/* Ensure consistent spacing on very small phones */
-@media (max-width: 375px) {
-    .landing-container {
-        justify-content: space-around;
-        padding: 20px 10px;
-    }
-    
-    .landing-container h1 {
-        font-size: 1.8rem;
-    }
-    
-    .cards-container {
-        gap: 12px;
-        margin: 15px 0;
-    }
-    
-    .card {
-        width: 90%;
-        max-width: 220px;
-        padding: 12px;
-    }
 }

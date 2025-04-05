@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="theme-color" content="#1e1e1e">
+    <title>Admin Panel - Code Playground</title>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js for Data Visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #1e1e1e;
+            --secondary-bg: #252526;
+            --accent-color: #0366d6;
+            --text-color: #f0f0f0;
+            --border-color: #3e3e42;
+            --chart-height: 240px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-top: 60px;
+        }
+        
+        /* Header styles */
+        header {
+            background-color: var(--secondary-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+        
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-title h1 {
+            font-size: 1.4rem;
+            font-weight: 500;
+        }
+        
+        .home-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin-left: 15px;
+        }
+        
+        .home-button:hover {
+            background-color: #0550ae;
+        }
+        
+        .user-account {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+        
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .logout-button {
+            background-color: #24292e;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: background-color 0.2s;
+        }
+        
+        .logout-button:hover {
+            background-color: #cf222e;
+        }
+        
+        /* Main content area */
+        main {
+            flex: 1;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background-color: var(--secondary-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .sidebar-menu {
+            list-style: none;
+        }
+        
+        .sidebar-menu li {
+            margin-bottom: 10px;
+        }
+        
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-color);
+            text-decoration: none;
+            padding: 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .sidebar-menu a:hover, .sidebar-menu a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Content area */
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+        
+        .card {
+            background-color: var(--secondary-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .card-header .icon {
+            font-size: 1.2rem;
+            color: var(--accent-color);
+        }
+        
+        .card-content {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: #999;
+        }
+        
+        .chart-container {
+            width: 100%;
+            height: var(--chart-height);
+        }
+        
+        /* Data tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .data-table th {
+            background-color: rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+        }
+        
+        .data-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background-color: rgba(23, 201, 100, 0.2);
+            color: #17c964;
+        }
+        
+        .status-inactive {
+            background-color: rgba(236, 153, 75, 0.2);
+            color: #ec994b;
+        }
+        
+        /* Notification popup */
+        .notification-popup {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--secondary-bg);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-color);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            transform: translateY(-10px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .notification-popup.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                position: fixed;
+                left: -250px;
+                top: 60px;
+                bottom: 0;
+                width: 250px;
+                transition: left 0.3s ease;
+                z-index: 90;
+            }
+            
+            .sidebar.active {
+                left: 0;
+            }
+            
+            .sidebar-toggle {
+                display: block;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background-color: var(--accent-color);
+                color: white;
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.2rem;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                z-index: 100;
+                cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Popup -->
+    <div id="notification-popup" class="notification-popup"></div>
+    
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <i class="fas fa-chart-line"></i>
+            <h1>Code Playground Admin</h1>
+            <a href="index.html" class="home-button">
+                <i class="fas fa-home"></i> Home
+            </a>
+        </div>
+        <div class="user-account" id="user-account">
+            <img id="user-avatar" src="" alt="Admin avatar" class="user-avatar">
+            <div>
+                <span id="user-name">Admin</span>
+                <div><small id="admin-status">Admin</small></div>
+            </div>
+            <button id="logout-button" class="logout-button">Logout</button>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main>
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <ul class="sidebar-menu">
+                <li><a href="#" class="active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="#" data-section="users"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="#" data-section="sessions"><i class="fas fa-code-branch"></i> Live Sessions</a></li>
+                <li><a href="#" data-section="projects"><i class="fas fa-folder"></i> Projects</a></li>
+                <li><a href="#" data-section="settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="index.html"><i class="fas fa-home"></i> Back to Home</a></li>
+            </ul>
+        </nav>
+        
+        <!-- Content Area -->
+        <div class="content">
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="dashboard-section">
+                <div class="dashboard-cards">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Total Users</h2>
+                            <i class="fas fa-users icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="total-users">0</div>
+                            <div class="stat-label">Registered users</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Active Sessions</h2>
+                            <i class="fas fa-plug icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="active-sessions">0</div>
+                            <div class="stat-label">Current live sessions</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Total Projects</h2>
+                            <i class="fas fa-code icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="total-projects">0</div>
+                            <div class="stat-label">Saved projects</div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Code Executions</h2>
+                            <i class="fas fa-play icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="stat-value" id="code-executions">0</div>
+                            <div class="stat-label">Last 24 hours</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dashboard-charts">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>User Activity</h2>
+                            <i class="fas fa-chart-line icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="user-activity-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Language Usage</h2>
+                            <i class="fas fa-chart-pie icon"></i>
+                        </div>
+                        <div class="card-content">
+                            <div class="chart-container">
+                                <canvas id="language-usage-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent User Activity</h2>
+                        <i class="fas fa-history icon"></i>
+                    </div>
+                    <div class="card-content">
+                        <table class="data-table" id="recent-activity-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Activity</th>
+                                    <th>Project</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Users Section (Hidden by default) -->
+            <section id="users-section" class="section-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>User Management</h2>
+                        <i class="fas fa-users icon"></i>
+                    </div>
+                    <div class="card-content">
+                        <table class="data-table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Projects</th>
+                                    <th>Last Active</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Live Sessions Section (Hidden by default) -->
+            <section id="sessions-section" class="section-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Live Coding Sessions</h2>
+                        <i class="fas fa-code-branch icon"></i>
+                    </div>
+                    <div class="card-content">
+                        <table class="data-table" id="sessions-table">
+                            <thead>
+                                <tr>
+                                    <th>Session ID</th>
+                                    <th>Created By</th>
+                                    <th>Type</th>
+                                    <th>Participants</th>
+                                    <th>Started</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Projects Section (Hidden by default) -->
+            <section id="projects-section" class="section-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Project Repository</h2>
+                        <i class="fas fa-folder icon"></i>
+                    </div>
+                    <div class="card-content">
+                        <table class="data-table" id="projects-table">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Owner</th>
+                                    <th>Type</th>
+                                    <th>Last Modified</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Table will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings Section (Hidden by default) -->
+            <section id="settings-section" class="section-content" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Admin Settings</h2>
+                        <i class="fas fa-cog icon"></i>
+                    </div>
+                    <div class="card-content">
+                        <form id="settings-form">
+                            <div class="form-group">
+                                <label for="github-client-id">GitHub Client ID</label>
+                                <input type="text" id="github-client-id" placeholder="GitHub Client ID">
+                            </div>
+                            <div class="form-group">
+                                <label for="github-client-secret">GitHub Client Secret</label>
+                                <input type="password" id="github-client-secret" placeholder="GitHub Client Secret">
+                            </div>
+                            <div class="form-group">
+                                <label for="firebase-api-key">Firebase API Key</label>
+                                <input type="text" id="firebase-api-key" placeholder="Firebase API Key">
+                            </div>
+                            <button type="submit" class="save-button">Save Settings</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <!-- Mobile Sidebar Toggle -->
+    <div class="sidebar-toggle" id="sidebar-toggle" style="display: none;">
+        <i class="fas fa-bars"></i>
+    </div>
+    
+    <!-- GitHub Utilities -->
+    <script src="github-utils.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    
+    <!-- Admin Panel JavaScript -->
+    <script src="admin-script.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for admin status
+            checkAdminAccess();
+            
+            // Initialize charts and data
+            // ... existing code ...
+        });
+        
+        function checkAdminAccess() {
+            // Check if user is admin through localStorage
+            if (localStorage.getItem('isAdmin') === 'true') {
+                // User is admin, continue loading the page
+                console.log('Admin access granted through localStorage');
+                document.getElementById('admin-status').textContent = 'Admin (Local Override)';
+                return;
+            }
+            
+            // Check if user is admin through Firebase (this would be your normal code)
+            // This is a placeholder - your actual implementation would vary
+            
+            // If not admin, redirect to home
+            // Commenting this out for now to allow access through localStorage
+            // window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html> 

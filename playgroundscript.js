@@ -13,54 +13,53 @@ window.addEventListener('DOMContentLoaded', () => {
       console.error("Error initializing Firebase database:", error);
     }
   }
+  
+  // Initialize GitHub dialog listeners
+  initializeGitHubDialogs();
 });
 
 // Check if coming from landing page for smooth transition
 window.addEventListener('load', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const fromLanding = urlParams.get('fromLanding');
+  // No animation, just remove the welcome overlay if it exists
+  const welcomeOverlay = document.getElementById('welcome-overlay');
+  if (welcomeOverlay) {
+    welcomeOverlay.style.display = 'none';
+  }
   
-  if (fromLanding === 'true') {
-    // Create a smoother entrance animation
-    const welcomeOverlay = document.getElementById('welcome-overlay');
-    welcomeOverlay.style.animation = 'none';
-    welcomeOverlay.style.opacity = '1';
-    
-    // Clear any existing content
-    welcomeOverlay.innerHTML = '';
-    
-    // Add entrance animation for main elements
-    const content = document.createElement('div');
-    content.className = 'welcome-content';
-    content.innerHTML = `
-      <h1>READY TO CODE</h1>
-      <div class="code-icon">
-        <i class="fas fa-code"></i>
-      </div>
-    `;
-    welcomeOverlay.appendChild(content);
-    
-    // Style the code icon
-    const codeIcon = content.querySelector('.code-icon');
-    codeIcon.style.fontSize = '3rem';
-    codeIcon.style.marginTop = '1rem';
-    codeIcon.style.color = '#f093fb';
-    codeIcon.style.animation = 'pulse 2s infinite ease-in-out';
-    
-    // Animate out after 2 seconds
-    setTimeout(() => {
-      content.style.animation = 'scaleOut 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards';
-      setTimeout(() => {
-        welcomeOverlay.style.animation = 'fadeOut 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards';
-        
-        // Clean URL parameter without refreshing
-        const url = new URL(window.location.href);
-        url.searchParams.delete('fromLanding');
-        window.history.replaceState({}, document.title, url.pathname);
-      }, 600);
-    }, 2000);
+  // Show ready notification
+  showNotification('Ready to code!');
+  
+  // Clean URL parameter without refreshing if it exists
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('fromLanding')) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('fromLanding');
+    window.history.replaceState({}, document.title, url.pathname);
   }
 });
+
+// GitHub configuration
+const GITHUB_WEBCODE_FOLDER = 'web-code';
+let currentProjectName = null;
+
+// Initialize GitHub dialog functionality
+function initializeGitHubDialogs() {
+  // Save dialog event listeners
+  document.getElementById('confirm-save').addEventListener('click', confirmSaveProject);
+  document.getElementById('cancel-save').addEventListener('click', closeAllDialogs);
+  
+  // Load dialog event listeners
+  document.getElementById('confirm-load').addEventListener('click', confirmLoadProject);
+  document.getElementById('cancel-load').addEventListener('click', closeAllDialogs);
+  
+  // Close buttons
+  document.querySelectorAll('.github-dialog-close').forEach(button => {
+    button.addEventListener('click', closeAllDialogs);
+  });
+  
+  // Overlay click to close
+  document.getElementById('overlay').addEventListener('click', closeAllDialogs);
+}
 
 // Initialize CodeMirror with autoCloseTags and autoCloseBrackets for HTML, CSS, and JS editors
 const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
@@ -163,12 +162,18 @@ function showNotification(message) {
         clearTimeout(window.notificationTimeout);
     }
 
-    // Reset the notification state
-    notification.classList.remove('show');
+    // Reset the notification state and classes
+    notification.classList.remove('show', 'ready-notification');
     void notification.offsetWidth; // Force reflow
 
     // Set the message and show the notification
     notification.textContent = message;
+    
+    // Add special class for "Ready to code!" message
+    if (message.toLowerCase().includes('ready to code')) {
+        notification.classList.add('ready-notification');
+    }
+    
     notification.classList.add('show');
 
     // Hide after 3 seconds
@@ -177,23 +182,212 @@ function showNotification(message) {
     }, 3000);
 }
 
-// Save code to localStorage
-document.getElementById('save-button').addEventListener('click', () => {
-  const code = {
-    html: htmlEditor.getValue(),
-    css: cssEditor.getValue(),
-    js: jsEditor.getValue(),
-  };
-  try {
-    localStorage.setItem('savedCode', JSON.stringify(code));
-    showNotification('Code saved!');
-  } catch (error) {
-    showNotification('Failed to save code!');
-  }
-});
+// Save code to GitHub
+document.getElementById('save-button').addEventListener('click', saveProject);
 
-// Load code from localStorage
-document.getElementById('load-button').addEventListener('click', () => {
+function saveProject() {
+  // Check if authenticated with GitHub
+  if (!window.githubUtils.isGithubAuthenticated()) {
+    showNotification('Please log in with GitHub first');
+    return;
+  }
+  
+  // Set default project name
+  const projectNameInput = document.getElementById('project-name-input');
+  projectNameInput.value = currentProjectName || 'my-web-project';
+  
+  // Show save dialog
+  document.getElementById('save-dialog').style.display = 'flex';
+  document.getElementById('overlay').style.display = 'block';
+  
+  // Focus the input
+  projectNameInput.focus();
+  projectNameInput.select();
+}
+
+// Confirm saving project to GitHub
+async function confirmSaveProject() {
+  try {
+    let projectName = document.getElementById('project-name-input').value.trim();
+    
+    if (!projectName) {
+      showNotification('Please enter a project name');
+      return;
+    }
+    
+    // Sanitize project name - only allow letters, numbers, hyphens
+    projectName = projectName.replace(/[^a-zA-Z0-9-]/g, '-');
+    
+    // Get code from editors
+    const htmlCode = htmlEditor.getValue();
+    const cssCode = cssEditor.getValue();
+    const jsCode = jsEditor.getValue();
+    
+    // Create folder structure for project
+    const folderPath = `${GITHUB_WEBCODE_FOLDER}/${projectName}`;
+    
+    // Save HTML file
+    await window.githubUtils.saveFileToGithub(
+      folderPath,
+      'index.html',
+      htmlCode
+    );
+    
+    // Save CSS file
+    await window.githubUtils.saveFileToGithub(
+      folderPath,
+      'styles.css',
+      cssCode
+    );
+    
+    // Save JS file
+    await window.githubUtils.saveFileToGithub(
+      folderPath,
+      'script.js',
+      jsCode
+    );
+    
+    // Update current project name
+    currentProjectName = projectName;
+    
+    showNotification(`Saved project "${projectName}" successfully!`);
+    closeAllDialogs();
+  } catch (error) {
+    console.error('Error saving project:', error);
+    showNotification('Error saving project: ' + error.message);
+  }
+}
+
+// Load code from GitHub
+document.getElementById('load-button').addEventListener('click', loadProject);
+
+async function loadProject() {
+  // Check if authenticated with GitHub
+  if (!window.githubUtils.isGithubAuthenticated()) {
+    showNotification('Please log in with GitHub first');
+    return;
+  }
+  
+  try {
+    // Get folders from GitHub
+    const contents = await window.githubUtils.listFilesInFolder(GITHUB_WEBCODE_FOLDER);
+    
+    // Filter for folders (directories)
+    const folders = contents.filter(item => item.type === 'dir');
+    
+    // Populate folder list
+    const folderList = document.getElementById('folder-list');
+    folderList.innerHTML = '';
+    
+    if (folders.length === 0) {
+      folderList.innerHTML = `<div class="auth-notice">No web projects found in your GitHub repository.</div>`;
+    } else {
+      folders.forEach(folder => {
+        const li = document.createElement('li');
+        li.dataset.path = folder.path;
+        li.dataset.name = folder.name;
+        
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-folder';
+        li.appendChild(icon);
+        
+        const span = document.createElement('span');
+        span.textContent = folder.name;
+        li.appendChild(span);
+        
+        // Add click handler to select folder
+        li.addEventListener('click', function() {
+          // Remove selected class from all items
+          document.querySelectorAll('#folder-list li').forEach(item => {
+            item.classList.remove('selected');
+          });
+          // Add selected class to clicked item
+          this.classList.add('selected');
+        });
+        
+        folderList.appendChild(li);
+      });
+    }
+    
+    // Show load dialog
+    document.getElementById('load-dialog').style.display = 'flex';
+    document.getElementById('overlay').style.display = 'block';
+  } catch (error) {
+    console.error('Error loading projects:', error);
+    showNotification('Error loading projects: ' + error.message);
+  }
+}
+
+// Confirm loading project from GitHub
+async function confirmLoadProject() {
+  try {
+    // Get selected folder
+    const selectedFolder = document.querySelector('#folder-list li.selected');
+    
+    if (!selectedFolder) {
+      showNotification('Please select a project to load');
+      return;
+    }
+    
+    const folderPath = selectedFolder.dataset.path;
+    const projectName = selectedFolder.dataset.name;
+    
+    // Load HTML file
+    let htmlContent = '';
+    try {
+      htmlContent = await window.githubUtils.getFileFromGithub(folderPath, 'index.html');
+    } catch (error) {
+      console.error('Error loading HTML file:', error);
+      htmlContent = '<!-- HTML file not found -->';
+    }
+    
+    // Load CSS file
+    let cssContent = '';
+    try {
+      cssContent = await window.githubUtils.getFileFromGithub(folderPath, 'styles.css');
+    } catch (error) {
+      console.error('Error loading CSS file:', error);
+      cssContent = '/* CSS file not found */';
+    }
+    
+    // Load JS file
+    let jsContent = '';
+    try {
+      jsContent = await window.githubUtils.getFileFromGithub(folderPath, 'script.js');
+    } catch (error) {
+      console.error('Error loading JS file:', error);
+      jsContent = '// JavaScript file not found';
+    }
+    
+    // Update editors with file content
+    htmlEditor.setValue(htmlContent);
+    cssEditor.setValue(cssContent);
+    jsEditor.setValue(jsContent);
+    
+    // Update current project name
+    currentProjectName = projectName;
+    
+    // Update output preview
+    updateOutput();
+    
+    showNotification(`Loaded project "${projectName}" successfully!`);
+    closeAllDialogs();
+  } catch (error) {
+    console.error('Error loading project:', error);
+    showNotification('Error loading project: ' + error.message);
+  }
+}
+
+// Close all dialogs
+function closeAllDialogs() {
+  document.querySelectorAll('.github-dialog').forEach(dialog => {
+    dialog.style.display = 'none';
+  });
+  document.getElementById('overlay').style.display = 'none';
+}
+
+// Load code from localStorage (legacy method kept for backward compatibility)
+document.getElementById('load-button').addEventListener('dblclick', () => {
   const savedCode = localStorage.getItem('savedCode');
   if (savedCode) {
     try {
@@ -202,12 +396,12 @@ document.getElementById('load-button').addEventListener('click', () => {
       cssEditor.setValue(code.css);
       jsEditor.setValue(code.js);
       updateOutput();
-      showNotification('Code loaded!');
+      showNotification('Code loaded from local storage!');
     } catch (error) {
       showNotification('Failed to load code!');
     }
   } else {
-    showNotification('No saved code found.');
+    showNotification('No saved code found in local storage.');
   }
 });
 
@@ -224,63 +418,10 @@ document.getElementById('share-button').addEventListener('click', (e) => {
     }
 });
 
-// "Copy Link" option - Original share functionality
-document.getElementById('share-copy').addEventListener('click', async () => {
-    const code = {
-        html: htmlEditor.getValue(),
-        css: cssEditor.getValue(),
-        js: jsEditor.getValue(),
-    };
-
-    try {
-        // Show loading notification
-        showNotification('Generating share link...');
-
-        // Create the long URL with the shared code
-        const encodedCode = encodeURIComponent(JSON.stringify(code));
-        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${encodedCode}`;
-
-        // Now shorten the URL using TinyURL API
-        const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(shareUrl)}`);
-        
-        if (!response.ok) {
-            throw new Error('Failed to generate short URL');
-        }
-
-        const shortUrl = await response.text();
-        
-        // Copy to clipboard and show success message
-        await navigator.clipboard.writeText(shortUrl);
-        showNotification('Share link copied to clipboard! 🎉');
-        
-        // Hide dropdown
-        document.getElementById('share-dropdown').style.display = 'none';
-    } catch (error) {
-        console.error('Error sharing code:', error);
-        showNotification('Failed to generate share link 😕');
-    }
-});
-
-// "Go Live" option - Start live collaboration
-document.getElementById('share-live').addEventListener('click', () => {
-    // Hide dropdown first
-    document.getElementById('share-dropdown').classList.remove('show');
-    
-    // Start or show notification based on current state
-    if (!isLiveSession) {
-        startLiveSession();
-        updateShareDropdown();
-    } else {
-        showNotification('Live session already active');
-    }
-});
-
 // Close dropdown when clicking elsewhere on the page
-document.addEventListener('click', (e) => {
+document.addEventListener('click', () => {
     const dropdown = document.getElementById('share-dropdown');
-    if (dropdown.style.display !== 'none' && 
-        !e.target.closest('#share-button') && 
-        !e.target.closest('#share-dropdown')) {
+    if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
     }
 });
@@ -970,3 +1111,323 @@ window.addEventListener('DOMContentLoaded', () => {
     showNotification('Joined live collaboration session!');
   }
 });
+
+// Add home button functionality
+document.getElementById('home-button').addEventListener('click', function() {
+    window.location.href = 'index.html';
+});
+
+// Function to adjust UI based on screen size - like languagescript.js
+function adjustForScreenSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isLandscape = width > height;
+    const isMobile = width <= 768;
+    const isSmallMobile = width <= 480;
+    
+    // Refresh CodeMirror editors to ensure proper rendering
+    if (htmlEditor && cssEditor && jsEditor) {
+        setTimeout(() => {
+            htmlEditor.refresh();
+            cssEditor.refresh();
+            jsEditor.refresh();
+        }, 100);
+    }
+    
+    // Adjust font size for small screens
+    if (isSmallMobile) {
+        document.documentElement.style.setProperty('--editor-font-size', '13px');
+    } else if (isMobile) {
+        document.documentElement.style.setProperty('--editor-font-size', '13px');
+    } else {
+        document.documentElement.style.setProperty('--editor-font-size', '14px');
+    }
+    
+    // Handle landscape mode on mobile
+    if (isLandscape && height <= 500) {
+        // Add alternative controls to output header
+        const outputHeader = document.querySelector('#output-section .editor-header');
+        
+        // Remove existing alternative controls if they exist
+        const existingControls = document.querySelector('.alternative-controls');
+        if (existingControls) {
+            existingControls.remove();
+        }
+        
+        // Create alternative controls container
+        const alternativeControls = document.createElement('div');
+        alternativeControls.className = 'alternative-controls';
+        
+        // Create Save button
+        const saveButton = document.createElement('button');
+        saveButton.innerHTML = '<i class="fas fa-save"></i>';
+        saveButton.addEventListener('click', () => {
+            const saveBtn = document.getElementById('save-button');
+            if (saveBtn) saveBtn.click();
+        });
+        alternativeControls.appendChild(saveButton);
+        
+        // Create Load button
+        const loadButton = document.createElement('button');
+        loadButton.innerHTML = '<i class="fas fa-folder-open"></i>';
+        loadButton.addEventListener('click', () => {
+            const loadBtn = document.getElementById('load-button');
+            if (loadBtn) loadBtn.click();
+        });
+        alternativeControls.appendChild(loadButton);
+        
+        // Add controls to header
+        outputHeader.appendChild(alternativeControls);
+        
+        // Hide regular footer
+        const footer = document.querySelector('footer');
+        if (footer) {
+            footer.style.display = 'none';
+        }
+    } else {
+        // Remove alternative controls if they exist
+        const alternativeControls = document.querySelector('.alternative-controls');
+        if (alternativeControls) {
+            alternativeControls.remove();
+        }
+        
+        // Show regular footer
+        const footer = document.querySelector('footer');
+        if (footer) {
+            footer.style.display = 'flex';
+        }
+    }
+}
+
+// Initialize event listeners for responsive design
+window.addEventListener('load', function() {
+    adjustForScreenSize();
+    
+    // Add resize and orientation change event listeners
+    window.addEventListener('resize', adjustForScreenSize);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(adjustForScreenSize, 100);
+    });
+});
+
+// After DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // For debugging Firebase initialization
+    if (typeof firebase !== 'undefined') {
+        console.log('Firebase SDK loaded');
+        
+        // Track this page view
+        trackPageView('web-playground');
+        
+        // Track language usage
+        incrementLanguageUsage('web');
+    } else {
+        console.log('Firebase SDK not available');
+    }
+    
+    // Initialize user account display
+    initializeUserAccount();
+    
+    // Initialize GitHub dialog listeners
+    initializeGitHubDialogs();
+    
+    // ... existing initialization code ...
+});
+
+// Initialize user account display in header
+function initializeUserAccount() {
+    // Check if authenticated with GitHub
+    if (window.githubUtils && window.githubUtils.isGithubAuthenticated()) {
+        // Get user info from localStorage
+        const username = localStorage.getItem('github_user_name') || "GitHub User";
+        const avatarUrl = localStorage.getItem('github_user_avatar') || "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png";
+        
+        // Update UI
+        const userAccount = document.getElementById('user-account');
+        const userAvatar = document.getElementById('user-avatar');
+        const userName = document.getElementById('user-name');
+        
+        userAvatar.src = avatarUrl;
+        userName.textContent = username;
+        userAccount.style.display = 'flex';
+        
+        // Setup logout button
+        document.getElementById('logout-button').addEventListener('click', logoutGitHub);
+    }
+}
+
+// Logout from GitHub
+function logoutGitHub() {
+    // Clear GitHub related data from localStorage
+    localStorage.removeItem('github_access_token');
+    localStorage.removeItem('github_user_name');
+    localStorage.removeItem('github_user_avatar');
+    localStorage.removeItem('github_user_login');
+    
+    // Show notification
+    showNotification('Logged out successfully');
+    
+    // Redirect to home page
+    setTimeout(() => {
+        window.location.href = 'index.html';
+    }, 1000);
+}
+
+// Track page view
+function trackPageView(pageType) {
+    // Check if user is authenticated
+    if (!window.githubUtils || !window.githubUtils.isGithubAuthenticated()) {
+        return;
+    }
+    
+    const userName = localStorage.getItem('github_user_name');
+    const userAvatar = localStorage.getItem('github_user_avatar');
+    
+    // Only track if we have user info
+    if (!userName) return;
+    
+    const database = firebase.database();
+    
+    // Log page view
+    database.ref('pageViews').push({
+        userName: userName,
+        userAvatar: userAvatar,
+        pageType: pageType,
+        timestamp: Date.now()
+    });
+    
+    // Update user record or create if doesn't exist
+    database.ref('users').child(userName).once('value', snapshot => {
+        if (snapshot.exists()) {
+            // Update existing user
+            database.ref('users').child(userName).update({
+                lastActive: Date.now(),
+                lastPage: pageType
+            });
+        } else {
+            // Create new user
+            database.ref('users').child(userName).set({
+                name: userName,
+                avatarUrl: userAvatar,
+                github: localStorage.getItem('github_user_login'),
+                firstSeen: Date.now(),
+                lastActive: Date.now(),
+                lastPage: pageType,
+                projectCount: 0
+            });
+        }
+    });
+}
+
+// Track code execution
+function trackCodeExecution() {
+    // Check if user is authenticated
+    if (!window.githubUtils || !window.githubUtils.isGithubAuthenticated()) {
+        return;
+    }
+    
+    const userName = localStorage.getItem('github_user_name');
+    if (!userName) return;
+    
+    const database = firebase.database();
+    
+    // Log code execution
+    database.ref('codeExecutions').push({
+        userName: userName,
+        type: 'webdev',
+        timestamp: Date.now()
+    });
+    
+    // Update language usage stats
+    incrementLanguageUsage('web');
+}
+
+// Increment language usage counter
+function incrementLanguageUsage(language) {
+    const database = firebase.database();
+    const langRef = database.ref('languageUsage').child(language);
+    
+    // Increment using transaction
+    langRef.transaction(current => {
+        return (current || 0) + 1;
+    });
+}
+
+// Track project save
+function trackProjectSave(projectName) {
+    // Check if user is authenticated
+    if (!window.githubUtils || !window.githubUtils.isGithubAuthenticated()) {
+        return;
+    }
+    
+    const userName = localStorage.getItem('github_user_name');
+    const userAvatar = localStorage.getItem('github_user_avatar');
+    if (!userName) return;
+    
+    const database = firebase.database();
+    
+    // Log project save activity
+    database.ref('activity').push({
+        userName: userName,
+        userAvatar: userAvatar,
+        action: 'Saved web project',
+        projectName: projectName,
+        timestamp: Date.now(),
+        status: 'completed'
+    });
+    
+    // Update project in projects collection
+    const projectRef = database.ref('projects').child(projectName.replace(/[.#$/\\]/g, '_'));
+    projectRef.update({
+        name: projectName,
+        ownerName: userName,
+        ownerAvatar: userAvatar,
+        type: 'web',
+        lastModified: Date.now(),
+        status: 'private'
+    });
+    
+    // Update user's project count
+    database.ref('users').child(userName).once('value', snapshot => {
+        if (snapshot.exists() && snapshot.hasChild('projectCount')) {
+            const count = snapshot.val().projectCount;
+            database.ref('users').child(userName).update({
+                projectCount: count + 1
+            });
+        } else {
+            database.ref('users').child(userName).update({
+                projectCount: 1
+            });
+        }
+    });
+}
+
+// Modify the updatePreview function to track executions
+const originalUpdatePreview = updateOutput;
+window.updatePreview = function() {
+    // Call the original function
+    originalUpdatePreview();
+    
+    // Track this execution
+    trackCodeExecution();
+};
+
+// Modify the saveProject function to track saves
+const originalSaveProject = confirmSaveProject;
+window.confirmSaveProject = function() {
+    // Call the original function
+    const result = originalSaveProject();
+    
+    // Track this save if successful
+    if (result && currentProjectName) {
+        trackProjectSave(currentProjectName);
+    }
+    
+    return result;
+};
+
+// Admin override function - add this near the end of the file
+function makeAdmin() {
+  localStorage.setItem('isAdmin', 'true');
+  alert('Admin status granted! Refresh the page to see admin options.');
+}

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta name="theme-color" content="#4a148c">
     <title>Code Playground - Create & Experiment</title>
@@ -21,6 +21,49 @@
 
     <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
+    
+    <style>
+        /* GitHub login button styles */
+        .github-login {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background-color: #24292e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .github-login:hover {
+            background-color: #2c3238;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
 </head>
 <body>
 
@@ -39,7 +82,32 @@
         </div>
 
         <h1>🚀 Code Playground</h1>
-        <p id="typing-text"></p>
+        <div class="typing-container">
+            <div id="typing-text-wrapper">
+                <span id="typing-text"></span>
+                <!-- Cursor will be added by JavaScript -->
+            </div>
+        </div>
+
+        <!-- GitHub Authentication Section -->
+        <div class="auth-section">
+            <!-- Login button - shown when not logged in -->
+            <button id="github-login" class="github-login">
+                <i class="fab fa-github"></i> Login with GitHub
+            </button>
+            
+            <!-- User info - shown when logged in -->
+            <div id="user-info" class="user-info hidden">
+                <img id="user-avatar" class="user-avatar" src="" alt="User avatar">
+                <span id="user-name">GitHub User</span>
+                <button id="admin-panel-btn" class="github-login hidden" style="margin: 0 5px; padding: 5px 10px; font-size: 0.8rem; background-color: #4a148c; border: 1px solid #9c27b0;">
+                    <i class="fas fa-chart-line"></i> Admin
+                </button>
+                <button id="logout-button" class="github-login" style="margin: 0; padding: 5px 10px; font-size: 0.8rem;">
+                    Logout
+                </button>
+            </div>
+        </div>
 
         <!-- Feature Cards -->
         <div class="cards-container">
@@ -58,17 +126,70 @@
                 <h2>JavaScript</h2>
                 <p>Add interactivity and power.</p>
             </div>
+            <div class="card language-card">
+                <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" alt="Python Logo" class="card-logo">
+                <h2>Languages</h2>
+                <p>Code in Python, C, and more!</p>
+            </div>
         </div>
 
-        <!-- Start Button -->
-        <button id="start-button">Start Building <i class="fas fa-arrow-right"></i></button>
+        <!-- Start Buttons -->
+        <div id="main-buttons" class="buttons-container hidden">
+            <button id="start-button">Web Development <i class="fas fa-arrow-right"></i></button>
+            <button id="language-button">Code Compiler <i class="fas fa-code"></i></button>
+        </div>
     </div>
 
     <!-- Transition Overlay -->
     <div class="transition-overlay"></div>
 
+    <!-- Include GitHub configuration -->
+    <script src="github-config.js"></script>
+    
     <!-- JavaScript -->
     <script src="script.js"></script>
+    
+    <script>
+    // Check for admin status on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get username from localStorage
+        const username = localStorage.getItem('github_user_name');
+        if (!username) return;
+        
+        // First check Firebase for admin status (if Firebase is available)
+        if (typeof firebase !== 'undefined') {
+            const database = firebase.database();
+            database.ref('admins').child(username).once('value', snapshot => {
+                if (snapshot.exists()) {
+                    // User is an admin, show admin button in user info
+                    const adminPanelBtn = document.getElementById('admin-panel-btn');
+                    if (adminPanelBtn) {
+                        adminPanelBtn.classList.remove('hidden');
+                        console.log('Admin button revealed - Firebase confirmed');
+                    }
+                    
+                    // Set admin flag in localStorage for future reference
+                    localStorage.setItem('isAdmin', 'true');
+                }
+            });
+        }
+        
+        // Also check localStorage as a backup
+        if (localStorage.getItem('isAdmin') === 'true') {
+            // Show admin button in user info
+            const adminPanelBtn = document.getElementById('admin-panel-btn');
+            if (adminPanelBtn) {
+                adminPanelBtn.classList.remove('hidden');
+                console.log('Admin button revealed - localStorage');
+            }
+        }
+    });
+
+    // Add click handler for admin button in user info
+    document.getElementById('admin-panel-btn').addEventListener('click', function() {
+        window.location.href = 'admin-panel.html';
+    });
+    </script>
 
 </body>
 </html>

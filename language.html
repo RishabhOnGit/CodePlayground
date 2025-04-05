@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="theme-color" content="#1e1e1e">
-    <title>Code Playground</title>
+    <title>Language Playground</title>
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material.min.css">
 
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="playgroundstyle.css">
+    <link rel="stylesheet" href="languagestyle.css">
     <style>
         /* GitHub Integration Styles */
         .github-dialog {
@@ -104,13 +104,13 @@
             background-color: #5d5d5d;
         }
         
-        .folder-list {
+        .file-list {
             list-style: none;
             padding: 0;
             margin: 0;
         }
         
-        .folder-list li {
+        .file-list li {
             padding: 10px;
             margin: 5px 0;
             background-color: #333;
@@ -120,15 +120,15 @@
             align-items: center;
         }
         
-        .folder-list li:hover {
+        .file-list li:hover {
             background-color: #444;
         }
         
-        .folder-list li i {
+        .file-list li i {
             margin-right: 10px;
         }
         
-        .folder-list li.selected {
+        .file-list li.selected {
             background-color: #0366d6;
         }
         
@@ -164,6 +164,7 @@
             padding: 5px 10px;
             background-color: rgba(255, 255, 255, 0.1);
             border-radius: 5px;
+            margin-left: auto;
         }
         
         .user-avatar {
@@ -193,84 +194,112 @@
             background-color: #cf222e;
         }
         
-        .header-controls {
+        .language-selector {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 15px;
+            padding: 10px 20px;
+            background-color: #1e1e1e;
+            border-bottom: 1px solid #333;
         }
         
-        /* Navbar Styles - REMOVED */
+        /* Editor Header Styles */
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: #252526;
+            border-bottom: 1px solid #333;
+        }
+        
+        .editor-title-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .editor-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #language-select {
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
-<body onload="init()">
-    <!-- Navbar REMOVED -->
+<body>
 
     <!-- Notification Popup -->
     <div id="notification-popup" class="notification-popup"></div>
     
-    <!-- Live collaboration indicator -->
-    <div id="live-indicator" class="live-indicator">
-        <span>Live Session</span>
-    </div>
-
-    <!-- Header -->
-    <header class="language-selector">
-        <div class="header-left">
-            <h1><i class="fas fa-code"></i> Code Playground</h1>
-            <button id="home-button" title="Back to Home">
-                <i class="fas fa-home"></i><span>Home</span>
-            </button>
-        </div>
-        <div class="header-controls">
+    <!-- Main Container -->
+    <main class="main-container">
+        <!-- Language Selector with Title -->
+        <header class="language-selector">
+            <div class="header-left">
+                <h1><i class="fas fa-code"></i>Language Playground</h1>
+                <button id="home-button" title="Back to Home">
+                    <i class="fas fa-home"></i><span>Home</span>
+                </button>
+            </div>
             <div class="user-account" id="user-account" style="display: none;">
                 <img id="user-avatar" src="" alt="User avatar" class="user-avatar">
                 <span id="user-name">User</span>
                 <button id="logout-button" class="logout-button">Logout</button>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <!-- Main Grid Layout -->
-    <main class="grid-container">
-        <!-- HTML Section -->
-        <section class="grid-item" id="html-section">
-            <div class="editor-header" data-editor="html">
-                <i class="fab fa-html5"></i>
-                <h2>HTML</h2>
-                <i class="fas fa-expand fullscreen-btn" data-target="html-section"></i> <!-- Fullscreen button -->
-            </div>
-            <textarea id="html-editor"></textarea>
-            <div class="resizer" data-section="html"></div>
-        </section>
-        <!-- CSS Section -->
-        <section class="grid-item" id="css-section">
-            <div class="editor-header" data-editor="css">
-                <i class="fab fa-css3-alt"></i>
-                <h2>CSS</h2>
-                <i class="fas fa-expand fullscreen-btn" data-target="css-section"></i> <!-- Fullscreen button -->
-            </div>
-            <textarea id="css-editor"></textarea>
-            <div class="resizer" data-section="css"></div>
-        </section>
-        <!-- JavaScript Section -->
-        <section class="grid-item" id="js-section">
-            <div class="editor-header" data-editor="js">
-                <i class="fab fa-js"></i>
-                <h2>JavaScript</h2>
-                <i class="fas fa-expand fullscreen-btn" data-target="js-section"></i> <!-- Fullscreen button -->
-            </div>
-            <textarea id="js-editor"></textarea>
-            <div class="resizer" data-section="js"></div>
-        </section>
-        <!-- Output Section -->
-        <section class="grid-item output-area" id="output-section">
+        <!-- Code Editor Section -->
+        <section class="editor-section">
             <div class="editor-header">
-                <i class="fas fa-play"></i>
-                <h2>Output</h2>
-                <i class="fas fa-expand fullscreen-btn" data-target="output-section"></i> <!-- Fullscreen button -->
+                <div class="editor-title-area">
+                    <div id="language-icon"><i class="fab fa-python"></i></div>
+                    <h2 id="editor-title">Python</h2>
+                </div>
+                <div class="editor-controls">
+                    <select id="language-select">
+                        <option value="python">Python</option>
+                        <option value="c">C</option>
+                    </select>
+                </div>
             </div>
-            <iframe id="output" sandbox="allow-scripts"></iframe>
-            <div class="resizer" data-section="output"></div>
+            <div class="editor-container">
+                <textarea id="code-editor"></textarea>
+            </div>
+        </section>
+
+        <!-- Output Section -->
+        <section class="output-section">
+            <div class="editor-header">
+                <div class="editor-title-area">
+                    <i class="fas fa-terminal"></i>
+                    <h2>Output</h2>
+                </div>
+                <div class="editor-controls">
+                    <button id="run-button" title="Run Code">
+                        <i class="fas fa-play"></i> <span>Run</span>
+                    </button>
+                </div>
+            </div>
+            <div id="output-terminal" class="output-terminal">
+                <div class="terminal-header">
+                    <span class="terminal-button red"></span>
+                    <span class="terminal-button yellow"></span>
+                    <span class="terminal-button green"></span>
+                    <span class="terminal-title">Terminal</span>
+                </div>
+                <div id="terminal-content" class="terminal-content">
+                    <div class="terminal-line">Ready to run your code!</div>
+                </div>
+            </div>
         </section>
     </main>
 
@@ -282,54 +311,23 @@
         <button id="load-button" title="Load Code">
             <i class="fas fa-folder-open"></i> <span>Load</span>
         </button>
-        <button id="chat-toggle" title="Playground Bot">
-            <i class="fas fa-comments"></i> <span>PlayGround AI</span>
+        <button id="examples-button" title="Example Code">
+            <i class="fas fa-book"></i> <span>Examples</span>
         </button>
-        <div style="position: relative;">
-            <button id="share-button" title="Share Code">
-                <i class="fas fa-share-alt"></i> <span>Share</span>
-            </button>
-            <div id="share-dropdown" class="share-dropdown" style="position: absolute; top: -80px; left: 0; width: 150px; background: #333; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 1px solid #6a1b9a; z-index: 9999; display: none;">
-                <div id="share-copy" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-copy"></i> Copy Link
-                </div>
-                <div id="share-live" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-users"></i> Go Live
-                </div>
-            </div>
-        </div>
-        <button id="font-size-button" title="Adjust Font Size">
-            <i class="fas fa-text-height"></i> <span>Font Size</span>
-        </button>
-        <input type="range" id="font-size-slider" min="10" max="30" value="14" style="display: none;">
     </footer>
 
-    <div id="chat-container" class="chat-container">
-        <div class="chat-header">
-            <span> PlayGround AI</span>
-            <i id="close-chat" class="fas fa-times"></i>
-        </div>
-        <div id="chat-body" class="chat-body">
-            <div class="message bot">Hello! How can I help you?</div>
-        </div>
-        <div class="chat-input">
-            <input id="chat-input-field" type="text" placeholder="Type a message...">
-            <button id="send-button">Send</button>
-        </div>
-    </div>
-    
     <!-- GitHub Dialogs -->
     
-    <!-- Save Project Dialog -->
+    <!-- Save File Dialog -->
     <div id="save-dialog" class="github-dialog" style="display: none;">
         <div class="github-dialog-header">
-            <h3>Save Project to GitHub</h3>
+            <h3>Save to GitHub</h3>
             <button class="github-dialog-close">&times;</button>
         </div>
         <div class="github-dialog-content">
-            <p>Enter a project name to save your HTML, CSS, and JavaScript files:</p>
-            <input type="text" id="project-name-input" placeholder="my-web-project" />
-            <div id="project-info">Files will be saved in your web-code folder on GitHub.</div>
+            <p>Enter a file name to save your code:</p>
+            <input type="text" id="file-name-input" placeholder="filename.py" />
+            <div id="file-extension-notice">File will be saved in your language-playground folder.</div>
         </div>
         <div class="github-dialog-footer">
             <button class="secondary" id="cancel-save">Cancel</button>
@@ -337,16 +335,16 @@
         </div>
     </div>
     
-    <!-- Load Project Dialog -->
+    <!-- Load File Dialog -->
     <div id="load-dialog" class="github-dialog" style="display: none;">
         <div class="github-dialog-header">
-            <h3>Load Project from GitHub</h3>
+            <h3>Load from GitHub</h3>
             <button class="github-dialog-close">&times;</button>
         </div>
         <div class="github-dialog-content">
-            <p>Select a project to load:</p>
-            <ul id="folder-list" class="folder-list">
-                <!-- Folders will be loaded here -->
+            <p>Select a file to load:</p>
+            <ul id="file-list" class="file-list">
+                <!-- Files will be loaded here -->
             </ul>
         </div>
         <div class="github-dialog-footer">
@@ -360,7 +358,7 @@
 
     <!-- GitHub Utilities -->
     <script src="github-utils.js"></script>
-
+    
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
@@ -382,24 +380,13 @@
 
     <!-- CodeMirror JS & Addons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/xml/xml.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/css/css.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/javascript/javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closetag.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
-    <!-- Add the CodeMirror comment addon -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/comment/comment.min.js"></script>
 
     <!-- Custom JS -->
-    <script src="playgroundscript.js"></script>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check for admin status
-        if (localStorage.getItem('isAdmin') === 'true') {
-            document.getElementById('admin-link').style.display = 'inline-block';
-        }
-    });
-    </script>
+    <script src="languagescript.js"></script>
 </body>
-</html>
+</html> 
