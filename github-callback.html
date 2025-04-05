@@ -80,8 +80,11 @@
     <script>
         // API Base URL - Updated to use Render backend URL from .env
         const API_BASE_URL = 'https://try-j2gk.onrender.com/api';
-        // Define the main playground URL for reference
+        // Define the main playground URL for reference - ensure it matches the actual domain
         const PLAYGROUND_URL = 'https://playgroundcode.vercel.app';
+        // Log current location for debugging
+        console.log("Current URL:", window.location.href);
+        console.log("Expected redirect URI:", githubConfig.redirectUri);
         
         // Function to get URL parameters
         function getUrlParam(param) {
@@ -132,11 +135,24 @@
                         
                         try {
                             const errorData = await response.json();
+                            console.error("Error response from server:", errorData);
                             errorMessage = errorData.error || errorMessage;
                             
                             // Special handling for redirect_uri_mismatch
                             if (errorMessage.includes('redirect_uri_mismatch')) {
                                 errorDetails = `The redirect URI (${githubConfig.redirectUri}) doesn't match what's configured in the GitHub OAuth App. Please check the GitHub application settings.`;
+                                
+                                // Log additional debug info
+                                console.log("Current page URL:", window.location.href);
+                                console.log("Window origin:", window.location.origin);
+                                console.log("Configured redirect URI:", githubConfig.redirectUri);
+                                
+                                // Update debug element with more details
+                                debugElem.innerHTML += `<br><br>URI Mismatch Details:<br>
+                                - Current URL: ${window.location.href}<br>
+                                - Window Origin: ${window.location.origin}<br>
+                                - Configured Redirect URI: ${githubConfig.redirectUri}<br>
+                                <br>Try updating the GitHub OAuth App settings to match the exact URL.`;
                             }
                         } catch (e) {
                             errorMessage += ` (Status: ${response.status})`;

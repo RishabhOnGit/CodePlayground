@@ -27,7 +27,12 @@ app.post('/api/github/token', async (req, res) => {
         
         // Use the provided redirect_uri or fall back to the environment variable
         const actualRedirectUri = redirect_uri || process.env.REDIRECT_URI;
-        console.log(`Exchanging GitHub code with redirect URI: ${actualRedirectUri}`);
+        
+        // Log for debugging
+        console.log(`GitHub code exchange request:`);
+        console.log(`- Code: ${code.substring(0, 5)}...`);
+        console.log(`- Redirect URI: ${actualRedirectUri}`);
+        console.log(`- ENV Redirect URI: ${process.env.REDIRECT_URI}`);
         
         // Exchange code for access token
         const response = await axios.post('https://github.com/login/oauth/access_token', {
