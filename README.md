@@ -6,7 +6,7 @@ A powerful web-based coding playground for multiple programming languages with f
 
 This project is a full-stack web application with:
 - Frontend hosted on Vercel: https://trial-playground.vercel.app/
-- Backend API hosted on Render: https://codeplayground-backend.onrender.com/
+- Backend API hosted on Render: https://try-j2gk.onrender.com/
 
 ## 🌐 Frontend (Vercel Deployment)
 
@@ -43,7 +43,7 @@ The backend server handles GitHub authentication and repository operations. It's
 2. Create a new Web Service
 3. Connect your GitHub repository
 4. Configure the service:
-   - Name: codeplayground-backend
+   - Name: try-j2gk
    - Root Directory: server/
    - Environment: Node
    - Build Command: `npm install`
