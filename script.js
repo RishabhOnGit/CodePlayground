@@ -21,12 +21,36 @@ document.getElementById("start-button").addEventListener("click", function() {
   }, 1500);
 });
 
+// Add event listener for the language button
+document.getElementById("language-button").addEventListener("click", function() {
+  // Show transition overlay
+  const overlay = document.querySelector(".transition-overlay");
+  overlay.classList.add("fade-out");
+  
+  // Animate content out
+  const landingContainer = document.querySelector(".landing-container");
+  landingContainer.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+  landingContainer.style.opacity = "0";
+  landingContainer.style.transform = "scale(0.95)";
+  
+  // Create animated code elements for transition
+  setTimeout(() => {
+    createAnimatedElements(['def main():', '#include <stdio.h>', 'print()', 'printf()', 'int main()', 'class', 'import']);
+  }, 300);
+
+  // Navigate after animation completes
+  setTimeout(() => {
+    // Use the language.html?fromLanding=true parameter to trigger welcome animation
+    window.location.href = "language.html?fromLanding=true";
+  }, 1500);
+});
+
 // Create animated code elements during transition
-function createAnimatedElements() {
+function createAnimatedElements(customSymbols) {
   const overlay = document.querySelector(".transition-overlay");
   
   // Create code-like symbols that float around during transition
-  const symbols = ['<div>', '</div>', '{...}', '()', '[]', '/* */', '=>'];
+  const symbols = customSymbols || ['<div>', '</div>', '{...}', '()', '[]', '/* */', '=>'];
   
   for (let i = 0; i < 15; i++) {
     const symbol = document.createElement('div');

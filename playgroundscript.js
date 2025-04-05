@@ -17,48 +17,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Check if coming from landing page for smooth transition
 window.addEventListener('load', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const fromLanding = urlParams.get('fromLanding');
+  // No animation, just remove the welcome overlay if it exists
+  const welcomeOverlay = document.getElementById('welcome-overlay');
+  if (welcomeOverlay) {
+    welcomeOverlay.style.display = 'none';
+  }
   
-  if (fromLanding === 'true') {
-    // Create a smoother entrance animation
-    const welcomeOverlay = document.getElementById('welcome-overlay');
-    welcomeOverlay.style.animation = 'none';
-    welcomeOverlay.style.opacity = '1';
-    
-    // Clear any existing content
-    welcomeOverlay.innerHTML = '';
-    
-    // Add entrance animation for main elements
-    const content = document.createElement('div');
-    content.className = 'welcome-content';
-    content.innerHTML = `
-      <h1>READY TO CODE</h1>
-      <div class="code-icon">
-        <i class="fas fa-code"></i>
-      </div>
-    `;
-    welcomeOverlay.appendChild(content);
-    
-    // Style the code icon
-    const codeIcon = content.querySelector('.code-icon');
-    codeIcon.style.fontSize = '3rem';
-    codeIcon.style.marginTop = '1rem';
-    codeIcon.style.color = '#f093fb';
-    codeIcon.style.animation = 'pulse 2s infinite ease-in-out';
-    
-    // Animate out after 2 seconds
-    setTimeout(() => {
-      content.style.animation = 'scaleOut 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards';
-      setTimeout(() => {
-        welcomeOverlay.style.animation = 'fadeOut 0.8s cubic-bezier(0.19, 1, 0.22, 1) forwards';
-        
-        // Clean URL parameter without refreshing
-        const url = new URL(window.location.href);
-        url.searchParams.delete('fromLanding');
-        window.history.replaceState({}, document.title, url.pathname);
-      }, 600);
-    }, 2000);
+  // Show ready notification
+  showNotification('Ready to code!');
+  
+  // Clean URL parameter without refreshing if it exists
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('fromLanding')) {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('fromLanding');
+    window.history.replaceState({}, document.title, url.pathname);
   }
 });
 
@@ -163,12 +136,18 @@ function showNotification(message) {
         clearTimeout(window.notificationTimeout);
     }
 
-    // Reset the notification state
-    notification.classList.remove('show');
+    // Reset the notification state and classes
+    notification.classList.remove('show', 'ready-notification');
     void notification.offsetWidth; // Force reflow
 
     // Set the message and show the notification
     notification.textContent = message;
+    
+    // Add special class for "Ready to code!" message
+    if (message.toLowerCase().includes('ready to code')) {
+        notification.classList.add('ready-notification');
+    }
+    
     notification.classList.add('show');
 
     // Hide after 3 seconds
@@ -969,4 +948,102 @@ window.addEventListener('DOMContentLoaded', () => {
     
     showNotification('Joined live collaboration session!');
   }
+});
+
+// Add home button functionality
+document.getElementById('home-button').addEventListener('click', function() {
+    window.location.href = 'index.html';
+});
+
+// Function to adjust UI based on screen size - like languagescript.js
+function adjustForScreenSize() {
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const isLandscape = width > height;
+    const isMobile = width <= 768;
+    const isSmallMobile = width <= 480;
+    
+    // Refresh CodeMirror editors to ensure proper rendering
+    if (htmlEditor && cssEditor && jsEditor) {
+        setTimeout(() => {
+            htmlEditor.refresh();
+            cssEditor.refresh();
+            jsEditor.refresh();
+        }, 100);
+    }
+    
+    // Adjust font size for small screens
+    if (isSmallMobile) {
+        document.documentElement.style.setProperty('--editor-font-size', '13px');
+    } else if (isMobile) {
+        document.documentElement.style.setProperty('--editor-font-size', '13px');
+    } else {
+        document.documentElement.style.setProperty('--editor-font-size', '14px');
+    }
+    
+    // Handle landscape mode on mobile
+    if (isLandscape && height <= 500) {
+        // Add alternative controls to output header
+        const outputHeader = document.querySelector('#output-section .editor-header');
+        
+        // Remove existing alternative controls if they exist
+        const existingControls = document.querySelector('.alternative-controls');
+        if (existingControls) {
+            existingControls.remove();
+        }
+        
+        // Create alternative controls container
+        const alternativeControls = document.createElement('div');
+        alternativeControls.className = 'alternative-controls';
+        
+        // Create Save button
+        const saveButton = document.createElement('button');
+        saveButton.innerHTML = '<i class="fas fa-save"></i>';
+        saveButton.addEventListener('click', () => {
+            const saveBtn = document.getElementById('save-button');
+            if (saveBtn) saveBtn.click();
+        });
+        alternativeControls.appendChild(saveButton);
+        
+        // Create Load button
+        const loadButton = document.createElement('button');
+        loadButton.innerHTML = '<i class="fas fa-folder-open"></i>';
+        loadButton.addEventListener('click', () => {
+            const loadBtn = document.getElementById('load-button');
+            if (loadBtn) loadBtn.click();
+        });
+        alternativeControls.appendChild(loadButton);
+        
+        // Add controls to header
+        outputHeader.appendChild(alternativeControls);
+        
+        // Hide regular footer
+        const footer = document.querySelector('footer');
+        if (footer) {
+            footer.style.display = 'none';
+        }
+    } else {
+        // Remove alternative controls if they exist
+        const alternativeControls = document.querySelector('.alternative-controls');
+        if (alternativeControls) {
+            alternativeControls.remove();
+        }
+        
+        // Show regular footer
+        const footer = document.querySelector('footer');
+        if (footer) {
+            footer.style.display = 'flex';
+        }
+    }
+}
+
+// Initialize event listeners for responsive design
+window.addEventListener('load', function() {
+    adjustForScreenSize();
+    
+    // Add resize and orientation change event listeners
+    window.addEventListener('resize', adjustForScreenSize);
+    window.addEventListener('orientationchange', function() {
+        setTimeout(adjustForScreenSize, 100);
+    });
 });

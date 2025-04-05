@@ -5,111 +5,15 @@
   box-sizing: border-box;
 }
 
+/* CSS Variables for dynamic adjustments */
+:root {
+  --editor-font-size: 14px;
+  --terminal-font-size: 14px;
+}
+
 /* Welcome Overlay Styles */
 #welcome-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #1e1e1e;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  opacity: 1;
-  animation: fadeOut 2s cubic-bezier(0.4, 0, 0.2, 1) forwards 1.5s;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-#welcome-overlay::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle at center, #6a1b9a, #4a148c, #1e1e1e);
-  opacity: 0.7;
-  animation: pulseGradient 3s ease-in-out infinite;
-  z-index: -1;
-}
-
-#welcome-overlay h1 {
-  color: #fff;
-  font-size: 3rem;
-  font-family: 'Montserrat', sans-serif;
-  text-shadow: 0 0 10px rgba(106, 27, 154, 0.8);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  animation: welcomeTextAnimation 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) forwards;
-  opacity: 0;
-  transform: scale(0.8);
-  position: relative;
-  display: inline-block;
-  padding: 0 3rem;
-}
-
-#welcome-overlay h1::before {
-  content: "<";
-  position: absolute;
-  left: 0;
-  color: #f093fb;
-  opacity: 0;
-  animation: bracketSlideIn 1s ease forwards 0.3s;
-}
-
-#welcome-overlay h1::after {
-  content: "/>";
-  position: absolute;
-  right: 0;
-  color: #f5576c;
-  opacity: 0;
-  animation: bracketSlideIn 1s ease forwards 0.3s;
-}
-
-/* Pulse gradient animation */
-@keyframes pulseGradient {
-  0% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.05); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 0.7; }
-}
-
-/* Improved text animation */
-@keyframes welcomeTextAnimation {
-  0% {
-    opacity: 0;
-    transform: scale(0.8) translateY(20px);
-    text-shadow: 0 0 10px rgba(106, 27, 154, 0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.1) translateY(0);
-    text-shadow: 0 0 20px rgba(106, 27, 154, 0.9), 0 0 30px rgba(245, 87, 108, 0.7);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    text-shadow: 0 0 15px rgba(106, 27, 154, 0.9), 0 0 25px rgba(245, 87, 108, 0.6);
-  }
-}
-
-/* Bracket slide-in animation */
-@keyframes bracketSlideIn {
-  0% { opacity: 0; transform: translateX(15px); }
-  100% { opacity: 0.8; transform: translateX(0); }
-}
-
-/* Smooth fadeout animation */
-@keyframes fadeOut {
-  0% { opacity: 1; visibility: visible; }
-  100% { 
-    opacity: 0; 
-    visibility: hidden; 
-    transform: translateY(-20px);
-  }
+  display: none; /* Hide the overlay completely */
 }
 
 /* Dark Mode (default) */
@@ -126,50 +30,66 @@ body {
   padding: 0;
 }
 
-/* Header with gradient background */
-header {
-  background: linear-gradient(135deg, #4a148c, #6a1b9a);
-  color: white;
-  text-align: center;
-  padding: 1.5rem;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  font-weight: bold;
-  flex-shrink: 0;
+/* 🔹 Header styles to match language playground */
+.language-selector {
+    background-color: #6200EE;
+    color: white;
+    padding: 6px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    height: 48px;
+    width: 100%;
 }
 
-/* Stylish Heading Text */
-header h1 {
-  font-size: 3rem;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  background: linear-gradient(to right, #f093fb, #f5576c);
-  background-clip: text;
-  color: transparent;
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
-  display: inline-block;
-  font-family: 'Montserrat', sans-serif;
-  font-weight: bold;
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-/* Code icon with scale and rotation on hover */
-header h1 i.fas.fa-code {
-  color: #f093fb;
-  margin-right: 10px;
-  transition: transform 0.3s ease, color 0.3s ease;
+.language-selector h1 {
+    margin: 0;
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-header h1 i.fas.fa-code:hover {
-  transform: rotate(360deg) scale(1.2);
-  color: #f5576c;
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#home-button {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 500;
+    font-size: 0.85rem;
+    height: 28px;
+}
+
+#home-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
 }
 
 /* Editor Labels Styling */
 .editor-header {
-  background-color: #6a1b9a;
-  padding: 0.8rem;
+  background: linear-gradient(135deg, #4a148c, #6a1b9a);
+  padding: 8px 12px;
   display: flex;
   align-items: center;
   border-bottom: 1px solid #4a148c;
+  border-radius: 6px 6px 0 0;
 }
 
 .editor-header h2 {
@@ -220,22 +140,26 @@ header h1 i.fas.fa-code:hover {
 .grid-container {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr 1fr;
-  grid-gap: 5px;
+  grid-gap: 12px;
   height: calc(100vh - 200px);
+  padding: 10px;
   position: relative;
   flex: 1;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .grid-item {
-  background-color: #292929;
+  background-color: #252526;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding-bottom: 3px;
-  /* Ensure no browser default resize is active */
+  padding-bottom: 0;
+  border-radius: 6px;
+  border: 1px solid #444;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   resize: none;
-  /* Make sure all resizer interactions use the col-resize cursor */
   cursor: default;
 }
 
@@ -275,29 +199,69 @@ header h1 i.fas.fa-code:hover {
   opacity: 0.7;
 }
 
-/* CodeMirror Fixes */
+/* Modern scrollbar styling */
+.CodeMirror::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.CodeMirror::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px;
+}
+
+.CodeMirror::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+/* HTML editor scrollbar color */
+#html-section .CodeMirror::-webkit-scrollbar-thumb {
+    background-color: rgba(228, 77, 38, 0.5);
+    border: 1px solid rgba(228, 77, 38, 0.2);
+}
+
+#html-section .CodeMirror::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(228, 77, 38, 0.7);
+}
+
+/* CSS editor scrollbar color */
+#css-section .CodeMirror::-webkit-scrollbar-thumb {
+    background-color: rgba(38, 77, 228, 0.5);
+    border: 1px solid rgba(38, 77, 228, 0.2);
+}
+
+#css-section .CodeMirror::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(38, 77, 228, 0.7);
+}
+
+/* JavaScript editor scrollbar color */
+#js-section .CodeMirror::-webkit-scrollbar-thumb {
+    background-color: rgba(240, 219, 79, 0.5);
+    border: 1px solid rgba(240, 219, 79, 0.2);
+}
+
+#js-section .CodeMirror::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(240, 219, 79, 0.7);
+}
+
+/* Firefox scrollbar styling */
 .CodeMirror {
-  height: 100% !important;
-  width: 100%;
-  background-color: #292929 !important;
-  color: #f0f0f0;
+    scrollbar-width: thin;
 }
 
-.CodeMirror-gutters {
-  background-color: #292929 !important;
-  border-right: 1px solid #4a148c;
+#html-section .CodeMirror {
+    scrollbar-color: rgba(228, 77, 38, 0.5) transparent;
 }
 
-.CodeMirror-cursor {
-  border-left: 1px solid #f0f0f0 !important;
+#css-section .CodeMirror {
+    scrollbar-color: rgba(38, 77, 228, 0.5) transparent;
 }
 
-.CodeMirror-selected {
-  background-color: rgba(128, 128, 128, 0.3);
-}
-
-textarea {
-  height: 100%;
+#js-section .CodeMirror {
+    scrollbar-color: rgba(240, 219, 79, 0.5) transparent;
 }
 
 /* Output section styling */
@@ -311,10 +275,8 @@ textarea {
   border: none;
   width: 100%;
   height: 100% !important;
-  border-top: 3px solid #6a1b9a;
+  border-top: none;
   display: block;
-  /* Prevent iframe from capturing mouse events during resize operations */
-  pointer-events: auto;
 }
 
 /* Add a special class that gets applied during resize operations */
@@ -326,7 +288,7 @@ textarea {
 .grid-item.output-area {
   position: relative;
   overflow: hidden;
-  resize: none; /* Prevent browser's default resize behavior */
+  resize: none;
 }
 
 /* Make sure the output section's resizer is properly positioned and functioning */
@@ -341,42 +303,41 @@ textarea {
   z-index: 10;
 }
 
-/* Footer styling */
+/* Footer Styling */
 footer {
-  background-color: #333;
-  padding: 1rem;
-  text-align: center;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 15px;
   gap: 10px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0;
+  background-color: #1e1e1e;
+  border-top: 1px solid #333;
+  z-index: 1000;
 }
 
-button {
-  background-color: #6a1b9a;
+footer button {
+  background-color: #333;
   color: white;
   border: none;
-  padding: 0.8rem 1.5rem;
-  margin: 0.5rem;
-  border-radius: 5px;
+  padding: 8px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s;
 }
 
-button:hover {
-  background-color: #8e24aa;
-  transform: scale(1.05);
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+footer button:hover {
+  background-color: #444;
 }
 
-button:active {
-  transform: scale(1);
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+footer button:active {
+  transform: scale(0.98);
 }
 
 /* Font size slider styling */
@@ -388,10 +349,10 @@ button:active {
   vertical-align: middle;
 }
 
-/* Popup Message Styling */
+/* Popup Message Styling with Capsule Animation */
 .notification-popup {
   position: fixed;
-  bottom: 80px; /* Position above the buttons */
+  bottom: 80px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
   background: linear-gradient(135deg, rgba(106, 27, 154, 0.95), rgba(74, 20, 140, 0.95));
@@ -418,7 +379,7 @@ button:active {
 }
 
 .notification-popup::before {
-  content: '🔗';
+  content: '🚀';
   font-size: 16px;
   margin-right: 5px;
 }
@@ -428,6 +389,24 @@ button:active {
   transform: translateX(-50%) translateY(0);
   visibility: visible;
   pointer-events: auto;
+  animation: capsulePulse 2s ease-in-out;
+}
+
+@keyframes capsulePulse {
+  0% { transform: translateX(-50%) translateY(0) scale(1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(106, 27, 154, 0.4); }
+  50% { transform: translateX(-50%) translateY(0) scale(1.05); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 25px rgba(106, 27, 154, 0.6); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(106, 27, 154, 0.4); }
+}
+
+/* Special Ready to Code notification */
+.notification-popup.ready-notification {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.9), rgba(56, 142, 60, 0.9));
+  border: 1px solid rgba(76, 175, 80, 0.4);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), 0 0 20px rgba(76, 175, 80, 0.4);
+}
+
+.notification-popup.ready-notification::before {
+  content: '✅';
 }
 
 /* Responsive Design for Tablets */
@@ -449,7 +428,6 @@ button:active {
     height: auto;
   }
   
-  /* Ensure consistent panel height */
   .CodeMirror {
     height: 300px !important;
   }
@@ -458,13 +436,11 @@ button:active {
     height: 300px !important;
   }
   
-  /* Adjust resizer for tablet view */
   .resizer {
     height: 100%;
     display: block;
   }
   
-  /* Hide horizontal resizers between rows */
   .grid-item:nth-child(3) .resizer,
   .grid-item:nth-child(4) .resizer {
     display: none;
@@ -483,7 +459,6 @@ button:active {
     margin: 0.3rem;
   }
   
-  /* Adjust chat container for tablets */
   .chat-container {
     width: 340px;
     height: 450px;
@@ -493,246 +468,383 @@ button:active {
 /* Responsive Design for Mobile */
 @media (max-width: 768px) {
   body {
-    max-height: none;
-    overflow: auto;
-    background-color: #1e1e1e;
-    min-height: 100vh;
-    height: 100%;
-    margin: 0;
-    padding: 0;
+    overflow-x: hidden;
   }
   
-  html {
-    background-color: #1e1e1e;
-    margin: 0;
-    padding: 0;
-    height: 100%;
+  .main-container {
+    height: calc(100vh - 48px - 40px);
   }
   
-  /* Fix font size for editors on mobile */
-  .CodeMirror {
-    font-size: 14px !important;
-  }
-  
-  /* Adjust grid layout for mobile */
   .grid-container {
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(4, 1fr);
-    height: auto;
-    min-height: 100vh;
-    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    gap: 5px;
+    height: calc(100vh - 90px);
   }
   
-  /* Make each grid item have fixed height on mobile */
   .grid-item {
-    min-height: 200px;
-    height: auto;
-    max-height: none;
-  }
-  
-  /* Override fullscreen elements */
-  .grid-item.fullscreen {
-    position: fixed;
     width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    z-index: 9999;
+    margin-bottom: 5px;
   }
   
-  /* Adjust the position of the live indicator when in landscape */
-  @media (orientation: landscape) {
-    .live-indicator {
-      top: auto;
-      bottom: 70px;
-      right: 10px;
-    }
+  #html-section {
+    order: 1;
+    height: 25vh;
   }
   
-  .editor-header {
-    padding: 0.5rem;
+  #css-section {
+    order: 2;
+    height: 20vh;
   }
   
-  .editor-header h2 {
-    font-size: 1.2rem;
+  #js-section {
+    order: 3;
+    height: 20vh;
   }
   
-  header h1 {
-    font-size: 1.5rem;
+  #output-section {
+    order: 4;
+    height: 25vh;
+  }
+  
+  .language-selector {
+    height: auto;
+    min-height: 40px;
+    padding: 5px 8px;
+    margin-bottom: 0;
+    width: 100%;
+  }
+  
+  .header-left {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: space-between;
+  }
+  
+  .language-selector h1 {
+    font-size: 1rem;
+  }
+  
+  #home-button, #language-select {
+    height: 26px;
+    padding: 0 8px;
+    font-size: 0.85rem;
   }
   
   footer {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
-    padding: 0.5rem;
+    height: 40px;
+    padding: 0;
+    gap: 0;
+    justify-content: space-around;
   }
   
-  button {
-    padding: 0.6rem 1rem;
-    margin: 0.2rem;
-    font-size: 0.9rem;
-    width: auto;
-  }
-  
-  /* Adjust chat container for mobile */
-  .chat-container {
-    width: 90%;
-    max-width: 320px;
-    height: 400px;
-    bottom: 70px;
-  }
-  
-  .chat-header {
-    padding: 10px 15px;
-  }
-  
-  .chat-body {
-    padding: 15px;
-    height: calc(100% - 110px);
-  }
-  
-  .chat-input {
-    padding: 10px;
-  }
-  
-  .chat-input input {
-    padding: 8px 12px;
-  }
-  
-  .chat-input button {
-    padding: 8px 15px;
-  }
-  
-  /* Font size adjustment */
-  #font-size-slider {
-    width: 120px;
-  }
-  
-  /* Adjust the live indicator position on mobile */
-  .live-indicator {
-    top: auto;
-    bottom: 60px;
-    right: 10px;
-    font-size: 10px;
-    padding: 3px 8px;
-  }
-  
-  /* Make the Go Live button text shorter on small screens */
-  #live-collab-button span {
-    display: none;
-  }
-  
-  /* Make buttons smaller on mobile */
   footer button {
-    padding: 0.6rem 1rem;
+    padding: 0 8px;
+    height: 32px;
+    font-size: 0.85rem;
+    flex: 0 1 auto;
+  }
+  
+  /* Editor styling */
+  .editor-header {
+    padding: 5px 8px;
+    min-height: 32px;
+  }
+  
+  .editor-header h2 {
     font-size: 0.9rem;
+    margin-left: 5px;
+  }
+  
+  .CodeMirror {
+    font-size: 13px;
+    line-height: 1.4;
   }
 }
 
 /* Extra small devices */
 @media (max-width: 480px) {
-  header h1 {
-    font-size: 1.2rem;
+  :root {
+    --editor-font-size: 13px;
+  }
+  
+  body {
+    height: 100vh;
+    overflow: hidden;
   }
   
   .grid-container {
-    grid-gap: 3px;
-    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 40px - 40px);
+    padding: 0;
+    margin: 0;
+    gap: 0;
   }
   
   .grid-item {
-    min-height: 200px;
-  }
-  
-  footer {
-    padding: 0.4rem;
-    flex-wrap: wrap;
-    justify-content: center;
     width: 100%;
-    box-sizing: border-box;
+    border-radius: 0;
     margin: 0;
+    border-left: none;
+    border-right: none;
   }
   
-  button {
-    padding: 0.5rem 0.8rem;
-    margin: 0.15rem;
+  #html-section {
+    order: 1;
+    height: 30vh;
+    min-height: 0;
+    border-top: none;
+  }
+  
+  #css-section {
+    order: 2;
+    height: 20vh;
+    min-height: 0;
+  }
+  
+  #js-section {
+    order: 3;
+    height: 20vh;
+    min-height: 0;
+  }
+  
+  #output-section {
+    order: 4;
+    height: 30vh;
+    min-height: 0;
+  }
+  
+  .language-selector {
+    padding: 0 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #5900e6;
+    height: 40px;
+    width: 100%;
+  }
+  
+  .language-selector h1 {
+    font-size: 0.9rem;
+    gap: 4px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .language-selector h1 i {
     font-size: 0.8rem;
+    margin-right: 4px;
   }
   
-  /* Notification popup adjustments for very small screens */
-  .notification-popup {
-    padding: 8px 15px;
-    min-width: 180px;
-    font-size: 12px;
-    bottom: 60px;
+  #home-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 0 6px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
   }
   
-  /* Only show icons for buttons on very small screens */
-  footer button i {
-    margin-right: 0;
+  .header-left {
+    width: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
   
-  footer button:not(#live-collab-button) span {
+  #home-button span {
     display: none;
   }
   
-  /* Adjust the editor headers */
   .editor-header {
-    padding: 5px;
+    padding: 4px 8px;
+    background-color: #202020;
+    height: 32px;
+    min-height: auto;
   }
   
   .editor-header h2 {
-    font-size: 14px;
+    font-size: 0.9rem;
+    margin-left: 5px;
+    color: #f5f5f5;
   }
   
-  /* Make sure the resize handles don't interfere with small screens */
+  /* Hide resizers on mobile */
   .resizer {
-    display: none;
-  }
-  
-  /* Ensure CodeMirror is still usable on tiny screens */
-  .CodeMirror {
-    font-size: 12px !important;
-  }
-}
-
-/* Adjust for landscape orientation on mobile */
-@media (max-height: 500px) and (orientation: landscape) {
-  .grid-container {
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: repeat(2, minmax(150px, 1fr));
-  }
-  
-  .grid-item {
-    min-height: 150px;
-  }
-  
-  header {
-    padding: 0.8rem;
+    display: none !important;
   }
   
   footer {
-    padding: 0.4rem;
+    height: 40px;
+    padding: 0;
+    border-top: 1px solid #333;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
   }
   
-  .chat-container {
-    height: 300px;
-    bottom: 60px;
+  footer button {
+    padding: 0;
+    flex: 1;
+    border-radius: 0;
+    background: none;
+    font-size: 1.2rem;
+    height: 40px;
+    border-right: 1px solid #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
   
-  .chat-body {
-    height: calc(100% - 100px);
+  footer button:last-child {
+    border-right: none;
+  }
+  
+  footer button span {
+    display: none;
+  }
+  
+  /* CodeMirror styles */
+  .CodeMirror {
+    font-size: var(--editor-font-size);
+  }
+  
+  /* Make line numbers smaller on mobile */
+  .CodeMirror .CodeMirror-linenumber {
+    font-size: 11px;
+  }
+  
+  /* Thinner gutters on mobile */
+  .CodeMirror .CodeMirror-gutters {
+    width: 28px !important;
+  }
+  
+  /* Font size slider in footer */
+  #font-size-slider {
+    position: fixed;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 200px;
+    z-index: 1001;
+  }
+}
+
+/* Handle landscape orientation on mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .grid-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    height: calc(100vh - 36px);
+    padding: 0;
+    gap: 1px;
+  }
+  
+  .grid-item {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+  
+  #html-section {
+    order: 1;
+    grid-column: 1;
+    grid-row: 1;
+    border-right: 1px solid #333;
+  }
+  
+  #css-section {
+    order: 2;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  
+  #js-section {
+    order: 3;
+    grid-column: 1;
+    grid-row: 2;
+    border-right: 1px solid #333;
+    border-top: 1px solid #333;
+  }
+  
+  #output-section {
+    order: 4;
+    grid-column: 2;
+    grid-row: 2;
+    border-top: 1px solid #333;
+  }
+  
+  .language-selector {
+    grid-column: span 2;
+    height: auto;
+    min-height: 36px;
+    padding: 4px 10px;
+    flex-direction: row;
+    width: 100%;
+  }
+  
+  footer {
+    display: none;
+  }
+  
+  .editor-header {
+    height: 28px;
+    padding: 2px 8px;
+    min-height: 28px;
+  }
+  
+  .editor-header h2 {
+    font-size: 0.8rem;
+  }
+  
+  /* Modify the font size for editors in landscape mode */
+  .CodeMirror {
+    font-size: 12px;
+  }
+  
+  /* Add alternative controls to editor headers */
+  .alternative-controls {
+    display: flex;
+    gap: 5px;
+    margin-left: auto;
+  }
+  
+  .alternative-controls button {
+    padding: 2px 5px;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.1);
+    border: none;
+    color: white;
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .alternative-controls button i {
+    font-size: 0.7rem;
+  }
+  
+  /* Hide resizers in landscape mode */
+  .resizer {
+    display: none !important;
   }
 }
 
 /* Chat Container */
 .chat-container {
     position: fixed;
-    bottom: 80px;  /* Position above the buttons */
-    left: 50%;  /* Center horizontally */
-    transform: translateX(-50%) translateY(20px);  /* Center and initial position */
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
     width: 380px;
     height: 500px;
     background: rgba(30, 30, 30, 0.95);
@@ -749,7 +861,7 @@ button:active {
 .chat-container.show {
     display: block;
     opacity: 1;
-    transform: translateX(-50%) translateY(0);  /* Center and final position */
+    transform: translateX(-50%) translateY(0);
 }
 
 /* Chat Header */
@@ -1125,5 +1237,127 @@ button:active {
 /* Last grid item's resizer - hide it completely */
 .grid-item:last-child .resizer {
   display: none;
+}
+
+/* CodeMirror Fixes */
+.CodeMirror {
+  height: 100% !important;
+  width: 100%;
+  background-color: #292929 !important;
+  color: #f0f0f0;
+  scrollbar-width: thin;
+  font-size: var(--editor-font-size);
+}
+
+.CodeMirror-gutters {
+  background-color: #292929 !important;
+  border-right: 1px solid #4a148c;
+}
+
+.CodeMirror-cursor {
+  border-left: 1px solid #f0f0f0 !important;
+}
+
+.CodeMirror-selected {
+  background-color: rgba(128, 128, 128, 0.3);
+}
+
+textarea {
+  height: 100%;
+}
+
+/* Remove the specific editor header styles that override the main style */
+#html-section .editor-header,
+#css-section .editor-header,
+#output-section .editor-header {
+    background: linear-gradient(135deg, #4a148c, #6a1b9a);
+    color: white;
+}
+
+#js-section .editor-header {
+    background: linear-gradient(135deg, #4a148c, #6a1b9a);
+    color: white;
+}
+
+/* Header with gradient background */
+header {
+  background: linear-gradient(135deg, #4a148c, #6a1b9a);
+  color: white;
+  text-align: center;
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+/* Stylish Heading Text */
+header h1 {
+  font-size: 3rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: linear-gradient(to right, #f093fb, #f5576c);
+  background-clip: text;
+  color: transparent;
+  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: bold;
+}
+
+/* Code icon with scale and rotation on hover */
+header h1 i.fas.fa-code {
+  color: #f093fb;
+  margin-right: 10px;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+header h1 i.fas.fa-code:hover {
+  transform: rotate(360deg) scale(1.2);
+  color: #f5576c;
+}
+
+/* Reset animations that are no longer needed */
+@keyframes fadeOut {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes welcomeTextAnimation {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes bracketSlideIn {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes pulseGradient {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes scaleIn {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes scaleOut {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0; }
+}
+
+#html-section .CodeMirror {
+  border-top: 3px solid #ff5722;
+}
+
+#css-section .CodeMirror {
+  border-top: 3px solid #3c99dc;
+}
+
+#js-section .CodeMirror {
+  border-top: 3px solid #f0db4f;
 }
 

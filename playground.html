@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="theme-color" content="#1e1e1e">
     <title>Code Playground</title>
 
@@ -26,14 +26,17 @@
         <span>Live Session</span>
     </div>
 
-    <!-- Welcome Overlay -->
-    <div id="welcome-overlay">
-        <h1>Welcome to Code Playground</h1>
-    </div>
-
     <!-- Header -->
-    <header>
-        <h1><i class="fas fa-code"></i> Code Playground</h1>
+    <header class="language-selector">
+        <div class="header-left">
+            <h1><i class="fas fa-code"></i> Code Playground</h1>
+            <button id="home-button" title="Back to Home">
+                <i class="fas fa-home"></i><span>Home</span>
+            </button>
+        </div>
+        <div class="header-controls">
+            <!-- Any additional controls can go here -->
+        </div>
     </header>
 
     <!-- Main Grid Layout -->
@@ -116,7 +119,7 @@
             <i id="close-chat" class="fas fa-times"></i>
         </div>
         <div id="chat-body" class="chat-body">
-<!--             <div class="message bot">Hello! How can I help you?</div> -->
+            <div class="message bot">Hello! How can I help you?</div>
         </div>
         <div class="chat-input">
             <input id="chat-input-field" type="text" placeholder="Type a message...">

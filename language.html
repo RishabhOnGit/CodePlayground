@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="theme-color" content="#1e1e1e">
+    <title>Language Playground</title>
+
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- CodeMirror Styles and Themes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material.min.css">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="languagestyle.css">
+</head>
+<body>
+
+    <!-- Notification Popup -->
+    <div id="notification-popup" class="notification-popup"></div>
+    
+    <!-- Main Container -->
+    <main class="main-container">
+        <!-- Language Selector with Title -->
+        <header class="language-selector">
+            <div class="header-left">
+                <h1><i class="fas fa-code"></i>Language Playground</h1>
+                <button id="home-button" title="Back to Home">
+                    <i class="fas fa-home"></i><span>Home</span>
+                </button>
+            </div>
+            <select id="language-select">
+                <option value="python">Python</option>
+                <option value="c">C</option>
+            </select>
+        </header>
+
+        <!-- Code Editor Section -->
+        <section class="editor-section">
+            <div class="editor-header">
+                <div id="language-icon"><i class="fab fa-python"></i></div>
+                <h2 id="editor-title">Python</h2>
+            </div>
+            <div class="editor-container">
+                <textarea id="code-editor"></textarea>
+            </div>
+        </section>
+
+        <!-- Output Section -->
+        <section class="output-section">
+            <div class="editor-header">
+                <i class="fas fa-terminal"></i>
+                <h2>Output</h2>
+                <button id="run-button" title="Run Code">
+                    <i class="fas fa-play"></i> <span>Run</span>
+                </button>
+            </div>
+            <div id="output-terminal" class="output-terminal">
+                <div class="terminal-header">
+                    <span class="terminal-button red"></span>
+                    <span class="terminal-button yellow"></span>
+                    <span class="terminal-button green"></span>
+                    <span class="terminal-title">Terminal</span>
+                </div>
+                <div id="terminal-content" class="terminal-content">
+                    <div class="terminal-line">Ready to run your code!</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer with Buttons -->
+    <footer>
+        <button id="save-button" title="Save Code">
+            <i class="fas fa-save"></i> <span>Save</span>
+        </button>
+        <button id="load-button" title="Load Code">
+            <i class="fas fa-folder-open"></i> <span>Load</span>
+        </button>
+        <button id="examples-button" title="Example Code">
+            <i class="fas fa-book"></i> <span>Examples</span>
+        </button>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+    <script>
+      // Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDCxSjzHa0oqU-ktfnaN5sfmrD2fnEcvlE",
+        authDomain: "playground-f2d18.firebaseapp.com",
+        databaseURL: "https://playground-f2d18-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "playground-f2d18",
+        storageBucket: "playground-f2d18.firebasestorage.app",
+        messagingSenderId: "549060916225",
+        appId: "1:549060916225:web:c34080d58e0747c09afc00"
+      };
+
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <!-- CodeMirror JS & Addons -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/addon/comment/comment.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="languagescript.js"></script>
+</body>
+</html> 
