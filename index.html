@@ -101,7 +101,7 @@
                 <img id="user-avatar" class="user-avatar" src="" alt="User avatar">
                 <span id="user-name">GitHub User</span>
                 <button id="admin-panel-btn" class="github-login hidden" style="margin: 0 5px; padding: 5px 10px; font-size: 0.8rem; background-color: #4a148c; border: 1px solid #9c27b0;">
-                    <i class="fas fa-chart-line"></i> Admin
+                    <i class="fas fa-chart-line"></i> <span>Admin</span>
                 </button>
                 <button id="logout-button" class="github-login" style="margin: 0; padding: 5px 10px; font-size: 0.8rem;">
                     Logout
@@ -156,25 +156,7 @@
         const username = localStorage.getItem('github_user_name');
         if (!username) return;
         
-        // First check Firebase for admin status (if Firebase is available)
-        if (typeof firebase !== 'undefined') {
-            const database = firebase.database();
-            database.ref('admins').child(username).once('value', snapshot => {
-                if (snapshot.exists()) {
-                    // User is an admin, show admin button in user info
-                    const adminPanelBtn = document.getElementById('admin-panel-btn');
-                    if (adminPanelBtn) {
-                        adminPanelBtn.classList.remove('hidden');
-                        console.log('Admin button revealed - Firebase confirmed');
-                    }
-                    
-                    // Set admin flag in localStorage for future reference
-                    localStorage.setItem('isAdmin', 'true');
-                }
-            });
-        }
-        
-        // Also check localStorage as a backup
+        // Show admin UI if already flagged in localStorage (faster response)
         if (localStorage.getItem('isAdmin') === 'true') {
             // Show admin button in user info
             const adminPanelBtn = document.getElementById('admin-panel-btn');
@@ -182,6 +164,47 @@
                 adminPanelBtn.classList.remove('hidden');
                 console.log('Admin button revealed - localStorage');
             }
+        }
+        
+        // Check if user is Rishabh (direct admin override)
+        if (username === 'Rishabh') {
+            console.log('Admin access granted to:', username);
+            localStorage.setItem('isAdmin', 'true');
+            
+            // Show admin button in user info
+            const adminPanelBtn = document.getElementById('admin-panel-btn');
+            if (adminPanelBtn) {
+                adminPanelBtn.classList.remove('hidden');
+                console.log('Admin button revealed - username match');
+            }
+            
+            return; // Skip Firebase check
+        }
+        
+        // First check Firebase for admin status (if Firebase is available)
+        try {
+            if (typeof firebase !== 'undefined' && firebase.database) {
+                const database = firebase.database();
+                database.ref('admins').child(username).once('value', snapshot => {
+                    if (snapshot.exists()) {
+                        // User is an admin, show admin button in user info
+                        const adminPanelBtn = document.getElementById('admin-panel-btn');
+                        if (adminPanelBtn) {
+                            adminPanelBtn.classList.remove('hidden');
+                            console.log('Admin button revealed - Firebase confirmed');
+                        }
+                        
+                        // Set admin flag in localStorage for future reference
+                        localStorage.setItem('isAdmin', 'true');
+                    }
+                }).catch(error => {
+                    console.warn('Firebase admin check failed:', error);
+                });
+            } else {
+                console.warn('Firebase not available for admin check');
+            }
+        } catch (error) {
+            console.warn('Error during admin check:', error);
         }
     });
 
