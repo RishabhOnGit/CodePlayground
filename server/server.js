@@ -6,9 +6,9 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS configuration - Update for production
+// CORS configuration - Update to accept multiple origins
 app.use(cors({
-    origin: 'https://playgroundcode.vercel.app',
+    origin: ['https://playgroundcode.vercel.app', 'https://code-playground-workspace.vercel.app', 'http://localhost:3000'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -19,18 +19,22 @@ app.use(express.json());
 // GitHub OAuth exchange endpoint
 app.post('/api/github/token', async (req, res) => {
     try {
-        const { code } = req.body;
+        const { code, redirect_uri } = req.body;
         
         if (!code) {
             return res.status(400).json({ error: 'Code is required' });
         }
+        
+        // Use the provided redirect_uri or fall back to the environment variable
+        const actualRedirectUri = redirect_uri || process.env.REDIRECT_URI;
+        console.log(`Exchanging GitHub code with redirect URI: ${actualRedirectUri}`);
         
         // Exchange code for access token
         const response = await axios.post('https://github.com/login/oauth/access_token', {
             client_id: process.env.GITHUB_CLIENT_ID,
             client_secret: process.env.GITHUB_CLIENT_SECRET,
             code,
-            redirect_uri: process.env.REDIRECT_URI
+            redirect_uri: actualRedirectUri
         }, {
             headers: {
                 'Accept': 'application/json'

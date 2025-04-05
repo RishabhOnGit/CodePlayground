@@ -78,7 +78,7 @@
     <script src="github-config.js"></script>
     
     <script>
-        // API Base URL - Updated to use Render backend URL
+        // API Base URL - Updated to use Render backend URL from .env
         const API_BASE_URL = 'https://try-j2gk.onrender.com/api';
         // Define the main playground URL for reference
         const PLAYGROUND_URL = 'https://playgroundcode.vercel.app';
@@ -106,7 +106,7 @@
                         document.querySelector('.loading').appendChild(debugElem);
                     }
                     
-                    debugElem.innerHTML = `Attempting to connect to: ${API_BASE_URL}/github/token (attempt ${retries + 1}/${maxRetries})<br>Code: ${code.substring(0, 5)}...`;
+                    debugElem.innerHTML = `Attempting to connect to: ${API_BASE_URL}/github/token (attempt ${retries + 1}/${maxRetries})<br>Code: ${code.substring(0, 5)}...<br>Redirect URI: ${githubConfig.redirectUri}`;
                     
                     // Add timeout to fetch requests
                     const controller = new AbortController();
@@ -117,7 +117,10 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ code }),
+                        body: JSON.stringify({ 
+                            code,
+                            redirect_uri: githubConfig.redirectUri // Explicitly pass the redirect URI
+                        }),
                         signal: controller.signal
                     });
                     
@@ -125,13 +128,21 @@
                     
                     if (!response.ok) {
                         let errorMessage = 'Failed to exchange code for token';
+                        let errorDetails = '';
+                        
                         try {
                             const errorData = await response.json();
                             errorMessage = errorData.error || errorMessage;
+                            
+                            // Special handling for redirect_uri_mismatch
+                            if (errorMessage.includes('redirect_uri_mismatch')) {
+                                errorDetails = `The redirect URI (${githubConfig.redirectUri}) doesn't match what's configured in the GitHub OAuth App. Please check the GitHub application settings.`;
+                            }
                         } catch (e) {
                             errorMessage += ` (Status: ${response.status})`;
                         }
-                        throw new Error(errorMessage);
+                        
+                        throw new Error(errorMessage + (errorDetails ? ': ' + errorDetails : ''));
                     }
                     
                     const data = await response.json();
