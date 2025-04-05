@@ -2,8 +2,8 @@
 const githubConfig = {
     // Your GitHub OAuth app credentials
     clientId: "Ov23liin8FnTxVvd7aQb",
-    // Updated to use Vercel deployment URL
-    redirectUri: "https://playgroundcode.vercel.app/github-callback.html",
+    // Updated to use trial playground Vercel deployment URL
+    redirectUri: "https://trial-playground.vercel.app/github-callback.html",
     scope: "repo" // This scope gives access to create repositories
 };
 

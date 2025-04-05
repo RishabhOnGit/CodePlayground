@@ -5,7 +5,7 @@ A powerful web-based coding playground for multiple programming languages with f
 ## 📋 Project Overview
 
 This project is a full-stack web application with:
-- Frontend hosted on Vercel: https://playgroundcode.vercel.app/
+- Frontend hosted on Vercel: https://trial-playground.vercel.app/
 - Backend API hosted on Render: https://codeplayground-backend.onrender.com/
 
 ## 🌐 Frontend (Vercel Deployment)
@@ -51,12 +51,13 @@ The backend server handles GitHub authentication and repository operations. It's
 5. Add the following environment variables:
    - GITHUB_CLIENT_ID
    - GITHUB_CLIENT_SECRET
-   - REDIRECT_URI=https://playgroundcode.vercel.app/github-callback.html
-   - FRONTEND_URL=https://playgroundcode.vercel.app
+   - REDIRECT_URI=https://trial-playground.vercel.app/github-callback.html
+   - FRONTEND_URL=https://trial-playground.vercel.app
 
 ## 📝 Configuration
 
-Make sure to update GitHub OAuth app settings with your new production URLs and update API endpoints in the frontend code to point to the Render backend.
+Make sure to update GitHub OAuth app settings with your new production URLs and update API endpoints in the frontend code to point to the Render backend. For GitHub OAuth, use:
+- Authorization callback URL: https://trial-playground.vercel.app/github-callback.html
 
 ## Overview
 
