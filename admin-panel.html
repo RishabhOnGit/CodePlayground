@@ -16,6 +16,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
     <!-- GitHub utils -->
     <script src="github-utils.js"></script>
     
@@ -389,6 +392,18 @@
                 width: 100%;
                 overflow-x: auto;
             }
+        }
+        
+        /* Highlight style for active sessions counter */
+        .counter-box.has-active-sessions {
+            background: linear-gradient(135deg, #FF9800, #FF5722);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
         }
     </style>
 </head>

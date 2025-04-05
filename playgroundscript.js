@@ -410,6 +410,9 @@ document.getElementById('share-button').addEventListener('click', (e) => {
     e.stopPropagation(); // Prevent click from bubbling to document
     const dropdown = document.getElementById('share-dropdown');
     
+    // Update the dropdown options based on current live session status
+    updateShareDropdown();
+    
     // Simple toggle - if display is none, show it, otherwise hide it
     if (dropdown.style.display === 'none' || dropdown.style.display === '') {
         dropdown.style.display = 'block';
@@ -424,6 +427,32 @@ document.addEventListener('click', () => {
     if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
     }
+});
+
+// Setup Share Dropdown Options
+document.addEventListener('DOMContentLoaded', () => {
+    // Copy Link option
+    document.getElementById('share-copy').addEventListener('click', () => {
+        // Generate a shareable URL with the current code
+        const currentUrl = window.location.href.split('?')[0]; // Remove any existing query params
+        navigator.clipboard.writeText(currentUrl);
+        showNotification('Link copied to clipboard!');
+        document.getElementById('share-dropdown').style.display = 'none';
+    });
+    
+    // Go Live option
+    document.getElementById('share-live').addEventListener('click', () => {
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase is not defined! Unable to start live session.");
+            showNotification("Error: Firebase not available. Live sharing is not available.");
+            document.getElementById('share-dropdown').style.display = 'none';
+            return;
+        }
+        
+        // Call the startLiveSession function
+        startLiveSession();
+        document.getElementById('share-dropdown').style.display = 'none';
+    });
 });
 
 // Function to toggle fullscreen for a specific element
@@ -887,6 +916,7 @@ let sessionId = null;
 let firebaseRef = null;
 let lastUpdatedBy = null;
 let isProcessingRemoteChange = false;
+let isSessionHost = false; // Track if this user is the host of the session
 
 // Start a live collaboration session
 function startLiveSession() {
@@ -904,9 +934,16 @@ function startLiveSession() {
     sessionId = generateSessionId();
     console.log("Generated session ID:", sessionId);
     
-    // Create Firebase reference
+    // Create Firebase reference for the collaborative session
     console.log("Creating Firebase reference to:", `sessions/${sessionId}`);
     firebaseRef = firebase.database().ref(`sessions/${sessionId}`);
+    
+    // Get user info for the session
+    const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+    const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+    
+    // Mark as session host
+    isSessionHost = true;
     
     // Initialize the session data
     firebaseRef.set({
@@ -914,8 +951,39 @@ function startLiveSession() {
       css: cssEditor.getValue(),
       js: jsEditor.getValue(),
       lastUpdate: Date.now(),
-      updatedBy: 'host'
+      updatedBy: 'host',
+      active: true, // Add active status flag
+      host: userName // Store host info
     });
+    
+    // Create the database variable if it doesn't exist
+    const database = firebase.database();
+    
+    // Also create a record in the liveSessions collection for admin panel
+    const liveSessionData = {
+      id: sessionId,
+      creatorName: userName,
+      creatorAvatar: userAvatar,
+      type: 'Web Playground',
+      startTime: Date.now(),
+      status: 'active',
+      participants: {
+        [userName]: {
+          name: userName,
+          avatar: userAvatar,
+          role: 'host',
+          joinedAt: Date.now()
+        }
+      }
+    };
+    
+    // Save to liveSessions for admin panel
+    database.ref(`liveSessions/${sessionId}`).set(liveSessionData)
+      .then(() => console.log("Live session recorded for admin panel"))
+      .catch(err => console.error("Error recording live session for admin:", err));
+    
+    // Log this activity
+    logActivity(userName, userAvatar, 'Started live session', 'Web Playground', 'active');
     
     // Set up listeners for remote changes
     setupLiveListeners();
@@ -933,8 +1001,18 @@ function startLiveSession() {
     shareButton.style.backgroundColor = '#ff5722';
     
     // Show the live indicator
-    document.getElementById('live-indicator').classList.add('active');
+    const liveIndicator = document.getElementById('live-indicator');
+    liveIndicator.classList.add('active');
+    liveIndicator.classList.add('host');
+    liveIndicator.classList.remove('guest');
+    liveIndicator.querySelector('span').textContent = 'Hosting Live Session';
     isLiveSession = true;
+    
+    // Update the share dropdown to add the End Live Session option
+    updateShareDropdown();
+    
+    // Setup session status monitoring
+    setupSessionMonitoring();
     
     showNotification('Live session started! Link copied to clipboard 🎉');
   } catch (error) {
@@ -947,8 +1025,73 @@ function startLiveSession() {
 function endLiveSession() {
   if (!firebaseRef) return;
   
+  // Only host can end the session by updating the active flag
+  if (isSessionHost) {
+    firebaseRef.update({
+      active: false,
+      endedAt: Date.now()
+    }).then(() => {
+      console.log("Session marked as inactive");
+      
+      // Update the liveSessions record for admin panel
+      const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+      const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+      const database = firebase.database();
+      
+      // Update the session status in liveSessions
+      database.ref(`liveSessions/${sessionId}`).update({
+        status: 'completed',
+        endTime: Date.now()
+      }).then(() => {
+        console.log("Live session status updated in admin panel");
+        // Log the end session activity
+        logActivity(userName, userAvatar, 'Ended live session', 'Web Playground', 'completed');
+      }).catch(err => {
+        console.error("Error updating live session status:", err);
+      });
+      
+      // Delay before fully disconnecting to allow clients to receive the inactive status
+      setTimeout(() => {
+        disconnectFromSession();
+      }, 1000);
+    }).catch(error => {
+      console.error("Error ending session:", error);
+      disconnectFromSession();
+    });
+  } else {
+    // For guests, just leave the session
+    disconnectFromSession();
+  }
+}
+
+// Disconnect from the session (for both host and guests)
+function disconnectFromSession() {
+  // Get user info
+  const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+  const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+  
+  // If we're a guest, update the participants list in the admin panel
+  if (!isSessionHost && firebase && sessionId) {
+    // Create database reference
+    const database = firebase.database();
+    
+    // Mark the participant as left in liveSessions
+    database.ref(`liveSessions/${sessionId}/participants/${userName}`).update({
+      leftAt: Date.now(),
+      status: 'left'
+    }).then(() => {
+      console.log("Updated participant status to left");
+      // Log the activity
+      logActivity(userName, userAvatar, 'Left live session', 'Web Playground', 'completed');
+    }).catch(err => {
+      console.error("Error updating participant status:", err);
+    });
+  }
+  
   // Remove all listeners
-  firebaseRef.off();
+  if (firebaseRef) {
+    firebaseRef.off();
+  }
   
   // Remove change listeners from editors
   htmlEditor.off('changes', handleHtmlChanges);
@@ -960,17 +1103,37 @@ function endLiveSession() {
   shareButton.classList.remove('active');
   shareButton.style.backgroundColor = '';
   
-  document.getElementById('live-indicator').classList.remove('active');
+  const liveIndicator = document.getElementById('live-indicator');
+  liveIndicator.classList.remove('active');
+  liveIndicator.classList.remove('host');
+  liveIndicator.classList.remove('guest');
+  liveIndicator.querySelector('span').textContent = 'Live Session';
+  
   isLiveSession = false;
   sessionId = null;
   firebaseRef = null;
+  isSessionHost = false;
+  
+  // Update share dropdown to remove End Live Session option
+  updateShareDropdown();
   
   showNotification('Live session ended');
 }
 
-// Generate a random session ID
-function generateSessionId() {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+// Monitor session status for changes (especially for guests)
+function setupSessionMonitoring() {
+  if (!firebaseRef) return;
+  
+  // Listen for changes to the active status
+  firebaseRef.child('active').on('value', (snapshot) => {
+    const isActive = snapshot.val();
+    
+    // If session is marked as inactive and we're not the host, disconnect
+    if (isActive === false && !isSessionHost) {
+      showNotification('The host ended this live session');
+      disconnectFromSession();
+    }
+  });
 }
 
 // Set up listeners for remote changes
@@ -996,6 +1159,11 @@ function setupLiveListeners() {
     
     isProcessingRemoteChange = false;
   });
+}
+
+// Generate a random session ID
+function generateSessionId() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 // Set up local change listeners
@@ -1060,8 +1228,8 @@ function updateShareDropdown() {
     existingEndLive.remove();
   }
   
-  // If live session is active, add the End Live option
-  if (isLiveSession) {
+  // If live session is active and user is the host, add the End Live option
+  if (isLiveSession && isSessionHost) {
     const endLiveOption = document.createElement('div');
     endLiveOption.id = 'share-end-live';
     endLiveOption.className = 'share-dropdown-option';
@@ -1091,24 +1259,84 @@ window.addEventListener('DOMContentLoaded', () => {
     // Join existing live session
     sessionId = liveSessionId;
     lastUpdatedBy = 'guest';
+    
+    // Make sure Firebase is available
+    if (typeof firebase === 'undefined' || !firebase.database) {
+      console.error("Firebase is not available when joining session");
+      showNotification("Error: Firebase not loaded. Cannot join live session.");
+      return;
+    }
+    
+    // Create database reference for collaboration
     firebaseRef = firebase.database().ref(`sessions/${sessionId}`);
     
-    // Set up listeners
-    setupLiveListeners();
-    setupLocalChangeListeners();
-    
-    // Update UI
-    const shareButton = document.getElementById('share-button');
-    shareButton.classList.add('active');
-    shareButton.style.backgroundColor = '#ff5722';
-    
-    document.getElementById('live-indicator').classList.add('active');
-    isLiveSession = true;
-    
-    // Update share dropdown with End Live option
-    updateShareDropdown();
-    
-    showNotification('Joined live collaboration session!');
+    // First check if the session is still active
+    firebaseRef.once('value', (snapshot) => {
+      const sessionData = snapshot.val();
+      
+      if (!sessionData || sessionData.active === false) {
+        // Session doesn't exist or is not active
+        showNotification('This live session has ended or does not exist');
+        sessionId = null;
+        firebaseRef = null;
+        return;
+      }
+      
+      // Get user info for participant tracking
+      const userName = localStorage.getItem('github_user_name') || 'Anonymous Guest';
+      const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+      
+      // Mark as guest (not host)
+      isSessionHost = false;
+      
+      // Set up listeners
+      setupLiveListeners();
+      setupLocalChangeListeners();
+      setupSessionMonitoring();
+      
+      // Create database reference for liveSessions
+      const database = firebase.database();
+      
+      // Update participants list in liveSessions for admin panel
+      database.ref(`liveSessions/${sessionId}/participants/${userName}`).update({
+        name: userName,
+        avatar: userAvatar,
+        role: 'guest',
+        joinedAt: Date.now()
+      }).then(() => {
+        console.log("Added to participants list in admin panel");
+        // Log the join session activity
+        logActivity(userName, userAvatar, 'Joined live session', 'Web Playground', 'active');
+      }).catch(err => {
+        console.error("Error updating participants list:", err);
+      });
+      
+      // Update UI
+      const shareButton = document.getElementById('share-button');
+      shareButton.classList.add('active');
+      shareButton.style.backgroundColor = '#ff5722';
+      
+      const liveIndicator = document.getElementById('live-indicator');
+      liveIndicator.classList.add('active');
+      liveIndicator.classList.add('guest');
+      liveIndicator.classList.remove('host');
+      liveIndicator.querySelector('span').textContent = 'Joined Live Session';
+      isLiveSession = true;
+      
+      // Update share dropdown with End Live option
+      updateShareDropdown();
+      
+      showNotification('Joined live collaboration session!');
+      
+      // Make sure the End Live Session option appears for guests too
+      // Some browsers might have timing issues, so we'll ensure it's there after a short delay
+      setTimeout(updateShareDropdown, 1000);
+    }).catch(error => {
+      console.error("Error joining session:", error);
+      showNotification('Failed to join live session. Please try again.');
+      sessionId = null;
+      firebaseRef = null;
+    });
   }
 });
 
@@ -1430,4 +1658,31 @@ window.confirmSaveProject = function() {
 function makeAdmin() {
   localStorage.setItem('isAdmin', 'true');
   alert('Admin status granted! Refresh the page to see admin options.');
+}
+
+// Log user activity to Firebase for admin tracking
+function logActivity(userName, userAvatar, action, target, status) {
+  if (!firebase || !firebase.database) {
+    console.error("Firebase not available for activity logging");
+    return;
+  }
+  
+  try {
+    const database = firebase.database();
+    const activityData = {
+      userName,
+      userAvatar,
+      action,
+      projectName: target,
+      timestamp: Date.now(),
+      status
+    };
+    
+    database.ref('activity').push(activityData)
+      .then(() => console.log("Activity logged:", action))
+      .catch(err => console.error("Error logging activity:", err));
+      
+  } catch (error) {
+    console.error("Error logging activity:", error);
+  }
 }

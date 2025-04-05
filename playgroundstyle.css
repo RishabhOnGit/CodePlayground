@@ -1025,7 +1025,7 @@ footer button:active {
 .live-indicator {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
   background-color: #ff5722;
   color: white;
   padding: 5px 10px;
@@ -1035,6 +1035,19 @@ footer button:active {
   align-items: center;
   gap: 5px;
   z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  font-weight: 500;
+}
+
+/* Different background colors for host vs guest */
+.live-indicator.host {
+  background-color: #ff9800;
+  box-shadow: 0 2px 5px rgba(255, 152, 0, 0.5);
+}
+
+.live-indicator.guest {
+  background-color: #ff5722;
+  box-shadow: 0 2px 5px rgba(255, 87, 34, 0.5);
 }
 
 .live-indicator.active {
@@ -1045,6 +1058,11 @@ footer button:active {
   content: "●";
   color: white;
   animation: blink 1.5s infinite;
+}
+
+/* Special styling for host indicator */
+.live-indicator span:contains("Hosting") {
+  color: #ffeb3b;
 }
 
 @keyframes blink {
@@ -1420,6 +1438,22 @@ header h1 i.fas.fa-code:hover {
   #logout-button {
     font-size: 0.7rem;
     padding: 3px 6px;
+  }
+}
+
+/* Reposition for header layout */
+@media (min-width: 768px) {
+  .live-indicator {
+    position: static;
+    margin-right: 15px;
+    font-size: 13px;
+    padding: 4px 12px;
+  }
+  
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
   }
 }
 

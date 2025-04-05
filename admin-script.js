@@ -1,17 +1,5 @@
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyDCxSjzHa0oqU-ktfnaN5sfmrD2fnEcvlE",
-    authDomain: "playground-f2d18.firebaseapp.com",
-    databaseURL: "https://playground-f2d18-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "playground-f2d18",
-    storageBucket: "playground-f2d18.firebasestorage.app",
-    messagingSenderId: "549060916225",
-    appId: "1:549060916225:web:c34080d58e0747c09afc00"
-};
-
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+// Admin Panel Script for Code Playground
+// Uses Firebase Config from firebase-config.js
 
 // DOM Elements
 document.addEventListener('DOMContentLoaded', function() {
@@ -32,6 +20,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize charts
     initCharts();
 });
+
+// Get database reference
+function getFirebaseDatabase() {
+    if (typeof getDatabase === 'function') {
+        const db = getDatabase();
+        if (db) return db;
+    }
+    
+    // Fallback to firebase.database() if getDatabase function is not available
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        return firebase.database();
+    }
+    
+    console.error("Firebase database not available in admin-script.js");
+    return null;
+}
 
 // Admin Authentication
 function checkAdminAuth() {
@@ -81,12 +85,12 @@ function checkAdminStatus(username) {
         return;
     }
     
-    database.ref('admins').child(username).once('value', snapshot => {
+    getFirebaseDatabase().ref('admins').child(username).once('value', snapshot => {
         if (!snapshot.exists()) {
             // Save this first admin if there are no admins yet
-            database.ref('admins').once('value', allAdmins => {
+            getFirebaseDatabase().ref('admins').once('value', allAdmins => {
                 if (!allAdmins.exists()) {
-                    database.ref('admins').child(username).set({
+                    getFirebaseDatabase().ref('admins').child(username).set({
                         role: 'admin',
                         createdAt: new Date().toISOString()
                     });
@@ -210,19 +214,30 @@ function initResponsiveSidebar() {
 // Load dashboard data
 function loadDashboardData() {
     // Load user stats
-    database.ref('users').once('value', snapshot => {
+    getFirebaseDatabase().ref('users').once('value', snapshot => {
         const totalUsers = snapshot.exists() ? snapshot.numChildren() : 0;
         document.getElementById('total-users').textContent = totalUsers;
     });
     
-    // Load active sessions
-    database.ref('liveSessions').orderByChild('status').equalTo('active').once('value', snapshot => {
+    // Load active sessions - check for sessions with 'active' status
+    getFirebaseDatabase().ref('liveSessions').orderByChild('status').equalTo('active').once('value', snapshot => {
         const activeSessions = snapshot.exists() ? snapshot.numChildren() : 0;
         document.getElementById('active-sessions').textContent = activeSessions;
+        
+        // Update the counter box style based on sessions count
+        const sessionCountBox = document.getElementById('active-sessions').closest('.counter-box');
+        if (activeSessions > 0) {
+            sessionCountBox.classList.add('has-active-sessions');
+        } else {
+            sessionCountBox.classList.remove('has-active-sessions');
+        }
+    }).catch(error => {
+        console.error("Error loading active sessions count:", error);
+        document.getElementById('active-sessions').textContent = "Error";
     });
     
     // Load projects count
-    database.ref('projects').once('value', snapshot => {
+    getFirebaseDatabase().ref('projects').once('value', snapshot => {
         const totalProjects = snapshot.exists() ? snapshot.numChildren() : 0;
         document.getElementById('total-projects').textContent = totalProjects;
     });
@@ -231,7 +246,7 @@ function loadDashboardData() {
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
     
-    database.ref('codeExecutions')
+    getFirebaseDatabase().ref('codeExecutions')
         .orderByChild('timestamp')
         .startAt(oneDayAgo.getTime())
         .once('value', snapshot => {
@@ -248,7 +263,7 @@ function loadRecentActivity() {
     const activityTable = document.getElementById('recent-activity-table').getElementsByTagName('tbody')[0];
     activityTable.innerHTML = '';
     
-    database.ref('activity')
+    getFirebaseDatabase().ref('activity')
         .orderByChild('timestamp')
         .limitToLast(10)
         .once('value', snapshot => {
@@ -311,7 +326,7 @@ function loadUsersData() {
     const usersTable = document.getElementById('users-table').getElementsByTagName('tbody')[0];
     usersTable.innerHTML = '';
     
-    database.ref('users').once('value', snapshot => {
+    getFirebaseDatabase().ref('users').once('value', snapshot => {
         if (snapshot.exists()) {
             const users = [];
             snapshot.forEach(childSnapshot => {
@@ -369,7 +384,18 @@ function loadSessionsData() {
     const sessionsTable = document.getElementById('sessions-table').getElementsByTagName('tbody')[0];
     sessionsTable.innerHTML = '';
     
-    database.ref('liveSessions').once('value', snapshot => {
+    // Add a loading indicator
+    const loadingRow = sessionsTable.insertRow();
+    const loadingCell = loadingRow.insertCell();
+    loadingCell.colSpan = 6;
+    loadingCell.textContent = 'Loading sessions...';
+    loadingCell.style.textAlign = 'center';
+    
+    // Query for both active and completed sessions
+    getFirebaseDatabase().ref('liveSessions').once('value', snapshot => {
+        // Remove loading indicator
+        sessionsTable.innerHTML = '';
+        
         if (snapshot.exists()) {
             const sessions = [];
             snapshot.forEach(childSnapshot => {
@@ -379,8 +405,8 @@ function loadSessionsData() {
                 });
             });
             
-            // Reverse to show newest first
-            sessions.reverse();
+            // Sort by most recent first (using startTime)
+            sessions.sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
             
             // Add to table
             sessions.forEach(session => {
@@ -388,15 +414,16 @@ function loadSessionsData() {
                 
                 // Session ID
                 const idCell = row.insertCell();
-                idCell.textContent = session.id.substring(0, 8) + '...';
+                // Show full ID with tooltip on hover
+                idCell.innerHTML = `<span title="${session.id}">${session.id ? session.id.substring(0, 10) + '...' : 'Unknown'}</span>`;
                 
                 // Created By
                 const creatorCell = row.insertCell();
                 creatorCell.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <img src="${session.creatorAvatar || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'}" 
-                            alt="${session.creatorName}" style="width: 24px; height: 24px; border-radius: 50%;">
-                        ${session.creatorName}
+                            alt="${session.creatorName || 'Unknown'}" style="width: 24px; height: 24px; border-radius: 50%;">
+                        ${session.creatorName || 'Unknown'}
                     </div>
                 `;
                 
@@ -406,11 +433,12 @@ function loadSessionsData() {
                 
                 // Participants
                 const participantsCell = row.insertCell();
-                participantsCell.textContent = session.participants ? Object.keys(session.participants).length : '1';
+                const participantCount = session.participants ? Object.keys(session.participants).length : 0;
+                participantsCell.textContent = participantCount;
                 
                 // Started
                 const startedCell = row.insertCell();
-                startedCell.textContent = formatTimestamp(session.startTime);
+                startedCell.textContent = session.startTime ? formatTimestamp(session.startTime) : 'Unknown';
                 
                 // Status
                 const statusCell = row.insertCell();
@@ -425,6 +453,14 @@ function loadSessionsData() {
             cell.textContent = 'No live sessions found';
             cell.style.textAlign = 'center';
         }
+    }).catch(error => {
+        console.error("Error loading sessions:", error);
+        sessionsTable.innerHTML = '';
+        const row = sessionsTable.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 6;
+        cell.textContent = 'Error loading sessions data';
+        cell.style.textAlign = 'center';
     });
 }
 
@@ -433,7 +469,7 @@ function loadProjectsData() {
     const projectsTable = document.getElementById('projects-table').getElementsByTagName('tbody')[0];
     projectsTable.innerHTML = '';
     
-    database.ref('projects').once('value', snapshot => {
+    getFirebaseDatabase().ref('projects').once('value', snapshot => {
         if (snapshot.exists()) {
             const projects = [];
             snapshot.forEach(childSnapshot => {
@@ -491,7 +527,7 @@ function loadProjectsData() {
 // Load settings
 function loadSettings() {
     // Load settings from Firebase
-    database.ref('settings').once('value', snapshot => {
+    getFirebaseDatabase().ref('settings').once('value', snapshot => {
         if (snapshot.exists()) {
             const settings = snapshot.val();
             document.getElementById('github-client-id').value = settings.githubClientId || '';
@@ -512,7 +548,7 @@ function loadSettings() {
             updatedBy: localStorage.getItem('github_user_name') || 'Admin'
         };
         
-        database.ref('settings').set(settings, error => {
+        getFirebaseDatabase().ref('settings').set(settings, error => {
             if (error) {
                 showNotification('Error saving settings: ' + error.message);
             } else {
@@ -545,7 +581,7 @@ function initUserActivityChart() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    database.ref('activity')
+    getFirebaseDatabase().ref('activity')
         .orderByChild('timestamp')
         .startAt(oneWeekAgo.getTime())
         .once('value', snapshot => {
@@ -626,7 +662,7 @@ function initLanguageUsageChart() {
     };
     
     // Get language usage data
-    database.ref('languageUsage').once('value', snapshot => {
+    getFirebaseDatabase().ref('languageUsage').once('value', snapshot => {
         if (snapshot.exists()) {
             const usage = snapshot.val();
             data.datasets[0].data[0] = usage.python || 0;

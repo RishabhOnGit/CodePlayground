@@ -208,11 +208,6 @@
     <!-- Notification Popup -->
     <div id="notification-popup" class="notification-popup"></div>
     
-    <!-- Live collaboration indicator -->
-    <div id="live-indicator" class="live-indicator">
-        <span>Live Session</span>
-    </div>
-
     <!-- Header -->
     <header class="language-selector">
         <div class="header-left">
@@ -222,6 +217,10 @@
             </button>
         </div>
         <div class="header-controls">
+            <!-- Live collaboration indicator -->
+            <div id="live-indicator" class="live-indicator">
+                <span>Live Session</span>
+            </div>
             <div class="user-account" id="user-account" style="display: none;">
                 <img id="user-avatar" src="" alt="User avatar" class="user-avatar">
                 <span id="user-name">User</span>
@@ -364,21 +363,9 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
-    <script>
-      // Firebase configuration
-      const firebaseConfig = {
-        apiKey: "AIzaSyDCxSjzHa0oqU-ktfnaN5sfmrD2fnEcvlE",
-        authDomain: "playground-f2d18.firebaseapp.com",
-        databaseURL: "https://playground-f2d18-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "playground-f2d18",
-        storageBucket: "playground-f2d18.firebasestorage.app",
-        messagingSenderId: "549060916225",
-        appId: "1:549060916225:web:c34080d58e0747c09afc00"
-      };
-
-      // Initialize Firebase
-      firebase.initializeApp(firebaseConfig);
-    </script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
 
     <!-- CodeMirror JS & Addons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"></script>
