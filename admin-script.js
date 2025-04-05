@@ -71,6 +71,16 @@ function checkAdminAuth() {
 
 // Check if user has admin privileges
 function checkAdminStatus(username) {
+    console.log("Checking admin status for:", username);
+    
+    // Manual override for specific users
+    if (username === "Rishabh") {
+        console.log("Admin access granted to:", username);
+        localStorage.setItem('isAdmin', 'true');
+        showNotification('Admin access granted');
+        return;
+    }
+    
     database.ref('admins').child(username).once('value', snapshot => {
         if (!snapshot.exists()) {
             // Save this first admin if there are no admins yet
@@ -80,6 +90,7 @@ function checkAdminStatus(username) {
                         role: 'admin',
                         createdAt: new Date().toISOString()
                     });
+                    localStorage.setItem('isAdmin', 'true');
                     showNotification('You have been assigned as the first admin');
                 } else {
                     // Not an admin, redirect
@@ -89,6 +100,10 @@ function checkAdminStatus(username) {
                     }, 2000);
                 }
             });
+        } else {
+            // User is an admin
+            localStorage.setItem('isAdmin', 'true');
+            showNotification('Admin access verified');
         }
     });
 }

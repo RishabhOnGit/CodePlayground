@@ -591,7 +591,6 @@
             if (localStorage.getItem('isAdmin') === 'true') {
                 // User is admin, continue loading the page
                 console.log('Admin access granted through localStorage');
-                document.getElementById('admin-status').textContent = 'Admin (Local Override)';
                 return;
             }
             
