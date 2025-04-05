@@ -22,6 +22,7 @@
     z-index: 1;
     overflow: hidden;
     padding: 1rem;
+    gap: clamp(10px, 2vh, 20px);
 }
 
 /* 🔹 Floating Background Elements */
@@ -118,7 +119,7 @@
     background: linear-gradient(to right, #f093fb, #f5576c);
     -webkit-background-clip: text;
     color: transparent;
-    margin-bottom: clamp(5px, 1vh, 15px);
+    margin-bottom: clamp(5px, 1vh, 10px);
 }
 
 /* 🔹 Typing Effect */
@@ -132,7 +133,8 @@
     max-width: clamp(280px, 80vw, 500px);
     border-right: 3px solid white;
     animation: blink-caret 0.8s infinite;
-    min-height: clamp(2rem, 5vh, 3rem);
+    min-height: clamp(1.5rem, 4vh, 2.5rem);
+    margin-bottom: clamp(15px, 2vh, 20px);
 }
 
 /* 🔹 Blinking Cursor */
@@ -161,7 +163,7 @@
     flex-wrap: wrap;
     justify-content: center;
     gap: clamp(10px, 2vw, 25px);
-    margin: clamp(15px, 3vh, 40px) 0;
+    margin: clamp(10px, 2vh, 20px) 0;
     width: 90%;
     max-width: 1000px;
 }
@@ -186,40 +188,6 @@
     box-shadow: 0 5px 15px rgba(255, 255, 255, 0.2);
 }
 
-/* 🔹 Start Button */
-#start-button {
-    padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
-    font-size: clamp(1rem, 1.5vw, 1.3rem);
-    font-weight: bold;
-    color: white;
-    background: linear-gradient(45deg, #ff5722, #ff784e);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: clamp(120px, 30vw, 200px);
-}
-
-/* 🔹 Language Button */
-#language-button {
-    padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
-    font-size: clamp(1rem, 1.5vw, 1.3rem);
-    font-weight: bold;
-    color: white;
-    background: linear-gradient(45deg, #4CAF50, #8BC34A);
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.3s ease-in-out;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: clamp(120px, 30vw, 200px);
-}
-
 /* 🔹 Buttons Container */
 .buttons-container {
     display: flex;
@@ -228,6 +196,35 @@
     justify-content: center;
     width: 90%;
     max-width: 600px;
+    margin-top: clamp(10px, 2vh, 20px);
+}
+
+/* 🔹 Common Button Styles */
+#start-button, #language-button {
+    padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
+    font-weight: bold;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: clamp(180px, 40vw, 250px);
+    text-align: center;
+}
+
+/* 🔹 Start Button */
+#start-button {
+    background: linear-gradient(45deg, #ff5722, #ff784e);
+}
+
+/* 🔹 Language Button */
+#language-button {
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
 }
 
 /* 🔹 Language Card Styling */
@@ -363,22 +360,34 @@
     .landing-container {
         padding: 1rem;
         height: 100vh;
-        justify-content: space-between;
+        justify-content: flex-start;
+        padding-top: clamp(40px, 10vh, 60px);
+    }
+    
+    .landing-container h1 {
+        margin-bottom: 5px;
+    }
+    
+    #typing-text {
+        margin-bottom: 10px;
+        min-height: 1.5rem;
     }
     
     .cards-container {
-        margin: 10px 0;
+        margin: 15px 0;
     }
     
     .buttons-container {
         flex-direction: column;
         width: 90%;
         align-items: center;
+        margin-top: 15px;
     }
     
     #start-button, #language-button {
-        width: 85%;
-        justify-content: center;
+        width: 90%;
+        max-width: 280px;
+        margin-bottom: 10px;
     }
     
     /* Adjust floating elements for better appearance on smaller screens */
@@ -423,20 +432,24 @@
     }
 }
 
-/* Landscape orientation specific */
+/* Handle landscape orientation on mobile */
 @media (max-height: 500px) and (orientation: landscape) {
     .landing-container {
         padding: 0.5rem;
+        justify-content: center;
+        gap: 10px;
     }
     
     .landing-container h1 {
         margin-top: 5px;
         margin-bottom: 0;
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
     }
     
     #typing-text {
         margin-bottom: 5px;
         min-height: auto;
+        font-size: clamp(0.8rem, 2vw, 1.2rem);
     }
     
     .cards-container {
@@ -450,11 +463,33 @@
     .card {
         width: clamp(120px, 20vw, 160px);
         padding: 8px;
+        margin: 0;
+    }
+    
+    .card-logo {
+        width: clamp(25px, 5vw, 40px);
+        margin-bottom: 5px;
+    }
+    
+    .card h2 {
+        font-size: clamp(0.9rem, 2vw, 1.1rem);
+        margin: 3px 0;
+    }
+    
+    .card p {
+        font-size: clamp(0.7rem, 1.5vw, 0.9rem);
+        margin: 0;
     }
     
     .buttons-container {
         flex-direction: row;
         margin-top: 5px;
+    }
+    
+    #start-button, #language-button {
+        padding: 6px 12px;
+        font-size: clamp(0.8rem, 1.8vw, 1rem);
+        width: clamp(160px, 30vw, 200px);
     }
 }
 
