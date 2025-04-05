@@ -8,9 +8,10 @@ const PORT = process.env.PORT || 3000;
 
 // CORS configuration - Update to allow only Vercel frontend
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'https://playgroundcode.vercel.app',
+    origin: ['https://trial-playground.vercel.app', 'https://playgroundcode.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }));
 
 app.use(express.json());
