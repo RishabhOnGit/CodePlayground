@@ -135,7 +135,13 @@ function createAnimatedElements(customSymbols) {
 
 // Typing Effect with Blinking Cursor
 const typingText = document.getElementById("typing-text");
-const textArray = ["Write, Edit, & Execute Code!", "A Code Editor for Web Developers.", "Your Playground for Creativity!"];
+const textArray = [
+    "✨ Where Code Comes to Life!",
+    "🚀 Your Ultimate Coding Playground",
+    "💡 Code, Create, Conquer!",
+    "🌟 Where Ideas Become Reality",
+    "⚡️ Fast, Fun, and Free Coding!"
+];
 let textIndex = 0;
 let charIndex = 0;
 let typingSpeed = 100;
@@ -175,6 +181,10 @@ function setupCursor() {
     const wrapper = document.getElementById('typing-text-wrapper');
     if (!wrapper) return;
     
+    // Remove any existing cursors first
+    const existingCursors = wrapper.querySelectorAll('.typing-cursor');
+    existingCursors.forEach(cursor => cursor.remove());
+    
     // Remove the border-right style from the element itself
     typingText.style.borderRight = 'none';
     
@@ -185,6 +195,9 @@ function setupCursor() {
     cursor.style.marginLeft = '2px';
     cursor.style.fontWeight = '300';
     cursor.style.animation = 'blink-caret 0.8s infinite';
+    cursor.style.verticalAlign = 'middle';  // Align cursor vertically
+    cursor.style.lineHeight = '1';
+    cursor.style.display = 'inline-block';
     
     // Insert the cursor after the typing text element
     wrapper.appendChild(cursor);
@@ -197,16 +210,19 @@ function setupCursor() {
             50% { opacity: 0; }
         }
         #typing-text {
-            display: inline;
+            display: inline-block;
             white-space: nowrap;
             overflow: hidden;
             min-height: 1.6em;
-            vertical-align: bottom;
+            vertical-align: middle;
+            line-height: normal;
         }
         #typing-text-wrapper {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
             text-align: center;
             min-width: 280px;
+            line-height: normal;
         }
         .typing-cursor {
             display: inline-block;
@@ -214,6 +230,7 @@ function setupCursor() {
             font-size: 1.2em;
             line-height: 1;
             animation: blink-caret 0.8s infinite;
+            vertical-align: middle;
         }
     `;
     document.head.appendChild(style);
@@ -306,16 +323,6 @@ function clearTypingEffects() {
     }
 }
 
-// Replace the old typing effect function with a no-op to avoid conflicts
-function typingEffect() { 
-    // This is the old typing effect function that is called elsewhere
-    // Replace it with a no-op that delegates to our new implementation
-    if (document.getElementById("typing-text")) {
-        clearTypingEffects();
-        initTypingEffect();
-    }
-}
-
 // Add touch support for mobile devices
 document.addEventListener('DOMContentLoaded', function() {
     const cards = document.querySelectorAll('.card');
@@ -400,22 +407,6 @@ function checkIfAdmin() {
     } else {
         console.warn("Firebase not available for admin check");
     }
-}
-
-// Typing effect for the slogan
-function typingEffect() {
-    const text = "Create, experiment, and share your code in real-time.";
-    const typingElement = document.getElementById("typing-text");
-    let i = 0;
-    
-    const typing = setInterval(function() {
-        if (i < text.length) {
-            typingElement.innerHTML += text.charAt(i);
-            i++;
-        } else {
-            clearInterval(typing);
-        }
-    }, 50);
 }
 
 // Handle navigation
@@ -528,8 +519,9 @@ function trackPageView() {
 
 // Initialize everything when DOM is loaded
 document.addEventListener("DOMContentLoaded", function() {
-    // Initialize typing effect
-    typingEffect();
+    // Initialize typing effect - using the smooth implementation only
+    clearTypingEffects();
+    initTypingEffect();
     
     // Initialize navigation
     handleNavigation();
