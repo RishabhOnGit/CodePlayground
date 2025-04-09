@@ -1360,6 +1360,26 @@ function startLiveSession() {
 
 // Function to join an existing live session
 function joinLiveSession(liveSessionId) {
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('github_access_token') !== null;
+    // Get URL parameters to check if this is an admin view
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdmin = urlParams.get('admin') === 'true';
+    
+    if (!isLoggedIn && !isAdmin) {
+        // Redirect to login page
+        showNotification('Please log in to join this live session');
+        
+        // Store the session URL to redirect back after login
+        localStorage.setItem('redirect_after_login', window.location.href);
+        
+        // Redirect to home page after short delay
+        setTimeout(() => {
+            window.location.href = 'index.html?login=required';
+        }, 2000);
+        return;
+    }
+    
     // Join existing live session
     sessionId = liveSessionId;
     lastUpdatedBy = 'guest';

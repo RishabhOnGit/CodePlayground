@@ -1337,6 +1337,23 @@ window.addEventListener('DOMContentLoaded', () => {
   const liveSessionId = urlParams.get('live');
   
   if (liveSessionId) {
+    // Check if user is logged in
+    const isLoggedIn = localStorage.getItem('github_access_token') !== null;
+    if (!isLoggedIn && !urlParams.get('admin')) {
+      // Redirect to login page with return URL
+      const currentUrl = encodeURIComponent(window.location.href);
+      showNotification('Please log in to join this live session');
+      
+      // Store the session URL to redirect back after login
+      localStorage.setItem('redirect_after_login', window.location.href);
+      
+      // Redirect to home page after short delay
+      setTimeout(() => {
+        window.location.href = 'index.html?login=required';
+      }, 2000);
+      return;
+    }
+    
     // Join existing live session
     sessionId = liveSessionId;
     lastUpdatedBy = 'guest';

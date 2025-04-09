@@ -277,6 +277,23 @@
                 linkElem.className = 'return-link';
                 document.querySelector('.loading').appendChild(linkElem);
                 
+                // Check if there's a redirect URL saved from a live session join attempt
+                const redirectUrl = localStorage.getItem('redirect_after_login');
+                if (redirectUrl) {
+                    // Show message about redirection
+                    const redirectMsg = document.createElement('div');
+                    redirectMsg.className = 'message';
+                    redirectMsg.textContent = 'Redirecting you to the live session...';
+                    document.querySelector('.loading').appendChild(redirectMsg);
+                    
+                    // Clear the stored redirect URL
+                    localStorage.removeItem('redirect_after_login');
+                    
+                    // Redirect after a short delay
+                    setTimeout(() => {
+                        window.location.href = redirectUrl;
+                    }, 2000);
+                }
             } catch (error) {
                 console.error('Authentication error:', error);
                 

@@ -1,6 +1,15 @@
 // GitHub Authentication Logic
 // Check if user is already authenticated with GitHub
 document.addEventListener('DOMContentLoaded', function() {
+    // Check for login required parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const loginRequired = urlParams.get('login') === 'required';
+    
+    if (loginRequired) {
+        // Show a more prominent login message
+        showLoginRequiredMessage();
+    }
+    
     checkGitHubAuth();
 
     // Add event listener for GitHub login button
@@ -532,3 +541,90 @@ document.addEventListener("DOMContentLoaded", function() {
     // Track page view if applicable
     trackPageView();
 });
+
+// Function to show a prominent login message
+function showLoginRequiredMessage() {
+    // Check if the message already exists
+    if (document.querySelector('.login-required-message')) {
+        return;
+    }
+    
+    // Create a message element
+    const messageContainer = document.createElement('div');
+    messageContainer.className = 'login-required-message';
+    messageContainer.style.position = 'fixed';
+    messageContainer.style.top = '80px';
+    messageContainer.style.left = '50%';
+    messageContainer.style.transform = 'translateX(-50%)';
+    messageContainer.style.backgroundColor = 'rgba(255, 87, 34, 0.9)';
+    messageContainer.style.color = 'white';
+    messageContainer.style.padding = '15px 20px';
+    messageContainer.style.borderRadius = '8px';
+    messageContainer.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+    messageContainer.style.zIndex = '1000';
+    messageContainer.style.textAlign = 'center';
+    messageContainer.style.maxWidth = '90%';
+    messageContainer.style.animation = 'fadeInDown 0.5s forwards';
+    
+    // Add message content
+    messageContainer.innerHTML = `
+        <div style="font-size: 18px; margin-bottom: 5px;"><i class="fas fa-lock"></i> Login Required</div>
+        <div style="font-size: 14px; margin-bottom: 10px;">You need to log in with GitHub to join live sessions</div>
+        <button id="login-prompt-button" style="background: white; color: #ff5722; border: none; padding: 5px 15px; 
+            border-radius: 4px; cursor: pointer; font-weight: bold;">Login Now</button>
+    `;
+    
+    // Add to document
+    document.body.appendChild(messageContainer);
+    
+    // Add click handler for the login button in the message
+    document.getElementById('login-prompt-button').addEventListener('click', function() {
+        initiateGithubLogin();
+    });
+    
+    // Add a style for the animation
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (messageContainer.parentNode) {
+            messageContainer.style.animation = 'fadeOutUp 0.5s forwards';
+            
+            // Add fadeOut animation
+            const fadeOutStyle = document.createElement('style');
+            fadeOutStyle.innerHTML = `
+                @keyframes fadeOutUp {
+                    from {
+                        opacity: 1;
+                        transform: translate(-50%, 0);
+                    }
+                    to {
+                        opacity: 0;
+                        transform: translate(-50%, -20px);
+                    }
+                }
+            `;
+            document.head.appendChild(fadeOutStyle);
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                if (messageContainer.parentNode) {
+                    messageContainer.parentNode.removeChild(messageContainer);
+                }
+            }, 500);
+        }
+    }, 10000);
+}
