@@ -405,6 +405,253 @@
             70% { box-shadow: 0 0 0 10px rgba(255, 87, 34, 0); }
             100% { box-shadow: 0 0 0 0 rgba(255, 87, 34, 0); }
         }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(3px);
+        }
+        
+        .modal-content {
+            background-color: var(--secondary-bg);
+            margin: 5% auto;
+            width: 90%;
+            max-width: 800px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            animation: modalFadeIn 0.3s ease;
+        }
+        
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .modal-header h2 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-close {
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            transition: color 0.2s;
+        }
+        
+        .modal-close:hover {
+            color: #ff5722;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .session-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .info-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        
+        .info-label {
+            font-weight: 500;
+            color: #999;
+            width: 100px;
+            flex-shrink: 0;
+        }
+        
+        .info-value {
+            word-break: break-word;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 20px 0;
+        }
+        
+        .participants-section h3, .session-content h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Participant cards */
+        .participants-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .participant-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .participant-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .participant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--border-color);
+        }
+        
+        .participant-info {
+            flex: 1;
+        }
+        
+        .participant-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .participant-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: #999;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .status-dot.active {
+            background-color: #17c964;
+            box-shadow: 0 0 5px rgba(23, 201, 100, 0.5);
+        }
+        
+        .status-dot.left {
+            background-color: #ec994b;
+        }
+        
+        .content-preview {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            max-height: 200px;
+            overflow: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        .action-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        
+        .action-button.primary {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .action-button.primary:hover {
+            background-color: #0550ae;
+        }
+        
+        .action-button.danger {
+            background-color: rgba(244, 67, 54, 0.15);
+            color: #f44336;
+        }
+        
+        .action-button.danger:hover {
+            background-color: rgba(244, 67, 54, 0.25);
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #999;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive modal */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .session-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .participants-list {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-actions {
+                flex-direction: column;
+            }
+            
+            .action-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -558,6 +805,7 @@
                                     <th>Projects</th>
                                     <th>Last Active</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -585,6 +833,7 @@
                                     <th>Participants</th>
                                     <th>Started</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -611,6 +860,7 @@
                                     <th>Type</th>
                                     <th>Last Modified</th>
                                     <th>Status</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -651,8 +901,76 @@
     </main>
     
     <!-- Mobile Sidebar Toggle -->
-    <div class="sidebar-toggle" id="sidebar-toggle" style="display: none;">
+    <div class="sidebar-toggle" id="sidebar-toggle">
         <i class="fas fa-bars"></i>
+    </div>
+    
+    <!-- Session Details Modal -->
+    <div id="session-details-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-code-branch"></i> Session Details</h2>
+                <span class="modal-close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="session-info">
+                    <div class="info-row">
+                        <div class="info-label">Session ID:</div>
+                        <div class="info-value" id="modal-session-id">Loading...</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Created By:</div>
+                        <div class="info-value" id="modal-creator">Loading...</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Type:</div>
+                        <div class="info-value" id="modal-type">Loading...</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Started:</div>
+                        <div class="info-value" id="modal-started">Loading...</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Status:</div>
+                        <div class="info-value" id="modal-status">Loading...</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Duration:</div>
+                        <div class="info-value" id="modal-duration">Loading...</div>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="participants-section">
+                    <h3><i class="fas fa-users"></i> Participants</h3>
+                    <div class="participants-list" id="modal-participants">
+                        <div class="loading">Loading participants...</div>
+                    </div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="session-content">
+                    <h3><i class="fas fa-code"></i> Session Content</h3>
+                    <div class="content-preview" id="modal-content">
+                        <div class="loading">Loading content preview...</div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button id="terminate-session" class="action-button danger">
+                        <i class="fas fa-times-circle"></i> Terminate Session
+                    </button>
+                    <button id="join-session" class="action-button primary">
+                        <i class="fas fa-eye"></i> Monitor Session
+                    </button>
+                    <button id="delete-session" class="action-button danger">
+                        <i class="fas fa-trash-alt"></i> Permanently Delete
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>

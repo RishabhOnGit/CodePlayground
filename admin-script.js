@@ -367,33 +367,85 @@ function loadUsersData() {
                 const isActive = user.lastActive && (Date.now() - user.lastActive < 24 * 60 * 60 * 1000);
                 const statusClass = isActive ? 'status-active' : 'status-inactive';
                 statusCell.innerHTML = `<span class="status-badge ${statusClass}">${isActive ? 'Active' : 'Inactive'}</span>`;
+                
+                // Actions
+                const actionsCell = row.insertCell();
+                actionsCell.style.textAlign = 'right';
+                
+                // Create delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-button danger';
+                deleteBtn.style.padding = '4px 8px';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteBtn.title = 'Delete User';
+                deleteBtn.setAttribute('data-user-id', user.id);
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent row click event
+                    deleteUser(user.id, user.name);
+                });
+                
+                actionsCell.appendChild(deleteBtn);
             });
         } else {
             // No users
             const row = usersTable.insertRow();
             const cell = row.insertCell();
-            cell.colSpan = 5;
+            cell.colSpan = 6; // Updated to account for the new actions column
             cell.textContent = 'No users found';
             cell.style.textAlign = 'center';
         }
     });
 }
 
+// Delete a user
+function deleteUser(userId, userName) {
+    if (!userId) return;
+    
+    const confirmDelete = confirm(`Are you sure you want to permanently DELETE the user "${userName || userId}" and all their data? This action cannot be undone.`);
+    if (!confirmDelete) return;
+    
+    // Start deletion process
+    let deleteOperations = [];
+    
+    // 1. Delete user from users collection
+    deleteOperations.push(getFirebaseDatabase().ref(`users/${userId}`).remove());
+    
+    // 2. Find and delete user's projects
+    getFirebaseDatabase().ref('projects').orderByChild('ownerId').equalTo(userId).once('value', snapshot => {
+        if (snapshot.exists()) {
+            snapshot.forEach(childSnapshot => {
+                const projectId = childSnapshot.key;
+                deleteOperations.push(getFirebaseDatabase().ref(`projects/${projectId}`).remove());
+                deleteOperations.push(getFirebaseDatabase().ref(`projectFiles/${projectId}`).remove());
+            });
+        }
+    }).then(() => {
+        // 3. Execute all delete operations
+        Promise.all(deleteOperations)
+            .then(() => {
+                console.log(`User ${userId} and their data successfully deleted`);
+                showNotification('User deleted successfully');
+                // Reload users data to update the table
+                loadUsersData();
+            })
+            .catch(error => {
+                console.error('Error deleting user:', error);
+                showNotification('Error deleting user: ' + error.message);
+            });
+    }).catch(error => {
+        console.error('Error finding user projects:', error);
+        showNotification('Error finding user projects: ' + error.message);
+    });
+}
+
 // Load live sessions data
 function loadSessionsData() {
     const sessionsTable = document.getElementById('sessions-table').getElementsByTagName('tbody')[0];
-    sessionsTable.innerHTML = '';
+    sessionsTable.innerHTML = '<tr><td colspan="7" class="loading">Loading sessions data...</td></tr>';
     
-    // Add a loading indicator
-    const loadingRow = sessionsTable.insertRow();
-    const loadingCell = loadingRow.insertCell();
-    loadingCell.colSpan = 6;
-    loadingCell.textContent = 'Loading sessions...';
-    loadingCell.style.textAlign = 'center';
-    
-    // Query for both active and completed sessions
     getFirebaseDatabase().ref('liveSessions').once('value', snapshot => {
-        // Remove loading indicator
+        // Clear the table
         sessionsTable.innerHTML = '';
         
         if (snapshot.exists()) {
@@ -411,6 +463,13 @@ function loadSessionsData() {
             // Add to table
             sessions.forEach(session => {
                 const row = sessionsTable.insertRow();
+                row.className = 'session-row';
+                row.setAttribute('data-session-id', session.id);
+                
+                // Make the row clickable to show details
+                row.addEventListener('click', () => {
+                    showSessionDetails(session.id);
+                });
                 
                 // Session ID
                 const idCell = row.insertCell();
@@ -434,7 +493,14 @@ function loadSessionsData() {
                 // Participants
                 const participantsCell = row.insertCell();
                 const participantCount = session.participants ? Object.keys(session.participants).length : 0;
-                participantsCell.textContent = participantCount;
+                const activeParticipants = session.participants ? Object.values(session.participants).filter(p => p.status !== 'left').length : 0;
+                
+                // Show total participants and active participants
+                participantsCell.innerHTML = `
+                    <div title="${activeParticipants} active of ${participantCount} total">
+                        <span style="color: #17c964;">${activeParticipants}</span>/${participantCount}
+                    </div>
+                `;
                 
                 // Started
                 const startedCell = row.insertCell();
@@ -444,12 +510,83 @@ function loadSessionsData() {
                 const statusCell = row.insertCell();
                 const statusClass = session.status === 'active' ? 'status-active' : 'status-inactive';
                 statusCell.innerHTML = `<span class="status-badge ${statusClass}">${session.status || 'Unknown'}</span>`;
+                
+                // Actions
+                const actionsCell = row.insertCell();
+                actionsCell.style.textAlign = 'right';
+                
+                // Create delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-button danger';
+                deleteBtn.style.padding = '4px 8px';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteBtn.title = 'Delete Session';
+                deleteBtn.setAttribute('data-session-id', session.id);
+                deleteBtn.setAttribute('data-session-type', session.type);
+                
+                // Add event listener for delete button
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent row click event
+                    
+                    // Directly delete the session without opening modal
+                    const sessionId = this.getAttribute('data-session-id');
+                    const sessionType = this.getAttribute('data-session-type');
+                    
+                    const confirmDelete = confirm('Are you sure you want to permanently DELETE this session? This action cannot be undone.');
+                    if (!confirmDelete) return;
+                    
+                    // Path to delete based on session type
+                    let sessionPath = '';
+                    if (sessionType === 'Web Playground') {
+                        sessionPath = `sessions/${sessionId}`;
+                    } else if (sessionType === 'Language Playground') {
+                        sessionPath = `languageSessions/${sessionId}`;
+                    }
+                    
+                    // Start deletion operations
+                    let deleteOperations = [];
+                    
+                    // 1. Delete from liveSessions collection
+                    const liveSessionRef = getFirebaseDatabase().ref(`liveSessions/${sessionId}`);
+                    deleteOperations.push(liveSessionRef.remove());
+                    
+                    // 2. Delete from type-specific collection if applicable
+                    if (sessionPath) {
+                        const typeSessionRef = getFirebaseDatabase().ref(sessionPath);
+                        deleteOperations.push(typeSessionRef.remove());
+                    }
+                    
+                    // Execute all delete operations
+                    Promise.all(deleteOperations)
+                        .then(() => {
+                            console.log(`Session ${sessionId} successfully deleted`);
+                            showNotification('Session deleted successfully');
+                            // Reload sessions data to update the table
+                            loadSessionsData();
+                        })
+                        .catch(error => {
+                            console.error('Error deleting session:', error);
+                            showNotification('Error deleting session: ' + error.message);
+                        });
+                });
+                
+                actionsCell.appendChild(deleteBtn);
+                
+                // Add hover style
+                row.style.cursor = 'pointer';
+                row.addEventListener('mouseover', () => {
+                    row.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                });
+                row.addEventListener('mouseout', () => {
+                    row.style.backgroundColor = '';
+                });
             });
         } else {
             // No sessions
             const row = sessionsTable.insertRow();
             const cell = row.insertCell();
-            cell.colSpan = 6;
+            cell.colSpan = 7; // Updated to account for the new actions column
             cell.textContent = 'No live sessions found';
             cell.style.textAlign = 'center';
         }
@@ -458,10 +595,327 @@ function loadSessionsData() {
         sessionsTable.innerHTML = '';
         const row = sessionsTable.insertRow();
         const cell = row.insertCell();
-        cell.colSpan = 6;
+        cell.colSpan = 7; // Updated to account for the new actions column
         cell.textContent = 'Error loading sessions data';
         cell.style.textAlign = 'center';
     });
+    
+    // Set up modal close handler
+    document.querySelector('.modal-close').addEventListener('click', hideSessionDetailsModal);
+    
+    // Set up terminate and monitor button handlers
+    document.getElementById('terminate-session').addEventListener('click', terminateSession);
+    document.getElementById('join-session').addEventListener('click', monitorSession);
+    document.getElementById('delete-session').addEventListener('click', deleteSession);
+}
+
+// Show session details modal
+function showSessionDetails(sessionId) {
+    // Get session data
+    getFirebaseDatabase().ref(`liveSessions/${sessionId}`).once('value', snapshot => {
+        const session = snapshot.val();
+        if (!session) {
+            showNotification('Session not found');
+            return;
+        }
+        
+        // Update modal with session data
+        document.getElementById('modal-session-id').textContent = sessionId;
+        
+        // Creator info
+        document.getElementById('modal-creator').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <img src="${session.creatorAvatar || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'}" 
+                    alt="${session.creatorName || 'Unknown'}" style="width: 24px; height: 24px; border-radius: 50%;">
+                ${session.creatorName || 'Unknown'}
+            </div>
+        `;
+        
+        // Type with language if available
+        let typeDisplay = session.type || 'Unknown';
+        if (session.language) {
+            typeDisplay += ` (${session.language})`;
+        }
+        document.getElementById('modal-type').textContent = typeDisplay;
+        
+        // Start time
+        document.getElementById('modal-started').textContent = session.startTime ? formatTimestamp(session.startTime) : 'Unknown';
+        
+        // Status with color
+        const statusClass = session.status === 'active' ? 'status-active' : 'status-inactive';
+        document.getElementById('modal-status').innerHTML = `<span class="status-badge ${statusClass}">${session.status || 'Unknown'}</span>`;
+        
+        // Duration
+        const startTime = session.startTime || Date.now();
+        const endTime = session.endTime || (session.status === 'active' ? Date.now() : startTime);
+        const durationMs = endTime - startTime;
+        const durationText = formatDuration(durationMs);
+        document.getElementById('modal-duration').textContent = durationText;
+        
+        // Participants list
+        const participantsContainer = document.getElementById('modal-participants');
+        participantsContainer.innerHTML = '';
+        
+        if (session.participants && Object.keys(session.participants).length > 0) {
+            Object.entries(session.participants).forEach(([userId, userData]) => {
+                const participantCard = document.createElement('div');
+                participantCard.className = 'participant-card';
+                
+                const statusClass = userData.status === 'active' ? 'active' : 'left';
+                const joinTime = userData.joinedAt ? formatTimestamp(userData.joinedAt) : 'Unknown';
+                const leftTime = userData.leftAt ? formatTimestamp(userData.leftAt) : '';
+                
+                participantCard.innerHTML = `
+                    <img class="participant-avatar" src="${userData.avatar || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png'}" alt="${userData.name}">
+                    <div class="participant-info">
+                        <div class="participant-name">${userData.name}</div>
+                        <div class="participant-status">
+                            <span class="status-dot ${statusClass}"></span>
+                            ${userData.role === 'host' ? 'Host' : 'Guest'} • ${userData.status}
+                        </div>
+                        <div class="participant-join-time" style="font-size: 0.8rem; color: #999; margin-top: 3px;">
+                            Joined: ${joinTime}
+                            ${userData.leftAt ? `<br>Left: ${leftTime}` : ''}
+                        </div>
+                    </div>
+                `;
+                
+                participantsContainer.appendChild(participantCard);
+            });
+        } else {
+            participantsContainer.innerHTML = '<div class="loading">No participants found</div>';
+        }
+        
+        // Content preview - get from the appropriate path based on type
+        const contentContainer = document.getElementById('modal-content');
+        contentContainer.innerHTML = '<div class="loading">Loading content preview...</div>';
+        
+        let contentPath = '';
+        if (session.type === 'Web Playground') {
+            contentPath = `sessions/${sessionId}`;
+        } else if (session.type === 'Language Playground') {
+            contentPath = `languageSessions/${sessionId}`;
+        }
+        
+        if (contentPath) {
+            getFirebaseDatabase().ref(contentPath).once('value', contentSnapshot => {
+                if (contentSnapshot.exists()) {
+                    const content = contentSnapshot.val();
+                    let previewHtml = '';
+                    
+                    if (session.type === 'Web Playground') {
+                        // For web playground, show HTML, CSS, JS
+                        previewHtml = `
+                            <div style="margin-bottom: 10px;">
+                                <strong>HTML:</strong>
+                                <pre style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; max-height: 100px; overflow-y: auto;">${content.html ? truncateText(content.html, 200) : 'Empty'}</pre>
+                            </div>
+                            <div style="margin-bottom: 10px;">
+                                <strong>CSS:</strong>
+                                <pre style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; max-height: 100px; overflow-y: auto;">${content.css ? truncateText(content.css, 200) : 'Empty'}</pre>
+                            </div>
+                            <div>
+                                <strong>JavaScript:</strong>
+                                <pre style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; max-height: 100px; overflow-y: auto;">${content.js ? truncateText(content.js, 200) : 'Empty'}</pre>
+                            </div>
+                        `;
+                    } else if (session.type === 'Language Playground') {
+                        // For language playground, show code and language
+                        previewHtml = `
+                            <div style="margin-bottom: 10px;">
+                                <strong>${content.language || 'Code'}:</strong>
+                                <pre style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; max-height: 150px; overflow-y: auto;">${content.code ? truncateText(content.code, 500) : 'Empty'}</pre>
+                            </div>
+                        `;
+                    } else {
+                        previewHtml = '<div>Content preview not available for this session type</div>';
+                    }
+                    
+                    contentContainer.innerHTML = previewHtml;
+                } else {
+                    contentContainer.innerHTML = '<div class="loading">No content available</div>';
+                }
+            }).catch(error => {
+                console.error('Error loading session content:', error);
+                contentContainer.innerHTML = '<div class="loading">Error loading content</div>';
+            });
+        } else {
+            contentContainer.innerHTML = '<div class="loading">Content preview not available</div>';
+        }
+        
+        // Update button states based on session status
+        const terminateButton = document.getElementById('terminate-session');
+        const monitorButton = document.getElementById('join-session');
+        const deleteButton = document.getElementById('delete-session');
+        
+        if (session.status === 'active') {
+            terminateButton.style.display = 'flex';
+            monitorButton.style.display = 'flex';
+            deleteButton.style.display = 'flex';
+        } else {
+            terminateButton.style.display = 'none';
+            monitorButton.style.display = 'none';
+            deleteButton.style.display = 'flex';
+        }
+        
+        // Set attributes for button handlers
+        terminateButton.setAttribute('data-session-id', sessionId);
+        monitorButton.setAttribute('data-session-id', sessionId);
+        monitorButton.setAttribute('data-session-type', session.type);
+        deleteButton.setAttribute('data-session-id', sessionId);
+        deleteButton.setAttribute('data-session-type', session.type);
+        
+        // Show the modal
+        document.getElementById('session-details-modal').style.display = 'flex';
+    });
+}
+
+// Hide session details modal
+function hideSessionDetailsModal() {
+    document.getElementById('session-details-modal').style.display = 'none';
+}
+
+// Terminate session
+function terminateSession() {
+    const sessionId = this.getAttribute('data-session-id');
+    if (!sessionId) return;
+    
+    const confirmTerminate = confirm('Are you sure you want to terminate this session? All participants will be disconnected.');
+    if (!confirmTerminate) return;
+    
+    // Get session type to determine which path to update
+    getFirebaseDatabase().ref(`liveSessions/${sessionId}`).once('value', snapshot => {
+        const session = snapshot.val();
+        if (!session) {
+            showNotification('Session not found');
+            return;
+        }
+        
+        // Path to update based on session type
+        let sessionPath = '';
+        if (session.type === 'Web Playground') {
+            sessionPath = `sessions/${sessionId}`;
+        } else if (session.type === 'Language Playground') {
+            sessionPath = `languageSessions/${sessionId}`;
+        }
+        
+        if (sessionPath) {
+            // Mark the session as inactive in the session-specific location
+            getFirebaseDatabase().ref(sessionPath).update({
+                active: false,
+                endedAt: Date.now(),
+                terminatedBy: 'admin'
+            }).then(() => {
+                console.log(`Session ${sessionId} marked as inactive in ${sessionPath}`);
+            }).catch(error => {
+                console.error(`Error updating session status in ${sessionPath}:`, error);
+            });
+        }
+        
+        // Update the session in liveSessions collection
+        getFirebaseDatabase().ref(`liveSessions/${sessionId}`).update({
+            status: 'completed',
+            endTime: Date.now(),
+            terminatedBy: 'admin'
+        }).then(() => {
+            showNotification('Session terminated successfully');
+            hideSessionDetailsModal();
+            // Reload sessions data to update the table
+            loadSessionsData();
+        }).catch(error => {
+            console.error('Error terminating session:', error);
+            showNotification('Error terminating session: ' + error.message);
+        });
+    });
+}
+
+// Delete session permanently
+function deleteSession() {
+    const sessionId = this.getAttribute('data-session-id');
+    const sessionType = this.getAttribute('data-session-type');
+    if (!sessionId) return;
+    
+    const confirmDelete = confirm('Are you sure you want to permanently DELETE this session? This action cannot be undone.');
+    if (!confirmDelete) return;
+    
+    // Path to delete based on session type
+    let sessionPath = '';
+    if (sessionType === 'Web Playground') {
+        sessionPath = `sessions/${sessionId}`;
+    } else if (sessionType === 'Language Playground') {
+        sessionPath = `languageSessions/${sessionId}`;
+    }
+    
+    // Start deletion operations
+    let deleteOperations = [];
+    
+    // 1. Delete from liveSessions collection
+    const liveSessionRef = getFirebaseDatabase().ref(`liveSessions/${sessionId}`);
+    deleteOperations.push(liveSessionRef.remove());
+    
+    // 2. Delete from type-specific collection if applicable
+    if (sessionPath) {
+        const typeSessionRef = getFirebaseDatabase().ref(sessionPath);
+        deleteOperations.push(typeSessionRef.remove());
+    }
+    
+    // Execute all delete operations
+    Promise.all(deleteOperations)
+        .then(() => {
+            console.log(`Session ${sessionId} successfully deleted`);
+            showNotification('Session deleted successfully');
+            hideSessionDetailsModal();
+            // Reload sessions data to update the table
+            loadSessionsData();
+        })
+        .catch(error => {
+            console.error('Error deleting session:', error);
+            showNotification('Error deleting session: ' + error.message);
+        });
+}
+
+// Monitor session
+function monitorSession() {
+    const sessionId = this.getAttribute('data-session-id');
+    const sessionType = this.getAttribute('data-session-type');
+    if (!sessionId || !sessionType) return;
+    
+    let url = '';
+    if (sessionType === 'Web Playground') {
+        url = `playground.html?live=${sessionId}&admin=true`;
+    } else if (sessionType === 'Language Playground') {
+        url = `language.html?live=${sessionId}&admin=true`;
+    } else {
+        showNotification('Cannot monitor this session type');
+        return;
+    }
+    
+    // Open in a new tab
+    window.open(url, '_blank');
+}
+
+// Format duration from milliseconds
+function formatDuration(ms) {
+    if (!ms) return 'Unknown';
+    
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    
+    if (hours > 0) {
+        return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds % 60}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}
+
+// Truncate text for preview
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 // Load projects data
@@ -512,16 +966,65 @@ function loadProjectsData() {
                 const statusCell = row.insertCell();
                 const statusClass = project.status === 'public' ? 'status-active' : 'status-inactive';
                 statusCell.innerHTML = `<span class="status-badge ${statusClass}">${project.status || 'private'}</span>`;
+                
+                // Actions
+                const actionsCell = row.insertCell();
+                actionsCell.style.textAlign = 'right';
+                
+                // Create delete button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-button danger';
+                deleteBtn.style.padding = '4px 8px';
+                deleteBtn.style.fontSize = '0.8rem';
+                deleteBtn.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                deleteBtn.title = 'Delete Project';
+                deleteBtn.setAttribute('data-project-id', project.id);
+                deleteBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent row click event
+                    deleteProject(project.id, project.name);
+                });
+                
+                actionsCell.appendChild(deleteBtn);
             });
         } else {
             // No projects
             const row = projectsTable.insertRow();
             const cell = row.insertCell();
-            cell.colSpan = 5;
+            cell.colSpan = 6; // Updated to account for the new actions column
             cell.textContent = 'No projects found';
             cell.style.textAlign = 'center';
         }
     });
+}
+
+// Delete a project
+function deleteProject(projectId, projectName) {
+    if (!projectId) return;
+    
+    const confirmDelete = confirm(`Are you sure you want to permanently DELETE the project "${projectName || projectId}"? This action cannot be undone.`);
+    if (!confirmDelete) return;
+    
+    getFirebaseDatabase().ref(`projects/${projectId}`).remove()
+        .then(() => {
+            console.log(`Project ${projectId} successfully deleted`);
+            showNotification('Project deleted successfully');
+            
+            // Also delete associated files if applicable
+            getFirebaseDatabase().ref(`projectFiles/${projectId}`).remove()
+                .then(() => {
+                    console.log(`Project files for ${projectId} also deleted`);
+                })
+                .catch(error => {
+                    console.error('Error deleting project files:', error);
+                });
+                
+            // Reload projects data to update the table
+            loadProjectsData();
+        })
+        .catch(error => {
+            console.error('Error deleting project:', error);
+            showNotification('Error deleting project: ' + error.message);
+        });
 }
 
 // Load settings
