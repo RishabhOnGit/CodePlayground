@@ -918,6 +918,52 @@ let lastUpdatedBy = null;
 let isProcessingRemoteChange = false;
 let isSessionHost = false; // Track if this user is the host of the session
 
+// Global variables for participants tracking
+let sessionParticipants = {};
+
+// Function to update the participants UI
+function updateParticipantsUI() {
+  if (!isLiveSession) return;
+  
+  const participantCount = document.getElementById('participant-count');
+  const participantsList = document.getElementById('participants-list');
+  
+  // Update the count
+  const count = Object.keys(sessionParticipants).length;
+  participantCount.textContent = count;
+  
+  // Clear the participants list
+  participantsList.innerHTML = '';
+  
+  // Add each participant to the list
+  Object.entries(sessionParticipants).forEach(([userId, userData]) => {
+    // Skip participants who have left
+    if (userData.status === 'left') return;
+    
+    const participantItem = document.createElement('div');
+    participantItem.className = 'participant-item';
+    
+    const avatar = document.createElement('img');
+    avatar.className = 'participant-avatar';
+    avatar.src = userData.avatar || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+    avatar.alt = userData.name || 'Anonymous';
+    
+    const name = document.createElement('div');
+    name.className = 'participant-name';
+    name.textContent = userData.name || 'Anonymous';
+    
+    const role = document.createElement('div');
+    role.className = `participant-role ${userData.role}`;
+    role.textContent = userData.role === 'host' ? 'Host' : 'Guest';
+    
+    participantItem.appendChild(avatar);
+    participantItem.appendChild(name);
+    participantItem.appendChild(role);
+    
+    participantsList.appendChild(participantItem);
+  });
+}
+
 // Start a live collaboration session
 function startLiveSession() {
   // Debug Firebase initialization
@@ -959,6 +1005,17 @@ function startLiveSession() {
     // Create the database variable if it doesn't exist
     const database = firebase.database();
     
+    // Initialize the host as the first participant
+    sessionParticipants = {
+      [userName]: {
+        name: userName,
+        avatar: userAvatar,
+        role: 'host',
+        joinedAt: Date.now(),
+        status: 'active'
+      }
+    };
+    
     // Also create a record in the liveSessions collection for admin panel
     const liveSessionData = {
       id: sessionId,
@@ -967,14 +1024,7 @@ function startLiveSession() {
       type: 'Web Playground',
       startTime: Date.now(),
       status: 'active',
-      participants: {
-        [userName]: {
-          name: userName,
-          avatar: userAvatar,
-          role: 'host',
-          joinedAt: Date.now()
-        }
-      }
+      participants: sessionParticipants
     };
     
     // Save to liveSessions for admin panel
@@ -990,6 +1040,9 @@ function startLiveSession() {
     
     // Set up local change listeners
     setupLocalChangeListeners();
+    
+    // Update participants UI
+    updateParticipantsUI();
     
     // Generate and copy share link
     const shareUrl = `${window.location.origin}${window.location.pathname}?live=${sessionId}`;
@@ -1070,8 +1123,8 @@ function disconnectFromSession() {
   const userName = localStorage.getItem('github_user_name') || 'Anonymous';
   const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
   
-  // If we're a guest, update the participants list in the admin panel
-  if (!isSessionHost && firebase && sessionId) {
+  // If we're in a session, update the participants list in the admin panel
+  if (firebase && sessionId) {
     // Create database reference
     const database = firebase.database();
     
@@ -1083,6 +1136,13 @@ function disconnectFromSession() {
       console.log("Updated participant status to left");
       // Log the activity
       logActivity(userName, userAvatar, 'Left live session', 'Web Playground', 'completed');
+      
+      // Update local participant data
+      if (sessionParticipants[userName]) {
+        sessionParticipants[userName].status = 'left';
+        sessionParticipants[userName].leftAt = Date.now();
+        updateParticipantsUI();
+      }
     }).catch(err => {
       console.error("Error updating participant status:", err);
     });
@@ -1091,6 +1151,11 @@ function disconnectFromSession() {
   // Remove all listeners
   if (firebaseRef) {
     firebaseRef.off();
+  }
+  
+  // Remove Firebase participants listener
+  if (sessionId) {
+    firebase.database().ref(`liveSessions/${sessionId}/participants`).off();
   }
   
   // Remove change listeners from editors
@@ -1109,10 +1174,15 @@ function disconnectFromSession() {
   liveIndicator.classList.remove('guest');
   liveIndicator.querySelector('span').textContent = 'Live Session';
   
+  // Reset participant display
+  document.getElementById('participant-count').textContent = '0';
+  document.getElementById('participants-list').innerHTML = '';
+  
   isLiveSession = false;
   sessionId = null;
   firebaseRef = null;
   isSessionHost = false;
+  sessionParticipants = {};
   
   // Update share dropdown to remove End Live Session option
   updateShareDropdown();
@@ -1133,6 +1203,17 @@ function setupSessionMonitoring() {
       showNotification('The host ended this live session');
       disconnectFromSession();
     }
+  });
+  
+  // Listen for changes to participants
+  firebase.database().ref(`liveSessions/${sessionId}/participants`).on('value', (snapshot) => {
+    if (!snapshot.exists()) return;
+    
+    // Update the participants list
+    sessionParticipants = snapshot.val() || {};
+    
+    // Update the UI
+    updateParticipantsUI();
   });
 }
 
@@ -1298,18 +1379,24 @@ window.addEventListener('DOMContentLoaded', () => {
       const database = firebase.database();
       
       // Update participants list in liveSessions for admin panel
-      database.ref(`liveSessions/${sessionId}/participants/${userName}`).update({
+      const participantData = {
         name: userName,
         avatar: userAvatar,
         role: 'guest',
-        joinedAt: Date.now()
-      }).then(() => {
-        console.log("Added to participants list in admin panel");
-        // Log the join session activity
-        logActivity(userName, userAvatar, 'Joined live session', 'Web Playground', 'active');
-      }).catch(err => {
-        console.error("Error updating participants list:", err);
-      });
+        joinedAt: Date.now(),
+        status: 'active'
+      };
+      
+      // Add this participant to the participants list
+      database.ref(`liveSessions/${liveSessionId}/participants/${userName}`).update(participantData)
+        .then(() => {
+          console.log("Added to participants list in admin panel");
+          // Log the join session activity
+          logActivity(userName, userAvatar, 'Joined live session', 'Web Playground', 'active');
+        })
+        .catch(err => {
+          console.error("Error updating participants list:", err);
+        });
       
       // Update UI
       const shareButton = document.getElementById('share-button');

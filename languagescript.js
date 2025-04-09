@@ -29,6 +29,15 @@ let codeEditor;
 let currentLanguage = 'python';
 let selectedFileName = null;
 
+// Global variables for live collaboration
+let isLiveSession = false;
+let sessionId = null;
+let firebaseRef = null;
+let isSessionHost = false;
+let lastUpdatedBy = null;
+let isProcessingRemoteChange = false;
+let sessionParticipants = {};
+
 // Initialize CodeMirror with default Python settings
 window.addEventListener('DOMContentLoaded', function() {
     codeEditor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
@@ -84,6 +93,15 @@ window.addEventListener('DOMContentLoaded', function() {
         incrementLanguageUsage(currentLanguage);
     } else {
         console.log('Firebase SDK not available');
+    }
+    
+    // Check for live session in URL when loading the page
+    const urlParams = new URLSearchParams(window.location.search);
+    const liveSessionId = urlParams.get('live');
+    
+    if (liveSessionId) {
+        // Join existing live session
+        joinLiveSession(liveSessionId);
     }
 });
 
@@ -389,6 +407,33 @@ function initializeEventListeners() {
     window.addEventListener('resize', adjustForScreenSize);
     window.addEventListener('orientationchange', function() {
         setTimeout(adjustForScreenSize, 100);
+    });
+    
+    // Share button and dropdown options
+    const shareButton = document.getElementById('share-button');
+    const shareDropdown = document.getElementById('share-dropdown');
+    
+    shareButton.addEventListener('click', function() {
+        shareDropdown.style.display = shareDropdown.style.display === 'none' ? 'flex' : 'none';
+    });
+    
+    document.getElementById('share-copy').addEventListener('click', function() {
+        shareDropdown.style.display = 'none';
+        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(codeEditor.getValue())}`;
+        navigator.clipboard.writeText(shareUrl);
+        showNotification('Link copied to clipboard!');
+    });
+    
+    document.getElementById('share-live').addEventListener('click', function() {
+        shareDropdown.style.display = 'none';
+        startLiveSession();
+    });
+    
+    // Close share dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!shareButton.contains(event.target) && !shareDropdown.contains(event.target)) {
+            shareDropdown.style.display = 'none';
+        }
     });
 }
 
@@ -1160,4 +1205,491 @@ function logoutGitHub() {
     setTimeout(() => {
         window.location.href = 'index.html';
     }, 1000);
+}
+
+// Function to update the participants UI
+function updateParticipantsUI() {
+    if (!isLiveSession) return;
+    
+    const participantCount = document.getElementById('participant-count');
+    const participantsList = document.getElementById('participants-list');
+    
+    // Update the count
+    const count = Object.keys(sessionParticipants).length;
+    participantCount.textContent = count;
+    
+    // Clear the participants list
+    participantsList.innerHTML = '';
+    
+    // Add each participant to the list
+    Object.entries(sessionParticipants).forEach(([userId, userData]) => {
+        // Skip participants who have left
+        if (userData.status === 'left') return;
+        
+        const participantItem = document.createElement('div');
+        participantItem.className = 'participant-item';
+        
+        const avatar = document.createElement('img');
+        avatar.className = 'participant-avatar';
+        avatar.src = userData.avatar || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+        avatar.alt = userData.name || 'Anonymous';
+        
+        const name = document.createElement('div');
+        name.className = 'participant-name';
+        name.textContent = userData.name || 'Anonymous';
+        
+        const role = document.createElement('div');
+        role.className = `participant-role ${userData.role}`;
+        role.textContent = userData.role === 'host' ? 'Host' : 'Guest';
+        
+        participantItem.appendChild(avatar);
+        participantItem.appendChild(name);
+        participantItem.appendChild(role);
+        
+        participantsList.appendChild(participantItem);
+    });
+}
+
+// Function to start a live session
+function startLiveSession() {
+    // Debug Firebase initialization
+    console.log("Starting live session...");
+    if (typeof firebase === 'undefined') {
+        console.error("Firebase is not defined! Check if Firebase scripts are loaded properly.");
+        showNotification("Error: Firebase not loaded. Check console for details.");
+        return;
+    }
+    console.log("Firebase is loaded correctly!");
+    
+    try {
+        // Generate unique session ID
+        sessionId = generateSessionId();
+        console.log("Generated session ID:", sessionId);
+        
+        // Create Firebase reference for the collaborative session
+        console.log("Creating Firebase reference to:", `languageSessions/${sessionId}`);
+        firebaseRef = firebase.database().ref(`languageSessions/${sessionId}`);
+        
+        // Get user info for the session
+        const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+        const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+        
+        // Mark as session host
+        isSessionHost = true;
+        
+        // Initialize the session data
+        firebaseRef.set({
+            code: codeEditor.getValue(),
+            language: currentLanguage,
+            lastUpdate: Date.now(),
+            updatedBy: 'host',
+            active: true, // Add active status flag
+            host: userName // Store host info
+        });
+        
+        // Create the database variable if it doesn't exist
+        const database = firebase.database();
+        
+        // Initialize the host as the first participant
+        sessionParticipants = {
+            [userName]: {
+                name: userName,
+                avatar: userAvatar,
+                role: 'host',
+                joinedAt: Date.now(),
+                status: 'active'
+            }
+        };
+        
+        // Also create a record in the liveSessions collection for admin panel
+        const liveSessionData = {
+            id: sessionId,
+            creatorName: userName,
+            creatorAvatar: userAvatar,
+            type: 'Language Playground',
+            language: currentLanguage,
+            startTime: Date.now(),
+            status: 'active',
+            participants: sessionParticipants
+        };
+        
+        // Save to liveSessions for admin panel
+        database.ref(`liveSessions/${sessionId}`).set(liveSessionData)
+            .then(() => console.log("Live session recorded for admin panel"))
+            .catch(err => console.error("Error recording live session for admin:", err));
+        
+        // Log this activity
+        logActivity(userName, userAvatar, 'Started live session', 'Language Playground', 'active');
+        
+        // Set up listeners for remote changes
+        setupLiveListeners();
+        
+        // Update participants UI
+        updateParticipantsUI();
+        
+        // Generate and copy share link
+        const shareUrl = `${window.location.origin}${window.location.pathname}?live=${sessionId}`;
+        navigator.clipboard.writeText(shareUrl);
+        
+        // Update UI - now we use the share button's appearance to indicate live status
+        const shareButton = document.getElementById('share-button');
+        shareButton.classList.add('active');
+        shareButton.style.backgroundColor = '#ff5722';
+        
+        // Show the live indicator
+        const liveIndicator = document.getElementById('live-indicator');
+        liveIndicator.style.display = 'flex';
+        liveIndicator.classList.add('active');
+        liveIndicator.classList.add('host');
+        liveIndicator.classList.remove('guest');
+        liveIndicator.querySelector('span').textContent = 'Hosting Live Session';
+        isLiveSession = true;
+        
+        // Update the share dropdown to add the End Live Session option
+        updateShareDropdown();
+        
+        // Setup session status monitoring
+        setupSessionMonitoring();
+        
+        showNotification('Live session started! Link copied to clipboard 🎉');
+    } catch (error) {
+        console.error("Error starting live session:", error);
+        showNotification("Error starting live session! Check console for details.");
+    }
+}
+
+// Function to join an existing live session
+function joinLiveSession(liveSessionId) {
+    // Join existing live session
+    sessionId = liveSessionId;
+    lastUpdatedBy = 'guest';
+    
+    // Make sure Firebase is available
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        console.error("Firebase is not available when joining session");
+        showNotification("Error: Firebase not loaded. Cannot join live session.");
+        return;
+    }
+    
+    // Create database reference for collaboration
+    firebaseRef = firebase.database().ref(`languageSessions/${sessionId}`);
+    
+    // First check if the session is still active
+    firebaseRef.once('value', (snapshot) => {
+        const sessionData = snapshot.val();
+        
+        if (!sessionData || sessionData.active === false) {
+            // Session doesn't exist or is not active
+            showNotification('This live session has ended or does not exist');
+            sessionId = null;
+            firebaseRef = null;
+            return;
+        }
+        
+        // Get user info for participant tracking
+        const userName = localStorage.getItem('github_user_name') || 'Anonymous Guest';
+        const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+        
+        // Switch language if needed
+        if (sessionData.language && sessionData.language !== currentLanguage) {
+            document.getElementById('language-select').value = sessionData.language;
+            handleLanguageChange({ target: { value: sessionData.language } });
+        }
+        
+        // Mark as guest (not host)
+        isSessionHost = false;
+        
+        // Set up listeners
+        setupLiveListeners();
+        setupSessionMonitoring();
+        
+        // Create database reference for liveSessions
+        const database = firebase.database();
+        
+        // Update participants list in liveSessions for admin panel
+        const participantData = {
+            name: userName,
+            avatar: userAvatar,
+            role: 'guest',
+            joinedAt: Date.now(),
+            status: 'active'
+        };
+        
+        // Add this participant to the participants list
+        database.ref(`liveSessions/${sessionId}/participants/${userName}`).update(participantData)
+            .then(() => {
+                console.log("Added to participants list in admin panel");
+                // Log the join session activity
+                logActivity(userName, userAvatar, 'Joined live session', 'Language Playground', 'active');
+            })
+            .catch(err => {
+                console.error("Error updating participants list:", err);
+            });
+        
+        // Update UI
+        const shareButton = document.getElementById('share-button');
+        shareButton.classList.add('active');
+        shareButton.style.backgroundColor = '#ff5722';
+        
+        const liveIndicator = document.getElementById('live-indicator');
+        liveIndicator.style.display = 'flex';
+        liveIndicator.classList.add('active');
+        liveIndicator.classList.add('guest');
+        liveIndicator.classList.remove('host');
+        liveIndicator.querySelector('span').textContent = 'Live Session (Guest)';
+        isLiveSession = true;
+        
+        // Update share dropdown
+        updateShareDropdown();
+        
+        showNotification('Joined live coding session!');
+        
+        // Clean URL parameter without refreshing
+        const url = new URL(window.location.href);
+        url.searchParams.delete('live');
+        window.history.replaceState({}, document.title, url.pathname);
+    });
+}
+
+// Function to end a live session
+function endLiveSession() {
+    if (!firebaseRef) return;
+    
+    // Only host can end the session by updating the active flag
+    if (isSessionHost) {
+        firebaseRef.update({
+            active: false,
+            endedAt: Date.now()
+        }).then(() => {
+            console.log("Session marked as inactive");
+            
+            // Update the liveSessions record for admin panel
+            const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+            const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+            const database = firebase.database();
+            
+            // Update the session status in liveSessions
+            database.ref(`liveSessions/${sessionId}`).update({
+                status: 'completed',
+                endTime: Date.now()
+            }).then(() => {
+                console.log("Live session status updated in admin panel");
+                // Log the end session activity
+                logActivity(userName, userAvatar, 'Ended live session', 'Language Playground', 'completed');
+            }).catch(err => {
+                console.error("Error updating live session status:", err);
+            });
+            
+            // Delay before fully disconnecting to allow clients to receive the inactive status
+            setTimeout(() => {
+                disconnectFromSession();
+            }, 1000);
+        }).catch(error => {
+            console.error("Error ending session:", error);
+            disconnectFromSession();
+        });
+    } else {
+        // For guests, just leave the session
+        disconnectFromSession();
+    }
+}
+
+// Function to disconnect from a session
+function disconnectFromSession() {
+    // Get user info
+    const userName = localStorage.getItem('github_user_name') || 'Anonymous';
+    const userAvatar = localStorage.getItem('github_user_avatar') || 'https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png';
+    
+    // If we're in a session, update the participants list in the admin panel
+    if (firebase && sessionId) {
+        // Create database reference
+        const database = firebase.database();
+        
+        // Mark the participant as left in liveSessions
+        database.ref(`liveSessions/${sessionId}/participants/${userName}`).update({
+            leftAt: Date.now(),
+            status: 'left'
+        }).then(() => {
+            console.log("Updated participant status to left");
+            // Log the activity
+            logActivity(userName, userAvatar, 'Left live session', 'Language Playground', 'completed');
+            
+            // Update local participant data
+            if (sessionParticipants[userName]) {
+                sessionParticipants[userName].status = 'left';
+                sessionParticipants[userName].leftAt = Date.now();
+                updateParticipantsUI();
+            }
+        }).catch(err => {
+            console.error("Error updating participant status:", err);
+        });
+    }
+    
+    // Remove all listeners
+    if (firebaseRef) {
+        firebaseRef.off();
+    }
+    
+    // Remove Firebase participants listener
+    if (sessionId) {
+        firebase.database().ref(`liveSessions/${sessionId}/participants`).off();
+    }
+    
+    // Update UI
+    const shareButton = document.getElementById('share-button');
+    shareButton.classList.remove('active');
+    shareButton.style.backgroundColor = '';
+    
+    const liveIndicator = document.getElementById('live-indicator');
+    liveIndicator.style.display = 'none';
+    liveIndicator.classList.remove('active');
+    liveIndicator.classList.remove('host');
+    liveIndicator.classList.remove('guest');
+    liveIndicator.querySelector('span').textContent = 'Live Session';
+    
+    // Reset participant display
+    document.getElementById('participant-count').textContent = '0';
+    document.getElementById('participants-list').innerHTML = '';
+    
+    isLiveSession = false;
+    sessionId = null;
+    firebaseRef = null;
+    isSessionHost = false;
+    sessionParticipants = {};
+    
+    // Update share dropdown to remove End Live Session option
+    updateShareDropdown();
+    
+    showNotification('Live session ended');
+}
+
+// Set up live session monitoring
+function setupSessionMonitoring() {
+    if (!firebaseRef) return;
+    
+    // Listen for changes to the active status
+    firebaseRef.child('active').on('value', (snapshot) => {
+        const isActive = snapshot.val();
+        
+        // If session is marked as inactive and we're not the host, disconnect
+        if (isActive === false && !isSessionHost) {
+            showNotification('The host ended this live session');
+            disconnectFromSession();
+        }
+    });
+    
+    // Listen for changes to participants
+    firebase.database().ref(`liveSessions/${sessionId}/participants`).on('value', (snapshot) => {
+        if (!snapshot.exists()) return;
+        
+        // Update the participants list
+        sessionParticipants = snapshot.val() || {};
+        
+        // Update the UI
+        updateParticipantsUI();
+    });
+}
+
+// Set up listeners for remote code changes
+function setupLiveListeners() {
+    firebaseRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        
+        // Skip if this is our own update
+        if (data.updatedBy === 'host' && lastUpdatedBy === 'host') return;
+        if (data.updatedBy === 'guest' && lastUpdatedBy === 'guest') return;
+        
+        // Mark that we're processing a remote change to avoid loops
+        isProcessingRemoteChange = true;
+        
+        // Update language if needed
+        if (data.language && data.language !== currentLanguage) {
+            document.getElementById('language-select').value = data.language;
+            handleLanguageChange({ target: { value: data.language } });
+        }
+        
+        // Update editor with remote data
+        codeEditor.setValue(data.code);
+        
+        isProcessingRemoteChange = false;
+    });
+    
+    // Set up listener for code changes to sync with Firebase
+    codeEditor.on('changes', function(instance, changes) {
+        if (!isLiveSession || isProcessingRemoteChange) return;
+        
+        // Set who made this update
+        lastUpdatedBy = isSessionHost ? 'host' : 'guest';
+        
+        // Update Firebase with the new code content
+        firebaseRef.update({
+            code: codeEditor.getValue(),
+            language: currentLanguage,
+            lastUpdate: Date.now(),
+            updatedBy: lastUpdatedBy
+        });
+    });
+}
+
+// Generate a random session ID
+function generateSessionId() {
+    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+// Update the share dropdown to include End Live Session option when applicable
+function updateShareDropdown() {
+    const dropdown = document.getElementById('share-dropdown');
+    
+    // Remove any existing end-live option
+    const existingEndLive = document.getElementById('share-end-live');
+    if (existingEndLive) {
+        existingEndLive.remove();
+    }
+    
+    // If live session is active and user is the host, add the End Live option
+    if (isLiveSession && isSessionHost) {
+        const endLiveOption = document.createElement('div');
+        endLiveOption.id = 'share-end-live';
+        endLiveOption.className = 'share-dropdown-option';
+        endLiveOption.style.padding = '10px 15px';
+        endLiveOption.style.color = 'white';
+        endLiveOption.style.cursor = 'pointer';
+        endLiveOption.style.display = 'flex';
+        endLiveOption.style.alignItems = 'center';
+        endLiveOption.style.gap = '8px';
+        endLiveOption.style.backgroundColor = 'rgba(255, 87, 34, 0.5)';
+        endLiveOption.innerHTML = '<i class="fas fa-times"></i> End Live Session';
+        endLiveOption.addEventListener('click', () => {
+            endLiveSession();
+            dropdown.style.display = 'none';
+        });
+        
+        dropdown.appendChild(endLiveOption);
+    }
+}
+
+// Log user activity in Firebase
+function logActivity(userName, userAvatar, action, target, status) {
+    if (typeof firebase === 'undefined' || !firebase.database) {
+        console.log('Firebase not available for activity logging');
+        return;
+    }
+    
+    const database = firebase.database();
+    
+    // Create a new activity record
+    const activityData = {
+        userName: userName,
+        userAvatar: userAvatar,
+        action: action,
+        target: target,
+        timestamp: Date.now(),
+        status: status || 'completed'
+    };
+    
+    // Push to the activity collection
+    database.ref('activity').push(activityData)
+        .then(() => console.log('Activity logged:', action))
+        .catch(err => console.error('Error logging activity:', err));
 } 

@@ -250,10 +250,25 @@
                     <i class="fas fa-home"></i><span>Home</span>
                 </button>
             </div>
-            <div class="user-account" id="user-account" style="display: none;">
-                <img id="user-avatar" src="" alt="User avatar" class="user-avatar">
-                <span id="user-name">User</span>
-                <button id="logout-button" class="logout-button">Logout</button>
+            <div class="header-controls">
+                <!-- Live collaboration indicator -->
+                <div id="live-indicator" class="live-indicator">
+                    <span>Live Session</span>
+                    <div class="participants-container">
+                        <span id="participant-count">0</span>
+                        <i class="fas fa-users"></i>
+                        <div class="participants-dropdown">
+                            <div id="participants-list">
+                                <!-- Participants will be listed here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="user-account" id="user-account" style="display: none;">
+                    <img id="user-avatar" src="" alt="User avatar" class="user-avatar">
+                    <span id="user-name">User</span>
+                    <button id="logout-button" class="logout-button">Logout</button>
+                </div>
             </div>
         </header>
 
@@ -314,6 +329,19 @@
         <button id="examples-button" title="Example Code">
             <i class="fas fa-book"></i> <span>Examples</span>
         </button>
+        <div style="position: relative;">
+            <button id="share-button" title="Share Code">
+                <i class="fas fa-share-alt"></i> <span>Share</span>
+            </button>
+            <div id="share-dropdown" class="share-dropdown" style="position: absolute; top: -80px; left: 0; width: 150px; background: #333; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); border: 1px solid #6a1b9a; z-index: 9999; display: none;">
+                <div id="share-copy" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-copy"></i> Copy Link
+                </div>
+                <div id="share-live" class="share-dropdown-option" style="padding: 10px 15px; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-users"></i> Go Live
+                </div>
+            </div>
+        </div>
     </footer>
 
     <!-- GitHub Dialogs -->

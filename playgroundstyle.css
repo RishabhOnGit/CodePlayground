@@ -1039,6 +1039,100 @@ footer button:active {
   font-weight: 500;
 }
 
+/* Participants container styling */
+.participants-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-left: 10px;
+}
+
+.participants-container i {
+  font-size: 11px;
+}
+
+#participant-count {
+  font-weight: bold;
+  min-width: 14px;
+  text-align: center;
+}
+
+.participants-container:hover .participants-dropdown {
+  display: block;
+}
+
+.participants-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 180px;
+  background-color: #333;
+  border-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  display: none;
+  margin-top: 5px;
+  z-index: 1001;
+  padding: 5px 0;
+}
+
+.participants-dropdown:before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 15px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+}
+
+#participants-list {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.participant-item:last-child {
+  border-bottom: none;
+}
+
+.participant-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.participant-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-role {
+  font-size: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.participant-role.host {
+  background-color: #ff9800;
+}
+
 /* Different background colors for host vs guest */
 .live-indicator.host {
   background-color: #ff9800;
@@ -1456,4 +1550,65 @@ header h1 i.fas.fa-code:hover {
     gap: 15px;
   }
 }
+
+/* Responsive adjustments for the live indicator and participants */
+@media (max-width: 768px) {
+  .live-indicator {
+    font-size: 10px;
+    padding: 4px 8px;
+  }
+  
+  .participants-container {
+    margin-left: 5px;
+    padding-left: 5px;
+  }
+  
+  .participants-dropdown {
+    width: 160px;
+  }
+  
+  .participant-item {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  
+  .participant-role {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .live-indicator {
+    padding: 3px 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: auto;
+    gap: 3px;
+  }
+  
+  .participants-container {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 3px;
+    margin-top: 3px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .participants-dropdown {
+    width: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .participants-dropdown:before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+/* Share dropdown menu */
 

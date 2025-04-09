@@ -1086,4 +1086,275 @@ footer button:hover {
         font-size: 0.7rem;
         padding: 3px 6px;
     }
+}
+
+/* Live session indicator */
+.live-indicator {
+  position: relative;
+  background-color: #ff5722;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: none;
+  align-items: center;
+  gap: 5px;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  font-weight: 500;
+  margin-right: 10px;
+}
+
+/* Participants container styling */
+.participants-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 10px;
+  position: relative;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-left: 10px;
+}
+
+.participants-container i {
+  font-size: 11px;
+}
+
+#participant-count {
+  font-weight: bold;
+  min-width: 14px;
+  text-align: center;
+}
+
+.participants-container:hover .participants-dropdown {
+  display: block;
+}
+
+.participants-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 180px;
+  background-color: #333;
+  border-radius: 5px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  display: none;
+  margin-top: 5px;
+  z-index: 1001;
+  padding: 5px 0;
+}
+
+.participants-dropdown:before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 15px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid #333;
+}
+
+#participants-list {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.participant-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.participant-item:last-child {
+  border-bottom: none;
+}
+
+.participant-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.participant-name {
+  flex-grow: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.participant-role {
+  font-size: 10px;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.participant-role.host {
+  background-color: #ff9800;
+}
+
+/* Different background colors for host vs guest */
+.live-indicator.host {
+  background-color: #ff9800;
+  box-shadow: 0 2px 5px rgba(255, 152, 0, 0.5);
+}
+
+.live-indicator.guest {
+  background-color: #ff5722;
+  box-shadow: 0 2px 5px rgba(255, 87, 34, 0.5);
+}
+
+.live-indicator.active {
+  display: flex;
+}
+
+.live-indicator::before {
+  content: "●";
+  color: white;
+  animation: blink 1.5s infinite;
+}
+
+/* Share dropdown menu */
+.share-dropdown {
+  position: fixed;
+  background: #333;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 9999;
+  border: 1px solid #6a1b9a;
+  width: 150px;
+  transition: opacity 0.2s ease;
+}
+
+.share-dropdown.show {
+  display: flex;
+}
+
+.share-dropdown-option {
+  padding: 10px 15px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.share-dropdown-option:hover {
+  background-color: #6a1b9a;
+}
+
+.share-dropdown-option i {
+  font-size: 14px;
+  width: 20px;
+}
+
+/* Share button active state (during live collaboration) */
+#share-button.active {
+  background-color: #ff5722 !important;
+}
+
+#share-button.active:hover {
+  background-color: #e64a19 !important;
+}
+
+/* Dynamically added End Live Session option */
+#share-end-live {
+  background-color: rgba(255, 87, 34, 0.5);
+}
+
+#share-end-live:hover {
+  background-color: #e64a19;
+}
+
+@keyframes blink {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+/* Responsive adjustments for the live indicator and participants */
+@media (max-width: 768px) {
+  .live-indicator {
+    font-size: 10px;
+    padding: 4px 8px;
+    margin-right: 5px;
+  }
+  
+  .participants-container {
+    margin-left: 5px;
+    padding-left: 5px;
+  }
+  
+  .participants-dropdown {
+    width: 160px;
+  }
+  
+  .participant-item {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  
+  .participant-role {
+    font-size: 9px;
+    padding: 1px 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .live-indicator {
+    padding: 3px 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: auto;
+    gap: 3px;
+    margin-right: 3px;
+  }
+  
+  .participants-container {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 3px;
+    margin-top: 3px;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .participants-dropdown {
+    width: 140px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .participants-dropdown:before {
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  
+  .share-dropdown {
+    bottom: 50px;
+    width: 120px;
+  }
+  
+  .share-dropdown-option {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 } 
