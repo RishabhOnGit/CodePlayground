@@ -61,164 +61,16 @@ function initializeGitHubDialogs() {
   document.getElementById('overlay').addEventListener('click', closeAllDialogs);
 }
 
-// Initialize editors and share functionality
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize CodeMirror editors
-    const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
-        mode: 'htmlmixed',
-        theme: 'material',
-        lineNumbers: true,
-        autoCloseTags: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        indentUnit: 4,
-        lineWrapping: true
-    });
-
-    const cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
-        mode: 'css',
-        theme: 'material',
-        lineNumbers: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        indentUnit: 4,
-        lineWrapping: true
-    });
-
-    const jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
-        mode: 'javascript',
-        theme: 'material',
-        lineNumbers: true,
-        autoCloseBrackets: true,
-        matchBrackets: true,
-        indentUnit: 4,
-        lineWrapping: true
-    });
-
-    // Make editors available globally
-    window.htmlEditor = htmlEditor;
-    window.cssEditor = cssEditor;
-    window.jsEditor = jsEditor;
-    
-    // Pre-fill the HTML editor with the default boilerplate
-    if (!htmlEditor.getValue().trim()) {
-        htmlEditor.setValue(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
-
-</body>
-</html>`);
-    }
-
-    // Setup Share Dropdown Options
-    const shareButton = document.getElementById('share-button');
-    const shareDropdown = document.getElementById('share-dropdown');
-    const shareCopy = document.getElementById('share-copy');
-
-    // Toggle dropdown visibility
-    shareButton.addEventListener('click', () => {
-        shareDropdown.style.display = shareDropdown.style.display === 'none' ? 'block' : 'none';
-    });
-
-    // Copy Link functionality
-    shareCopy.addEventListener('click', async () => {
-        try {
-            // Get current code content
-            const codeContent = {
-                html: htmlEditor.getValue(),
-                css: cssEditor.getValue(),
-                js: jsEditor.getValue()
-            };
-
-            // Show loading state
-            showNotification('Generating share link...');
-            
-            // Use TinyURL API directly instead of encoding in URL
-            const apiUrl = 'https://tinyurl.com/api-create.php';
-            const payload = JSON.stringify(codeContent);
-            
-            // Create a temporary element to store the payload
-            const tempElement = document.createElement('div');
-            tempElement.id = 'temp-payload';
-            tempElement.style.display = 'none';
-            tempElement.textContent = payload;
-            document.body.appendChild(tempElement);
-            
-            // Generate a unique ID for this playground content
-            const contentId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-            
-            // Save to localStorage as a temporary solution
-            localStorage.setItem(`playground_${contentId}`, payload);
-            
-            // Generate the sharing URL with just the ID
-            const baseUrl = window.location.href.split('?')[0];
-            const shareUrl = `${baseUrl}?id=${contentId}`;
-            
-            // Create TinyURL
-            try {
-                const response = await fetch(`${apiUrl}?url=${encodeURIComponent(shareUrl)}`);
-                const tinyUrl = await response.text();
-                
-                // Copy the tiny URL to clipboard
-                await navigator.clipboard.writeText(tinyUrl);
-                showNotification('Shortened link copied to clipboard!');
-            } catch (tinyUrlError) {
-                console.error('Error creating TinyURL:', tinyUrlError);
-                // Fallback to copying the regular URL
-                await navigator.clipboard.writeText(shareUrl);
-                showNotification('Share link copied to clipboard!');
-            }
-            
-            // Clean up the temporary element
-            document.body.removeChild(tempElement);
-        } catch (error) {
-            console.error('Error generating share link:', error);
-            showNotification('Error generating share link. Please try again.');
-        } finally {
-            shareDropdown.style.display = 'none';
-        }
-    });
-
-    // Load shared code from URL if present
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedId = urlParams.get('id');
-    const sharedCode = urlParams.get('code');
-    
-    if (sharedId) {
-        try {
-            // Retrieve code from localStorage
-            const storedCode = localStorage.getItem(`playground_${sharedId}`);
-            if (storedCode) {
-                const code = JSON.parse(storedCode);
-                if (code.html) htmlEditor.setValue(code.html);
-                if (code.css) cssEditor.setValue(code.css);
-                if (code.js) jsEditor.setValue(code.js);
-                showNotification('Shared code loaded successfully!');
-            } else {
-                showNotification('Shared code not found or expired.');
-            }
-        } catch (error) {
-            console.error('Error loading shared code:', error);
-            showNotification('Invalid shared code format.');
-        }
-    } else if (sharedCode) {
-        // Handle legacy code parameter for backward compatibility
-        try {
-            const code = JSON.parse(decodeURIComponent(sharedCode));
-            if (code.html) htmlEditor.setValue(code.html);
-            if (code.css) cssEditor.setValue(code.css);
-            if (code.js) jsEditor.setValue(code.js);
-            showNotification('Shared code loaded successfully!');
-        } catch (error) {
-            console.error('Error loading shared code:', error);
-            showNotification('Invalid shared code format.');
-        }
-    }
+// Initialize CodeMirror with autoCloseTags and autoCloseBrackets for HTML, CSS, and JS editors
+const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+  mode: 'xml',
+  theme: 'material',
+  lineNumbers: true,
+  autoCloseTags: true,
+  extraKeys: {
+    'Ctrl-/': 'toggleComment',  // Enable comment toggling with Ctrl + /
+    'Cmd-/': 'toggleComment'    // For macOS users with Cmd + /
+  }
 });
 
 // Pre-fill the HTML editor with the default boilerplate
@@ -577,6 +429,32 @@ document.addEventListener('click', () => {
     }
 });
 
+// Setup Share Dropdown Options
+document.addEventListener('DOMContentLoaded', () => {
+    // Copy Link option
+    document.getElementById('share-copy').addEventListener('click', () => {
+        // Generate a shareable URL with the current code
+        const currentUrl = window.location.href.split('?')[0]; // Remove any existing query params
+        navigator.clipboard.writeText(currentUrl);
+        showNotification('Link copied to clipboard!');
+        document.getElementById('share-dropdown').style.display = 'none';
+    });
+    
+    // Go Live option
+    document.getElementById('share-live').addEventListener('click', () => {
+        if (typeof firebase === 'undefined') {
+            console.error("Firebase is not defined! Unable to start live session.");
+            showNotification("Error: Firebase not available. Live sharing is not available.");
+            document.getElementById('share-dropdown').style.display = 'none';
+            return;
+        }
+        
+        // Call the startLiveSession function
+        startLiveSession();
+        document.getElementById('share-dropdown').style.display = 'none';
+    });
+});
+
 // Function to toggle fullscreen for a specific element
 function toggleFullScreen(element) {
   if (element.requestFullscreen) {
@@ -618,6 +496,37 @@ function setEditorFontSize(fontSize) {
     editor.getWrapperElement().style.fontSize = `${fontSize}px`;
   });
 }
+
+// Load shared code from URL if present
+window.addEventListener('load', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const sharedCode = urlParams.get('code');
+  if (sharedCode) {
+    try {
+      const code = JSON.parse(decodeURIComponent(sharedCode));
+      htmlEditor.setValue(code.html);
+      cssEditor.setValue(code.css);
+      jsEditor.setValue(code.js);
+      updateOutput();
+    } catch (error) {
+      showNotification('Invalid shared code.');
+    }
+  }
+
+  // Trigger initial output update
+  updateOutput();
+
+  // Remove the welcome overlay after a few seconds
+  setTimeout(() => {
+    const welcomeOverlay = document.getElementById('welcome-overlay');
+    if (welcomeOverlay) {
+      welcomeOverlay.style.display = 'none';
+    }
+  }, 3000); // Matches the fadeOut animation time
+
+  // Initialize resizers and call only after DOM is fully loaded
+  initializeResizers();
+});
 
 // chat bot code
 document.addEventListener("DOMContentLoaded", function () {
