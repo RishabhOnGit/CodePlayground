@@ -246,32 +246,43 @@
     gap: 10px;
     width: clamp(180px, 40vw, 250px);
     text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
 /* 🔹 Start Button */
 #start-button {
-    background: linear-gradient(45deg, #ff5722, #ff784e);
+    background: linear-gradient(135deg, #9c27b0, #6a1b9a);
 }
 
 /* 🔹 Language Button */
 #language-button {
-    background: linear-gradient(45deg, #4CAF50, #8BC34A);
+    background: linear-gradient(135deg, #7b1fa2, #4a148c);
+}
+
+/* ✅ Hover Effects */
+#start-button:hover, #language-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+#start-button:hover {
+    background: linear-gradient(135deg, #ab47bc, #8e24aa);
+}
+
+#language-button:hover {
+    background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+}
+
+#start-button:active, #language-button:active {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 /* 🔹 Language Card Styling */
 .language-card {
     background: rgba(255, 255, 255, 0.2);
-}
-
-/* ✅ Hover Effects */
-#start-button:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-}
-
-#language-button:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* 🔹 Transition Overlay - Improved */
