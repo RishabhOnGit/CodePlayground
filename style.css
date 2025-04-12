@@ -257,41 +257,38 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    width: clamp(180px, 40vw, 250px);
+    width: clamp(160px, 35vw, 220px);
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
     height: clamp(40px, 5vh, 45px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* 🔹 Start Button */
 #start-button {
-    background: linear-gradient(135deg, #9c27b0, #6a1b9a);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
 }
 
 /* 🔹 Language Button */
 #language-button {
-    background: linear-gradient(135deg, #7b1fa2, #4a148c);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
 }
 
 /* ✅ Hover Effects */
 #start-button:hover, #language-button:hover {
     transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-#start-button:hover {
-    background: linear-gradient(135deg, #ab47bc, #8e24aa);
-}
-
-#language-button:hover {
-    background: linear-gradient(135deg, #8e24aa, #6a1b9a);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
 }
 
 #start-button:active, #language-button:active {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* 🔹 Language Card Styling */
