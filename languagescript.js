@@ -461,9 +461,6 @@ function initializeEventListeners() {
     // Load button
     document.getElementById('load-button').addEventListener('click', loadCode);
     
-    // Examples button
-    document.getElementById('examples-button').addEventListener('click', showExamples);
-    
     // Home button
     document.getElementById('home-button').addEventListener('click', goToHome);
     
@@ -584,88 +581,21 @@ function handleLanguageChange(event) {
 
 // Set default Python code
 function setPythonDefaultCode() {
-    const defaultCode = `# Python Calculation Example
-def calculate_fibonacci(n):
-    """Calculate the first n Fibonacci numbers"""
-    fibonacci = [0, 1]
-    for i in range(2, n):
-        fibonacci.append(fibonacci[i-1] + fibonacci[i-2])
-    return fibonacci
-
-def calculate_factorial(n):
-    """Calculate the factorial of n"""
-    if n == 0 or n == 1:
-        return 1
-    else:
-        return n * calculate_factorial(n-1)
-
-def main():
-    # Calculate and display Fibonacci sequence
-    fib_count = 10
-    fibonacci_sequence = calculate_fibonacci(fib_count)
-    print(f"First {fib_count} Fibonacci numbers: {fibonacci_sequence}")
-    
-    # Calculate and display factorial
-    num = 5
-    factorial_result = calculate_factorial(num)
-    print(f"Factorial of {num} is: {factorial_result}")
-    
-    # Calculate and display square and cube of numbers 1 to 5
-    print("\\nNumber\\tSquare\\tCube")
-    print("------------------------")
-    for i in range(1, 6):
-        print(f"{i}\\t{i**2}\\t{i**3}")
-
-if __name__ == "__main__":
-    main()`;
+    const defaultCode = `# Welcome to Language Playground
+print("Welcome to Language Playground!")
+print("Start coding in Python here...")`;
     
     codeEditor.setValue(defaultCode);
 }
 
 // Set default C code
 function setCDefaultCode() {
-    const defaultCode = `// C Calculation Example
+    const defaultCode = `// Welcome to Language Playground
 #include <stdio.h>
 
-// Function to calculate factorial
-int factorial(int n) {
-    if (n == 0 || n == 1)
-        return 1;
-    else
-        return n * factorial(n - 1);
-}
-
-// Function to display Fibonacci sequence
-void fibonacci(int n) {
-    int a = 0, b = 1, next;
-    
-    printf("First %d Fibonacci numbers: ", n);
-    printf("%d, %d", a, b);
-    
-    for (int i = 2; i < n; i++) {
-        next = a + b;
-        printf(", %d", next);
-        a = b;
-        b = next;
-    }
-    printf("\\n");
-}
-
 int main() {
-    // Calculate and display Fibonacci sequence
-    fibonacci(10);
-    
-    // Calculate and display factorial
-    int num = 5;
-    printf("Factorial of %d is: %d\\n", num, factorial(num));
-    
-    // Calculate and display square and cube of numbers 1 to 5
-    printf("\\nNumber\\tSquare\\tCube\\n");
-    printf("------------------------\\n");
-    for (int i = 1; i <= 5; i++) {
-        printf("%d\\t%d\\t%d\\n", i, i*i, i*i*i);
-    }
-    
+    printf("Welcome to Language Playground!\\n");
+    printf("Start coding in C here...\\n");
     return 0;
 }`;
     
@@ -1198,20 +1128,6 @@ function closeAllDialogs() {
     if (fileNameInput) {
         fileNameInput.value = '';
     }
-}
-
-// Show example code
-function showExamples() {
-    if (currentLanguage === 'python') {
-        setPythonDefaultCode();
-    } else if (currentLanguage === 'c') {
-        setCDefaultCode();
-    }
-    
-    // Reset selected file name when loading examples
-    selectedFileName = null;
-    
-    showNotification('Loaded example code');
 }
 
 // Navigate back to home
