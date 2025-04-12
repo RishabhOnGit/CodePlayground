@@ -11,11 +11,16 @@ const githubConfig = {
 function initiateGithubLogin() {
     console.log("Initiating GitHub login with redirect URI:", githubConfig.redirectUri);
     
-    // Construct the GitHub authorization URL
-    const authUrl = `https://github.com/login/oauth/authorize?client_id=${githubConfig.clientId}&redirect_uri=${encodeURIComponent(githubConfig.redirectUri)}&scope=${githubConfig.scope}`;
+    // Clear any existing auth state
+    sessionStorage.removeItem('github_auth_state');
+    localStorage.removeItem('github_access_token');
     
-    // Store auth state in session storage
-    sessionStorage.setItem('github_auth_state', 'pending');
+    // Generate a random state value for security
+    const state = Math.random().toString(36).substring(2);
+    sessionStorage.setItem('github_auth_state', state);
+    
+    // Construct the GitHub authorization URL with state parameter
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${githubConfig.clientId}&redirect_uri=${encodeURIComponent(githubConfig.redirectUri)}&scope=${githubConfig.scope}&state=${state}`;
     
     // Redirect to GitHub for authentication
     window.location.href = authUrl;
