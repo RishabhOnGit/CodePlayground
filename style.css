@@ -220,33 +220,20 @@
 }
 
 /* 🔹 Buttons Container */
-.button-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    width: 90%;
-    max-width: 600px;
-}
-
-.button-description {
-    color: rgba(255, 255, 255, 0.9);
-    font-size: clamp(0.9rem, 1.2vw, 1.1rem);
-    margin-bottom: 5px;
-}
-
 .buttons-container {
     display: flex;
     gap: clamp(10px, 2vw, 20px);
     flex-wrap: wrap;
     justify-content: center;
-    width: 100%;
+    width: 90%;
+    max-width: 600px;
+    margin-top: clamp(10px, 2vh, 20px);
 }
 
 /* 🔹 Common Button Styles */
 #start-button, #language-button {
-    padding: clamp(8px, 1.5vw, 12px) clamp(20px, 3vw, 35px);
-    font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+    padding: clamp(10px, 2vw, 14px) clamp(20px, 3vw, 35px);
+    font-size: clamp(1rem, 1.5vw, 1.3rem);
     font-weight: bold;
     color: white;
     border: none;
@@ -257,43 +244,34 @@
     align-items: center;
     justify-content: center;
     gap: 10px;
-    width: clamp(160px, 35vw, 220px);
+    width: clamp(180px, 40vw, 250px);
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    position: relative;
-    overflow: hidden;
-    height: clamp(40px, 5vh, 45px);
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(5px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* 🔹 Start Button */
 #start-button {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+    background: linear-gradient(45deg, #ff5722, #ff784e);
 }
 
 /* 🔹 Language Button */
 #language-button {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-}
-
-/* ✅ Hover Effects */
-#start-button:hover, #language-button:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.3);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.25), rgba(255, 255, 255, 0.15));
-}
-
-#start-button:active, #language-button:active {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(45deg, #4CAF50, #8BC34A);
 }
 
 /* 🔹 Language Card Styling */
 .language-card {
     background: rgba(255, 255, 255, 0.2);
+}
+
+/* ✅ Hover Effects */
+#start-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+#language-button:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* 🔹 Transition Overlay - Improved */
