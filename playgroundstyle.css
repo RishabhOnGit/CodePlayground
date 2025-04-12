@@ -845,7 +845,7 @@ footer button:active {
     bottom: 80px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
-    width: 380px;
+    width: 760px;
     height: 500px;
     background: rgba(30, 30, 30, 0.95);
     border-radius: 15px;
@@ -928,12 +928,38 @@ footer button:active {
 .message {
     padding: 10px 15px;
     margin: 8px 0;
-    max-width: 80%;
+    width: fit-content;
+    min-width: 50px;
+    max-width: 90%;
     word-wrap: break-word;
     font-size: 14px;
     line-height: 1.4;
     position: relative;
     border-radius: 15px;
+}
+
+/* Fine-tune message sizing for different content types */
+.message.user, .message.bot {
+    max-width: max-content;
+}
+
+/* Very short messages shouldn't look too wide */
+.message.user:not(.has-code), .message.bot:not(.has-code) {
+    max-width: min(90%, max-content);
+}
+
+/* Prevent super tiny messages */
+.message.user, .message.bot {
+    min-width: 60px;
+}
+
+/* Ensure short messages have enough padding */
+.message.user:not(.has-code) {
+    padding-right: 18px;
+}
+
+.message.bot:not(.has-code) {
+    padding-left: 18px;
 }
 
 /* Bot Messages */
@@ -1626,22 +1652,31 @@ header h1 i.fas.fa-code:hover {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: rgba(106, 27, 154, 0.7);
+    background: rgba(106, 27, 154, 0.8);
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 5px 8px;
+    padding: 6px 10px;
     font-size: 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 5px;
     transition: background-color 0.2s ease;
-    z-index: 2;
+    z-index: 5;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .copy-code-button:hover {
     background: rgba(106, 27, 154, 1);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.copy-code-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
 }
 
 .code-block {
@@ -1669,6 +1704,12 @@ header h1 i.fas.fa-code:hover {
     margin-bottom: 5px;
 }
 
+/* Set minimum width for messages with code blocks using has-code class*/
+.message.bot.has-code {
+    min-width: 70%;
+    width: auto;
+}
+
 /* Fix for message padding with code blocks */
 .message.bot {
     padding-bottom: 5px;
@@ -1687,5 +1728,33 @@ header h1 i.fas.fa-code:hover {
     font-family: Arial, sans-serif;
     text-transform: uppercase;
     letter-spacing: 1px;
+}
+
+/* Responsive styles for the chat container */
+@media (max-width: 768px) {
+    .chat-container {
+        width: 90%; /* Use percentage width on smaller screens */
+        max-width: 600px; /* Cap the maximum width */
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-container {
+        width: 95%; /* Almost full width on mobile */
+        height: 80vh; /* Use viewport height for better mobile experience */
+        bottom: 70px; /* Position slightly higher to avoid overlapping with buttons */
+    }
+    
+    /* Adjust code block container to fit smaller screen */
+    .code-block-container {
+        max-width: 100%;
+        overflow-x: auto;
+    }
+    
+    /* Make copy button smaller on mobile */
+    .copy-code-button {
+        padding: 3px 6px;
+        font-size: 11px;
+    }
 }
 

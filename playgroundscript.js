@@ -610,23 +610,44 @@ document.addEventListener("DOMContentLoaded", function () {
         
         if (sender === "bot") {
             // Process the text to identify code blocks
-            const formattedText = processCodeBlocks(text);
-            messageDiv.innerHTML = formattedText;
+            const processedContent = processCodeBlocks(text);
+            messageDiv.innerHTML = processedContent.html;
+            
+            // Add class if message contains code
+            if (processedContent.hasCode) {
+                messageDiv.classList.add('has-code');
+            }
             
             // Add event listeners for copy buttons
             setTimeout(() => {
                 const copyButtons = messageDiv.querySelectorAll('.copy-code-button');
                 copyButtons.forEach(button => {
                     button.addEventListener('click', function() {
-                        const codeBlock = this.nextElementSibling;
-                        copyToClipboard(codeBlock.textContent);
-                        
-                        // Show copied feedback
-                        const originalText = this.textContent;
-                        this.textContent = "Copied!";
-                        setTimeout(() => {
-                            this.textContent = originalText;
-                        }, 1500);
+                        try {
+                            const codeBlock = this.nextElementSibling;
+                            console.log("Copy button clicked, code block:", codeBlock);
+                            
+                            // Find the code element inside the pre
+                            const codeElement = codeBlock.querySelector('code');
+                            console.log("Code element found:", codeElement);
+                            
+                            // Get the text content
+                            const textToCopy = codeElement ? codeElement.textContent : codeBlock.textContent;
+                            console.log("Text to copy (length):", textToCopy.length);
+                            
+                            // Copy the text
+                            copyToClipboard(textToCopy);
+                            
+                            // Show copied feedback
+                            const originalText = this.textContent;
+                            this.textContent = "Copied!";
+                            setTimeout(() => {
+                                this.textContent = originalText;
+                            }, 1500);
+                        } catch (error) {
+                            console.error("Error copying code:", error);
+                            alert("Failed to copy code. Please see console for details.");
+                        }
                     });
                 });
             }, 0);
@@ -643,6 +664,9 @@ document.addEventListener("DOMContentLoaded", function () {
     function processCodeBlocks(text) {
         // Pattern to match code blocks (text surrounded by triple backticks)
         const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
+        
+        // Check if there are code blocks
+        const hasCodeBlocks = text.match(codeBlockRegex);
         
         // Replace code blocks with formatted HTML
         let formattedText = text.replace(codeBlockRegex, function(match, language, code) {
@@ -663,7 +687,10 @@ document.addEventListener("DOMContentLoaded", function () {
         // Fix double <br> tags that might have been created
         formattedText = formattedText.replace(/<br><br>/g, '<br>');
         
-        return formattedText;
+        return {
+            html: formattedText,
+            hasCode: hasCodeBlocks !== null
+        };
     }
     
     // Function to format code (remove unnecessary indentation)
@@ -675,7 +702,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const lines = code.split('\n');
         const nonEmptyLines = lines.filter(line => line.trim().length > 0);
         
-        if (nonEmptyLines.length === 0) return code;
+        if (nonEmptyLines.length === 0) return escapeHTML(code);
         
         // Find common indentation level
         const indentLevels = nonEmptyLines.map(line => {
@@ -686,17 +713,25 @@ document.addEventListener("DOMContentLoaded", function () {
         const minIndent = Math.min(...indentLevels);
         
         // Remove common indentation
+        let formattedCode;
         if (minIndent > 0) {
-            return lines.map(line => {
+            formattedCode = lines.map(line => {
                 if (line.length >= minIndent) {
                     return line.substring(minIndent);
                 }
                 return line;
             }).join('\n');
+        } else {
+            formattedCode = code;
         }
         
         // Escape HTML characters
-        return code
+        return escapeHTML(formattedCode);
+    }
+    
+    // Helper function to escape HTML
+    function escapeHTML(text) {
+        return text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
@@ -704,16 +739,35 @@ document.addEventListener("DOMContentLoaded", function () {
     
     // Function to copy text to clipboard
     function copyToClipboard(text) {
+        // Use the modern Clipboard API if available
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text)
+                .catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    fallbackCopyToClipboard(text);
+                });
+        } else {
+            // Fallback for browsers that don't support the Clipboard API
+            fallbackCopyToClipboard(text);
+        }
+    }
+
+    // Fallback copy method using execCommand
+    function fallbackCopyToClipboard(text) {
         const textarea = document.createElement('textarea');
         textarea.value = text;
         textarea.style.position = 'fixed'; // Avoid scrolling to bottom
+        textarea.style.opacity = '0';
         document.body.appendChild(textarea);
         textarea.select();
         
         try {
-            document.execCommand('copy');
+            const successful = document.execCommand('copy');
+            if (!successful) {
+                console.error('Fallback copy method failed');
+            }
         } catch (err) {
-            console.error('Failed to copy text: ', err);
+            console.error('Failed to copy text (fallback): ', err);
         }
         
         document.body.removeChild(textarea);
