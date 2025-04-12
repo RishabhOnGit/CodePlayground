@@ -151,17 +151,14 @@ npx serve
 2. Type your coding question or request in the chat input
 3. Receive intelligent assistance and code suggestions
 
-## Browser Compatibility
+## Browser Compatibility (Use Desktop For Better Experience)
 
 - Chrome (recommended): Full support for all features
 - Firefox: Full support
 - Safari: Full support
 - Edge: Full support
-- Mobile browsers: Responsive support with adapted layout
+- Mobile browsers: Responsive support with adapted layout but not smooth as Desktop.
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
