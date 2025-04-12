@@ -1612,3 +1612,80 @@ header h1 i.fas.fa-code:hover {
 
 /* Share dropdown menu */
 
+/* Code Block Styling for Chat */
+.code-block-container {
+    position: relative;
+    margin: 10px 0;
+    background: #1e1e1e;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(106, 27, 154, 0.4);
+}
+
+.copy-code-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(106, 27, 154, 0.7);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.2s ease;
+    z-index: 2;
+}
+
+.copy-code-button:hover {
+    background: rgba(106, 27, 154, 1);
+}
+
+.code-block {
+    background: #1e1e1e;
+    color: #f8f8f2;
+    font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin: 0;
+    padding: 12px 15px;
+    border-radius: 0;
+    white-space: pre;
+    tab-size: 4;
+}
+
+.code-block code {
+    font-family: inherit;
+}
+
+/* Message specific styling for code blocks */
+.message.bot .code-block-container {
+    max-width: 100%;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+/* Fix for message padding with code blocks */
+.message.bot {
+    padding-bottom: 5px;
+}
+
+/* Language tag */
+.code-block::before {
+    content: attr(data-language);
+    display: block;
+    background: rgba(0, 0, 0, 0.3);
+    color: #ccc;
+    font-size: 11px;
+    padding: 3px 10px;
+    margin: -12px -15px 8px -15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+

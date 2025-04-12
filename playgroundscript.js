@@ -607,9 +607,116 @@ document.addEventListener("DOMContentLoaded", function () {
     function appendMessage(sender, text) {
         const messageDiv = document.createElement("div");
         messageDiv.className = `message ${sender}`;
-        messageDiv.textContent = text;
+        
+        if (sender === "bot") {
+            // Process the text to identify code blocks
+            const formattedText = processCodeBlocks(text);
+            messageDiv.innerHTML = formattedText;
+            
+            // Add event listeners for copy buttons
+            setTimeout(() => {
+                const copyButtons = messageDiv.querySelectorAll('.copy-code-button');
+                copyButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const codeBlock = this.nextElementSibling;
+                        copyToClipboard(codeBlock.textContent);
+                        
+                        // Show copied feedback
+                        const originalText = this.textContent;
+                        this.textContent = "Copied!";
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                        }, 1500);
+                    });
+                });
+            }, 0);
+        } else {
+            // For user messages, just use text content
+            messageDiv.textContent = text;
+        }
+        
         chatBody.appendChild(messageDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
+    }
+    
+    // Function to process code blocks in the text
+    function processCodeBlocks(text) {
+        // Pattern to match code blocks (text surrounded by triple backticks)
+        const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
+        
+        // Replace code blocks with formatted HTML
+        let formattedText = text.replace(codeBlockRegex, function(match, language, code) {
+            // Clean up the code (remove extra indentation)
+            const cleanCode = formatCode(code);
+            
+            return `
+                <div class="code-block-container">
+                    <button class="copy-code-button"><i class="fas fa-copy"></i> Copy code</button>
+                    <pre class="code-block" data-language="${language || 'code'}"><code>${cleanCode}</code></pre>
+                </div>
+            `;
+        });
+        
+        // Replace line breaks with <br> tags for regular text
+        formattedText = formattedText.replace(/\n/g, '<br>');
+        
+        // Fix double <br> tags that might have been created
+        formattedText = formattedText.replace(/<br><br>/g, '<br>');
+        
+        return formattedText;
+    }
+    
+    // Function to format code (remove unnecessary indentation)
+    function formatCode(code) {
+        // Remove leading and trailing whitespace
+        code = code.trim();
+        
+        // Calculate common indentation
+        const lines = code.split('\n');
+        const nonEmptyLines = lines.filter(line => line.trim().length > 0);
+        
+        if (nonEmptyLines.length === 0) return code;
+        
+        // Find common indentation level
+        const indentLevels = nonEmptyLines.map(line => {
+            const match = line.match(/^\s*/);
+            return match ? match[0].length : 0;
+        });
+        
+        const minIndent = Math.min(...indentLevels);
+        
+        // Remove common indentation
+        if (minIndent > 0) {
+            return lines.map(line => {
+                if (line.length >= minIndent) {
+                    return line.substring(minIndent);
+                }
+                return line;
+            }).join('\n');
+        }
+        
+        // Escape HTML characters
+        return code
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+    
+    // Function to copy text to clipboard
+    function copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed'; // Avoid scrolling to bottom
+        document.body.appendChild(textarea);
+        textarea.select();
+        
+        try {
+            document.execCommand('copy');
+        } catch (err) {
+            console.error('Failed to copy text: ', err);
+        }
+        
+        document.body.removeChild(textarea);
     }
 
     // Send Message Function
@@ -622,6 +729,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Show user message
         appendMessage("user", userInput);
+
+        // Check if the message is coding/development related
+        if (!isDevRelatedQuestion(userInput)) {
+            appendMessage("bot", "I can only assist with coding and development related questions. Please ask about programming, web development, code examples, or technical concepts.");
+            return;
+        }
 
         // Show thinking message
         const thinkingMessage = document.createElement("div");
@@ -717,7 +830,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Initial greeting
     setTimeout(() => {
-        appendMessage("bot", "Hello! How can I help you with coding today? 👋");
+        appendMessage("bot", "Hello! How can I help you with coding today? 👋 I can assist with programming questions and generate code examples. Please note that I can only answer coding and development related questions.");
     }, 1000);
 });
 
@@ -1887,4 +2000,43 @@ async function generateHash(str) {
         }
         return Math.abs(hash).toString(16);
     }
+}
+
+// Function to check if the question is related to coding/development
+function isDevRelatedQuestion(input) {
+    // Convert to lowercase for case-insensitive matching
+    const text = input.toLowerCase();
+    
+    // Keywords related to programming and development
+    const devKeywords = [
+        'code', 'program', 'develop', 'script', 'function', 'html', 'css', 'javascript', 'js',
+        'python', 'java', 'c++', 'ruby', 'php', 'sql', 'database', 'api', 'framework',
+        'library', 'algorithm', 'variable', 'class', 'object', 'method', 'array', 'string',
+        'number', 'boolean', 'json', 'xml', 'http', 'server', 'client', 'frontend', 'backend',
+        'full stack', 'fullstack', 'web', 'app', 'application', 'mobile', 'desktop', 'git',
+        'github', 'version control', 'debug', 'error', 'bug', 'fix', 'syntax', 'compiler',
+        'interpreter', 'runtime', 'ide', 'editor', 'vscode', 'visual studio', 'intellij',
+        'eclipse', 'atom', 'sublime', 'react', 'angular', 'vue', 'node', 'express', 'django',
+        'flask', 'spring', 'bootstrap', 'tailwind', 'sass', 'less', 'webpack', 'npm', 'yarn',
+        'package', 'module', 'component', 'state', 'props', 'hook', 'rest', 'graphql', 'ajax',
+        'fetch', 'async', 'promise', 'callback', 'event', 'listener', 'dom', 'document',
+        'window', 'browser', 'responsive', 'design', 'layout', 'grid', 'flex', 'animation',
+        'transition', 'transform', 'style', 'attribute', 'element', 'tag', 'form', 'input',
+        'button', 'select', 'option', 'checkbox', 'radio', 'textarea', 'label', 'div', 'span',
+        'header', 'footer', 'nav', 'section', 'article', 'main', 'sidebar', 'container',
+        'wrapper', 'box', 'card', 'modal', 'popup', 'alert', 'notification', 'toast',
+        'dropdown', 'menu', 'navbar', 'sidebar', 'footer', 'header', 'authentication',
+        'authorization', 'login', 'logout', 'register', 'signup', 'user', 'password',
+        'encrypt', 'decrypt', 'hash', 'salt', 'token', 'jwt', 'oauth', 'session', 'cookie',
+        'storage', 'local', 'session', 'memory', 'cache', 'performance', 'optimization',
+        'minify', 'compress', 'bundle', 'build', 'deploy', 'host', 'server', 'cloud',
+        'aws', 'azure', 'gcp', 'firebase', 'heroku', 'netlify', 'vercel', 'docker',
+        'kubernetes', 'container', 'microservice', 'architecture', 'design pattern',
+        'mvc', 'mvvm', 'crud', 'rest', 'api', 'endpoint', 'request', 'response',
+        'status', 'header', 'body', 'parameter', 'query', 'path', 'route', 'middleware',
+        'controller', 'model', 'view', 'template', 'render', 'generate'
+    ];
+    
+    // Check if the input contains any dev keywords
+    return devKeywords.some(keyword => text.includes(keyword));
 }
