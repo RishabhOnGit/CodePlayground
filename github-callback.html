@@ -96,7 +96,6 @@
         async function exchangeCodeForToken(code) {
             let retries = 0;
             const maxRetries = 3;
-            const retryDelay = 5000; // Increase delay to 5 seconds
             
             const attemptExchange = async () => {
                 try {
@@ -119,17 +118,13 @@
                     const response = await fetch(`${API_BASE_URL}/github/token`, {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache', // Add cache control
-                            'Accept': 'application/json'
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ 
                             code,
-                            redirect_uri: PLAYGROUND_URL + '/github-callback.html'
+                            redirect_uri: githubConfig.redirectUri // Explicitly pass the redirect URI
                         }),
-                        signal: controller.signal,
-                        mode: 'cors',
-                        credentials: 'include' // Add credentials
+                        signal: controller.signal
                     });
                     
                     clearTimeout(timeoutId);
@@ -146,20 +141,21 @@
                             // Special handling for redirect_uri_mismatch
                             if (errorMessage.includes('redirect_uri_mismatch')) {
                                 errorDetails = `The redirect URI (${githubConfig.redirectUri}) doesn't match what's configured in the GitHub OAuth App. Please check the GitHub application settings.`;
-                                throw new Error(errorMessage + ': ' + errorDetails);
-                            }
-                            
-                            // If we get a 401 or 403, the code might be expired
-                            if (response.status === 401 || response.status === 403) {
-                                errorDetails = 'Authentication code may have expired. Please try logging in again.';
-                                // Clear any stored auth state
-                                sessionStorage.removeItem('github_auth_state');
-                                localStorage.removeItem('github_access_token');
-                                throw new Error(errorMessage + ': ' + errorDetails);
+                                
+                                // Log additional debug info
+                                console.log("Current page URL:", window.location.href);
+                                console.log("Window origin:", window.location.origin);
+                                console.log("Configured redirect URI:", githubConfig.redirectUri);
+                                
+                                // Update debug element with more details
+                                debugElem.innerHTML += `<br><br>URI Mismatch Details:<br>
+                                - Current URL: ${window.location.href}<br>
+                                - Window Origin: ${window.location.origin}<br>
+                                - Configured Redirect URI: ${githubConfig.redirectUri}<br>
+                                <br>Try updating the GitHub OAuth App settings to match the exact URL.`;
                             }
                         } catch (e) {
                             errorMessage += ` (Status: ${response.status})`;
-                            throw e;
                         }
                         
                         throw new Error(errorMessage + (errorDetails ? ': ' + errorDetails : ''));
@@ -167,16 +163,11 @@
                     
                     const data = await response.json();
                     
-                    if (!data.access_token) {
-                        throw new Error('No access token received from server');
-                    }
-                    
                     // Store the token and user info
                     localStorage.setItem('github_access_token', data.access_token);
                     localStorage.setItem('github_login_time', Date.now());
                     localStorage.setItem('github_user_name', data.user.name || data.user.login);
                     localStorage.setItem('github_user_avatar', data.user.avatar_url);
-                    localStorage.setItem('github_user_login', data.user.login);
                     
                     return data;
                 } catch (error) {
@@ -188,17 +179,11 @@
                         debugElem.innerHTML += `<br><br>Error (attempt ${retries + 1}/${maxRetries}): ${error.message}`;
                     }
                     
-                    // If we have a specific error that shouldn't be retried, throw immediately
-                    if (error.message.includes('redirect_uri_mismatch') || 
-                        error.message.includes('code may have expired')) {
-                        throw error;
-                    }
-                    
                     retries++;
                     if (retries < maxRetries) {
-                        debugElem.innerHTML += `<br>Retrying in ${retryDelay/1000} seconds...`;
-                        // Wait longer before retrying
-                        await new Promise(resolve => setTimeout(resolve, retryDelay));
+                        debugElem.innerHTML += `<br>Retrying in 3 seconds...`;
+                        // Wait 3 seconds before retrying
+                        await new Promise(resolve => setTimeout(resolve, 3000));
                         return attemptExchange();
                     }
                     
@@ -276,23 +261,37 @@
                 
                 // Update UI to show success
                 document.querySelector('.spinner').style.display = 'none';
-                document.querySelector('.message').textContent = 'Authentication successful! Redirecting...';
+                document.querySelector('.message').textContent = 'Authentication successful!';
                 document.querySelector('.message').classList.add('success');
+                
+                // Add repo info
+                const repoElem = document.createElement('div');
+                repoElem.className = 'message';
+                repoElem.innerHTML = `Created repository: <a href="${repoData.repo.html_url}" target="_blank" style="color: #4caf50;">${repoData.repo.full_name}</a>`;
+                document.querySelector('.loading').appendChild(repoElem);
+                
+                // Add a return link
+                const linkElem = document.createElement('a');
+                linkElem.href = window.location.origin + '/index.html';
+                linkElem.textContent = 'Return to homepage';
+                linkElem.className = 'return-link';
+                document.querySelector('.loading').appendChild(linkElem);
                 
                 // Check if there's a redirect URL saved from a live session join attempt
                 const redirectUrl = localStorage.getItem('redirect_after_login');
                 if (redirectUrl) {
+                    // Show message about redirection
+                    const redirectMsg = document.createElement('div');
+                    redirectMsg.className = 'message';
+                    redirectMsg.textContent = 'Redirecting you to the live session...';
+                    document.querySelector('.loading').appendChild(redirectMsg);
+                    
                     // Clear the stored redirect URL
                     localStorage.removeItem('redirect_after_login');
                     
                     // Redirect after a short delay
                     setTimeout(() => {
                         window.location.href = redirectUrl;
-                    }, 2000);
-                } else {
-                    // Redirect to homepage after a short delay
-                    setTimeout(() => {
-                        window.location.href = 'https://playgroundcode.vercel.app/index.html';
                     }, 2000);
                 }
             } catch (error) {
@@ -309,9 +308,9 @@
                 errorElem.textContent = error.message || 'Unknown error occurred';
                 document.querySelector('.loading').appendChild(errorElem);
                 
-                // Add a return link only in case of error
+                // Add a return link
                 const linkElem = document.createElement('a');
-                linkElem.href = 'https://playgroundcode.vercel.app/index.html';
+                linkElem.href = window.location.origin + '/index.html';
                 linkElem.textContent = 'Return to homepage';
                 linkElem.className = 'return-link';
                 document.querySelector('.loading').appendChild(linkElem);
