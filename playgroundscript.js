@@ -64,7 +64,7 @@ function initializeGitHubDialogs() {
 // Initialize editors and share functionality
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize CodeMirror editors
-    window.htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+    const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
         mode: 'htmlmixed',
         theme: 'material',
         lineNumbers: true,
@@ -75,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lineWrapping: true
     });
 
-    window.cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
+    const cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
         mode: 'css',
         theme: 'material',
         lineNumbers: true,
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lineWrapping: true
     });
 
-    window.jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
+    const jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
         mode: 'javascript',
         theme: 'material',
         lineNumbers: true,
@@ -94,6 +94,11 @@ document.addEventListener('DOMContentLoaded', () => {
         indentUnit: 4,
         lineWrapping: true
     });
+
+    // Make editors available globally
+    window.htmlEditor = htmlEditor;
+    window.cssEditor = cssEditor;
+    window.jsEditor = jsEditor;
 
     // Setup Share Dropdown Options
     const shareButton = document.getElementById('share-button');
@@ -110,66 +115,52 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Get current code content
             const codeContent = {
-                html: window.htmlEditor.getValue(),
-                css: window.cssEditor.getValue(),
-                js: window.jsEditor.getValue()
+                html: htmlEditor.getValue(),
+                css: cssEditor.getValue(),
+                js: jsEditor.getValue()
             };
 
             // Show loading state
             showNotification('Generating share link...');
             
+            // Use TinyURL API directly instead of encoding in URL
+            const apiUrl = 'https://tinyurl.com/api-create.php';
+            const payload = JSON.stringify(codeContent);
+            
+            // Create a temporary element to store the payload
+            const tempElement = document.createElement('div');
+            tempElement.id = 'temp-payload';
+            tempElement.style.display = 'none';
+            tempElement.textContent = payload;
+            document.body.appendChild(tempElement);
+            
             // Generate a unique ID for this playground content
             const contentId = Date.now().toString(36) + Math.random().toString(36).substr(2);
             
             // Save to localStorage as a temporary solution
-            localStorage.setItem(`playground_${contentId}`, JSON.stringify(codeContent));
+            localStorage.setItem(`playground_${contentId}`, payload);
             
-            // Generate the sharing URL with just the ID - this is the important part
-            const baseUrl = window.location.origin + window.location.pathname;
+            // Generate the sharing URL with just the ID
+            const baseUrl = window.location.href.split('?')[0];
             const shareUrl = `${baseUrl}?id=${contentId}`;
             
-            console.log("Sharing URL created:", shareUrl);  // Debugging
-            
+            // Create TinyURL
             try {
-                // Copy the share URL to clipboard directly using the clipboard API
-                await navigator.clipboard.writeText(shareUrl);
-                showNotification('Share link copied to clipboard!');
-                console.log("Successfully copied to clipboard:", shareUrl);
-            } catch (clipboardError) {
-                console.error("Clipboard API error:", clipboardError);
-                
-                // Fallback method for copying to clipboard
-                const tempInput = document.createElement('input');
-                tempInput.value = shareUrl;
-                document.body.appendChild(tempInput);
-                tempInput.select();
-                document.execCommand('copy');
-                document.body.removeChild(tempInput);
-                
-                showNotification('Share link copied to clipboard!');
-                console.log("Used fallback copy method for:", shareUrl);
-            }
-            
-            // Try TinyURL as a second step (only after we've copied the original URL)
-            try {
-                // Use TinyURL API
-                const apiUrl = 'https://tinyurl.com/api-create.php';
                 const response = await fetch(`${apiUrl}?url=${encodeURIComponent(shareUrl)}`);
+                const tinyUrl = await response.text();
                 
-                // Check if the response was successful
-                if (response.ok) {
-                    const tinyUrl = await response.text();
-                    
-                    // Only copy TinyURL if it looks valid (contains tinyurl.com)
-                    if (tinyUrl.includes('tinyurl.com')) {
-                        await navigator.clipboard.writeText(tinyUrl);
-                        showNotification('Shortened link copied to clipboard!');
-                    }
-                }
+                // Copy the tiny URL to clipboard
+                await navigator.clipboard.writeText(tinyUrl);
+                showNotification('Shortened link copied to clipboard!');
             } catch (tinyUrlError) {
                 console.error('Error creating TinyURL:', tinyUrlError);
-                // We already copied the regular URL, so no fallback needed
+                // Fallback to copying the regular URL
+                await navigator.clipboard.writeText(shareUrl);
+                showNotification('Share link copied to clipboard!');
             }
+            
+            // Clean up the temporary element
+            document.body.removeChild(tempElement);
         } catch (error) {
             console.error('Error generating share link:', error);
             showNotification('Error generating share link. Please try again.');
@@ -189,9 +180,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const storedCode = localStorage.getItem(`playground_${sharedId}`);
             if (storedCode) {
                 const code = JSON.parse(storedCode);
-                if (code.html) window.htmlEditor.setValue(code.html);
-                if (code.css) window.cssEditor.setValue(code.css);
-                if (code.js) window.jsEditor.setValue(code.js);
+                if (code.html) htmlEditor.setValue(code.html);
+                if (code.css) cssEditor.setValue(code.css);
+                if (code.js) jsEditor.setValue(code.js);
                 showNotification('Shared code loaded successfully!');
             } else {
                 showNotification('Shared code not found or expired.');
@@ -204,15 +195,50 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle legacy code parameter for backward compatibility
         try {
             const code = JSON.parse(decodeURIComponent(sharedCode));
-            if (code.html) window.htmlEditor.setValue(code.html);
-            if (code.css) window.cssEditor.setValue(code.css);
-            if (code.js) window.jsEditor.setValue(code.js);
+            if (code.html) htmlEditor.setValue(code.html);
+            if (code.css) cssEditor.setValue(code.css);
+            if (code.js) jsEditor.setValue(code.js);
             showNotification('Shared code loaded successfully!');
         } catch (error) {
             console.error('Error loading shared code:', error);
             showNotification('Invalid shared code format.');
         }
     }
+});
+
+// Pre-fill the HTML editor with the default boilerplate
+htmlEditor.setValue(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+</body>
+</html>`);
+
+const cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
+  mode: 'css',
+  theme: 'material',
+  lineNumbers: true,
+  autoCloseBrackets: true,
+  extraKeys: {
+    'Ctrl-/': 'toggleComment',
+    'Cmd-/': 'toggleComment'
+  }
+});
+
+const jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
+  mode: 'javascript',
+  theme: 'material',
+  lineNumbers: true,
+  autoCloseBrackets: true,
+  extraKeys: {
+    'Ctrl-/': 'toggleComment',
+    'Cmd-/': 'toggleComment'
+  }
 });
 
 // Debounce updateOutput for better performance
@@ -223,18 +249,18 @@ function debounceUpdate() {
 }
 
 // Apply debouncing for each editor
-window.htmlEditor.on('change', debounceUpdate);
-window.cssEditor.on('change', debounceUpdate);
-window.jsEditor.on('change', debounceUpdate);
+htmlEditor.on('change', debounceUpdate);
+cssEditor.on('change', debounceUpdate);
+jsEditor.on('change', debounceUpdate);
 
 // Function to update the output preview
 function updateOutput() {
-  const htmlContent = window.htmlEditor.getValue();
-  const cssContent = `<style>${window.cssEditor.getValue()}</style>`;
+  const htmlContent = htmlEditor.getValue();
+  const cssContent = `<style>${cssEditor.getValue()}</style>`;
   const jsContent = `
     <script>
       try {
-        ${window.jsEditor.getValue()}
+        ${jsEditor.getValue()}
       } catch (error) {
         document.body.innerHTML = '<pre style="color: red;">' + error + '</pre>';
       }
@@ -326,9 +352,9 @@ async function confirmSaveProject() {
     projectName = projectName.replace(/[^a-zA-Z0-9-]/g, '-');
     
     // Get code from editors
-    const htmlCode = window.htmlEditor.getValue();
-    const cssCode = window.cssEditor.getValue();
-    const jsCode = window.jsEditor.getValue();
+    const htmlCode = htmlEditor.getValue();
+    const cssCode = cssEditor.getValue();
+    const jsCode = jsEditor.getValue();
     
     // Create folder structure for project
     const folderPath = `${GITHUB_WEBCODE_FOLDER}/${projectName}`;
@@ -467,9 +493,9 @@ async function confirmLoadProject() {
     }
     
     // Update editors with file content
-    window.htmlEditor.setValue(htmlContent);
-    window.cssEditor.setValue(cssContent);
-    window.jsEditor.setValue(jsContent);
+    htmlEditor.setValue(htmlContent);
+    cssEditor.setValue(cssContent);
+    jsEditor.setValue(jsContent);
     
     // Update current project name
     currentProjectName = projectName;
@@ -499,9 +525,9 @@ document.getElementById('load-button').addEventListener('dblclick', () => {
   if (savedCode) {
     try {
       const code = JSON.parse(savedCode);
-      window.htmlEditor.setValue(code.html);
-      window.cssEditor.setValue(code.css);
-      window.jsEditor.setValue(code.js);
+      htmlEditor.setValue(code.html);
+      cssEditor.setValue(code.css);
+      jsEditor.setValue(code.js);
       updateOutput();
       showNotification('Code loaded from local storage!');
     } catch (error) {
@@ -572,7 +598,7 @@ document.getElementById('font-size-slider').addEventListener('input', (event) =>
 });
 
 function setEditorFontSize(fontSize) {
-  const editors = [window.htmlEditor, window.cssEditor, window.jsEditor];
+  const editors = [htmlEditor, cssEditor, jsEditor];
   editors.forEach(editor => {
     editor.getWrapperElement().style.fontSize = `${fontSize}px`;
   });
@@ -845,9 +871,9 @@ function handleMouseMove(e) {
   gridContainer.style.gridTemplateColumns = newColumns.map(width => `${width}px`).join(' ');
   
   // Refresh CodeMirror editors to adjust to new size
-  window.htmlEditor.refresh();
-  window.cssEditor.refresh();
-  window.jsEditor.refresh();
+  htmlEditor.refresh();
+  cssEditor.refresh();
+  jsEditor.refresh();
   
   // Force a redraw of the output
   updateOutput();
@@ -879,9 +905,9 @@ function handleMouseUp() {
 function refreshAllEditors() {
   // Delay the refresh slightly to allow layout changes to complete
   setTimeout(() => {
-    window.htmlEditor.refresh();
-    window.cssEditor.refresh();
-    window.jsEditor.refresh();
+    htmlEditor.refresh();
+    cssEditor.refresh();
+    jsEditor.refresh();
     
     // Force a redraw of the output
     updateOutput();
@@ -1043,9 +1069,9 @@ function startLiveSession() {
     
     // Initialize the session data
     firebaseRef.set({
-      html: window.htmlEditor.getValue(),
-      css: window.cssEditor.getValue(),
-      js: window.jsEditor.getValue(),
+      html: htmlEditor.getValue(),
+      css: cssEditor.getValue(),
+      js: jsEditor.getValue(),
       lastUpdate: Date.now(),
       updatedBy: 'host',
       active: true, // Add active status flag
@@ -1209,9 +1235,9 @@ function disconnectFromSession() {
   }
   
   // Remove change listeners from editors
-  window.htmlEditor.off('changes', handleHtmlChanges);
-  window.cssEditor.off('changes', handleCssChanges);
-  window.jsEditor.off('changes', handleJsChanges);
+  htmlEditor.off('changes', handleHtmlChanges);
+  cssEditor.off('changes', handleCssChanges);
+  jsEditor.off('changes', handleJsChanges);
   
   // Update UI
   const shareButton = document.getElementById('share-button');
@@ -1281,9 +1307,9 @@ function setupLiveListeners() {
     isProcessingRemoteChange = true;
     
     // Update editors with remote data
-    window.htmlEditor.setValue(data.html);
-    window.cssEditor.setValue(data.css);
-    window.jsEditor.setValue(data.js);
+    htmlEditor.setValue(data.html);
+    cssEditor.setValue(data.css);
+    jsEditor.setValue(data.js);
     
     // Update output
     updateOutput();
@@ -1299,9 +1325,9 @@ function generateSessionId() {
 
 // Set up local change listeners
 function setupLocalChangeListeners() {
-  window.htmlEditor.on('changes', handleHtmlChanges);
-  window.cssEditor.on('changes', handleCssChanges);
-  window.jsEditor.on('changes', handleJsChanges);
+  htmlEditor.on('changes', handleHtmlChanges);
+  cssEditor.on('changes', handleCssChanges);
+  jsEditor.on('changes', handleJsChanges);
 }
 
 // Handle HTML editor changes
@@ -1313,7 +1339,7 @@ function handleHtmlChanges(instance, changes) {
   
   // Update Firebase with the new HTML content
   firebaseRef.update({
-    html: window.htmlEditor.getValue(),
+    html: htmlEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1328,7 +1354,7 @@ function handleCssChanges(instance, changes) {
   
   // Update Firebase with the new CSS content
   firebaseRef.update({
-    css: window.cssEditor.getValue(),
+    css: cssEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1343,7 +1369,7 @@ function handleJsChanges(instance, changes) {
   
   // Update Firebase with the new JS content
   firebaseRef.update({
-    js: window.jsEditor.getValue(),
+    js: jsEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1508,11 +1534,11 @@ function adjustForScreenSize() {
     const isSmallMobile = width <= 480;
     
     // Refresh CodeMirror editors to ensure proper rendering
-    if (window.htmlEditor && window.cssEditor && window.jsEditor) {
+    if (htmlEditor && cssEditor && jsEditor) {
         setTimeout(() => {
-            window.htmlEditor.refresh();
-            window.cssEditor.refresh();
-            window.jsEditor.refresh();
+            htmlEditor.refresh();
+            cssEditor.refresh();
+            jsEditor.refresh();
         }, 100);
     }
     
