@@ -120,13 +120,15 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Cache-Control': 'no-cache' // Add cache control
+                            'Cache-Control': 'no-cache', // Add cache control
+                            'Accept': 'application/json'
                         },
                         body: JSON.stringify({ 
                             code,
-                            redirect_uri: githubConfig.redirectUri
+                            redirect_uri: PLAYGROUND_URL + '/github-callback.html'
                         }),
                         signal: controller.signal,
+                        mode: 'cors',
                         credentials: 'include' // Add credentials
                     });
                     
