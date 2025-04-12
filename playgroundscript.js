@@ -61,51 +61,158 @@ function initializeGitHubDialogs() {
   document.getElementById('overlay').addEventListener('click', closeAllDialogs);
 }
 
-// Initialize CodeMirror with autoCloseTags and autoCloseBrackets for HTML, CSS, and JS editors
-const htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
-  mode: 'xml',
-  theme: 'material',
-  lineNumbers: true,
-  autoCloseTags: true,
-  extraKeys: {
-    'Ctrl-/': 'toggleComment',  // Enable comment toggling with Ctrl + /
-    'Cmd-/': 'toggleComment'    // For macOS users with Cmd + /
-  }
-});
+// Initialize editors and share functionality
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize CodeMirror editors
+    window.htmlEditor = CodeMirror.fromTextArea(document.getElementById('html-editor'), {
+        mode: 'htmlmixed',
+        theme: 'material',
+        lineNumbers: true,
+        autoCloseTags: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true
+    });
 
-// Pre-fill the HTML editor with the default boilerplate
-htmlEditor.setValue(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<body>
+    window.cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
+        mode: 'css',
+        theme: 'material',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true
+    });
 
-</body>
-</html>`);
+    window.jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
+        mode: 'javascript',
+        theme: 'material',
+        lineNumbers: true,
+        autoCloseBrackets: true,
+        matchBrackets: true,
+        indentUnit: 4,
+        lineWrapping: true
+    });
 
-const cssEditor = CodeMirror.fromTextArea(document.getElementById('css-editor'), {
-  mode: 'css',
-  theme: 'material',
-  lineNumbers: true,
-  autoCloseBrackets: true,
-  extraKeys: {
-    'Ctrl-/': 'toggleComment',
-    'Cmd-/': 'toggleComment'
-  }
-});
+    // Setup Share Dropdown Options
+    const shareButton = document.getElementById('share-button');
+    const shareDropdown = document.getElementById('share-dropdown');
+    const shareCopy = document.getElementById('share-copy');
 
-const jsEditor = CodeMirror.fromTextArea(document.getElementById('js-editor'), {
-  mode: 'javascript',
-  theme: 'material',
-  lineNumbers: true,
-  autoCloseBrackets: true,
-  extraKeys: {
-    'Ctrl-/': 'toggleComment',
-    'Cmd-/': 'toggleComment'
-  }
+    // Toggle dropdown visibility
+    shareButton.addEventListener('click', () => {
+        shareDropdown.style.display = shareDropdown.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Copy Link functionality
+    shareCopy.addEventListener('click', async () => {
+        try {
+            // Get current code content
+            const codeContent = {
+                html: window.htmlEditor.getValue(),
+                css: window.cssEditor.getValue(),
+                js: window.jsEditor.getValue()
+            };
+
+            // Show loading state
+            showNotification('Generating share link...');
+            
+            // Generate a unique ID for this playground content
+            const contentId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+            
+            // Save to localStorage as a temporary solution
+            localStorage.setItem(`playground_${contentId}`, JSON.stringify(codeContent));
+            
+            // Generate the sharing URL with just the ID - this is the important part
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?id=${contentId}`;
+            
+            console.log("Sharing URL created:", shareUrl);  // Debugging
+            
+            try {
+                // Copy the share URL to clipboard directly using the clipboard API
+                await navigator.clipboard.writeText(shareUrl);
+                showNotification('Share link copied to clipboard!');
+                console.log("Successfully copied to clipboard:", shareUrl);
+            } catch (clipboardError) {
+                console.error("Clipboard API error:", clipboardError);
+                
+                // Fallback method for copying to clipboard
+                const tempInput = document.createElement('input');
+                tempInput.value = shareUrl;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                document.execCommand('copy');
+                document.body.removeChild(tempInput);
+                
+                showNotification('Share link copied to clipboard!');
+                console.log("Used fallback copy method for:", shareUrl);
+            }
+            
+            // Try TinyURL as a second step (only after we've copied the original URL)
+            try {
+                // Use TinyURL API
+                const apiUrl = 'https://tinyurl.com/api-create.php';
+                const response = await fetch(`${apiUrl}?url=${encodeURIComponent(shareUrl)}`);
+                
+                // Check if the response was successful
+                if (response.ok) {
+                    const tinyUrl = await response.text();
+                    
+                    // Only copy TinyURL if it looks valid (contains tinyurl.com)
+                    if (tinyUrl.includes('tinyurl.com')) {
+                        await navigator.clipboard.writeText(tinyUrl);
+                        showNotification('Shortened link copied to clipboard!');
+                    }
+                }
+            } catch (tinyUrlError) {
+                console.error('Error creating TinyURL:', tinyUrlError);
+                // We already copied the regular URL, so no fallback needed
+            }
+        } catch (error) {
+            console.error('Error generating share link:', error);
+            showNotification('Error generating share link. Please try again.');
+        } finally {
+            shareDropdown.style.display = 'none';
+        }
+    });
+
+    // Load shared code from URL if present
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedId = urlParams.get('id');
+    const sharedCode = urlParams.get('code');
+    
+    if (sharedId) {
+        try {
+            // Retrieve code from localStorage
+            const storedCode = localStorage.getItem(`playground_${sharedId}`);
+            if (storedCode) {
+                const code = JSON.parse(storedCode);
+                if (code.html) window.htmlEditor.setValue(code.html);
+                if (code.css) window.cssEditor.setValue(code.css);
+                if (code.js) window.jsEditor.setValue(code.js);
+                showNotification('Shared code loaded successfully!');
+            } else {
+                showNotification('Shared code not found or expired.');
+            }
+        } catch (error) {
+            console.error('Error loading shared code:', error);
+            showNotification('Invalid shared code format.');
+        }
+    } else if (sharedCode) {
+        // Handle legacy code parameter for backward compatibility
+        try {
+            const code = JSON.parse(decodeURIComponent(sharedCode));
+            if (code.html) window.htmlEditor.setValue(code.html);
+            if (code.css) window.cssEditor.setValue(code.css);
+            if (code.js) window.jsEditor.setValue(code.js);
+            showNotification('Shared code loaded successfully!');
+        } catch (error) {
+            console.error('Error loading shared code:', error);
+            showNotification('Invalid shared code format.');
+        }
+    }
 });
 
 // Debounce updateOutput for better performance
@@ -116,18 +223,18 @@ function debounceUpdate() {
 }
 
 // Apply debouncing for each editor
-htmlEditor.on('change', debounceUpdate);
-cssEditor.on('change', debounceUpdate);
-jsEditor.on('change', debounceUpdate);
+window.htmlEditor.on('change', debounceUpdate);
+window.cssEditor.on('change', debounceUpdate);
+window.jsEditor.on('change', debounceUpdate);
 
 // Function to update the output preview
 function updateOutput() {
-  const htmlContent = htmlEditor.getValue();
-  const cssContent = `<style>${cssEditor.getValue()}</style>`;
+  const htmlContent = window.htmlEditor.getValue();
+  const cssContent = `<style>${window.cssEditor.getValue()}</style>`;
   const jsContent = `
     <script>
       try {
-        ${jsEditor.getValue()}
+        ${window.jsEditor.getValue()}
       } catch (error) {
         document.body.innerHTML = '<pre style="color: red;">' + error + '</pre>';
       }
@@ -219,9 +326,9 @@ async function confirmSaveProject() {
     projectName = projectName.replace(/[^a-zA-Z0-9-]/g, '-');
     
     // Get code from editors
-    const htmlCode = htmlEditor.getValue();
-    const cssCode = cssEditor.getValue();
-    const jsCode = jsEditor.getValue();
+    const htmlCode = window.htmlEditor.getValue();
+    const cssCode = window.cssEditor.getValue();
+    const jsCode = window.jsEditor.getValue();
     
     // Create folder structure for project
     const folderPath = `${GITHUB_WEBCODE_FOLDER}/${projectName}`;
@@ -360,9 +467,9 @@ async function confirmLoadProject() {
     }
     
     // Update editors with file content
-    htmlEditor.setValue(htmlContent);
-    cssEditor.setValue(cssContent);
-    jsEditor.setValue(jsContent);
+    window.htmlEditor.setValue(htmlContent);
+    window.cssEditor.setValue(cssContent);
+    window.jsEditor.setValue(jsContent);
     
     // Update current project name
     currentProjectName = projectName;
@@ -392,9 +499,9 @@ document.getElementById('load-button').addEventListener('dblclick', () => {
   if (savedCode) {
     try {
       const code = JSON.parse(savedCode);
-      htmlEditor.setValue(code.html);
-      cssEditor.setValue(code.css);
-      jsEditor.setValue(code.js);
+      window.htmlEditor.setValue(code.html);
+      window.cssEditor.setValue(code.css);
+      window.jsEditor.setValue(code.js);
       updateOutput();
       showNotification('Code loaded from local storage!');
     } catch (error) {
@@ -427,32 +534,6 @@ document.addEventListener('click', () => {
     if (dropdown.style.display === 'block') {
         dropdown.style.display = 'none';
     }
-});
-
-// Setup Share Dropdown Options
-document.addEventListener('DOMContentLoaded', () => {
-    // Copy Link option
-    document.getElementById('share-copy').addEventListener('click', () => {
-        // Generate a shareable URL with the current code
-        const currentUrl = window.location.href.split('?')[0]; // Remove any existing query params
-        navigator.clipboard.writeText(currentUrl);
-        showNotification('Link copied to clipboard!');
-        document.getElementById('share-dropdown').style.display = 'none';
-    });
-    
-    // Go Live option
-    document.getElementById('share-live').addEventListener('click', () => {
-        if (typeof firebase === 'undefined') {
-            console.error("Firebase is not defined! Unable to start live session.");
-            showNotification("Error: Firebase not available. Live sharing is not available.");
-            document.getElementById('share-dropdown').style.display = 'none';
-            return;
-        }
-        
-        // Call the startLiveSession function
-        startLiveSession();
-        document.getElementById('share-dropdown').style.display = 'none';
-    });
 });
 
 // Function to toggle fullscreen for a specific element
@@ -491,42 +572,11 @@ document.getElementById('font-size-slider').addEventListener('input', (event) =>
 });
 
 function setEditorFontSize(fontSize) {
-  const editors = [htmlEditor, cssEditor, jsEditor];
+  const editors = [window.htmlEditor, window.cssEditor, window.jsEditor];
   editors.forEach(editor => {
     editor.getWrapperElement().style.fontSize = `${fontSize}px`;
   });
 }
-
-// Load shared code from URL if present
-window.addEventListener('load', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const sharedCode = urlParams.get('code');
-  if (sharedCode) {
-    try {
-      const code = JSON.parse(decodeURIComponent(sharedCode));
-      htmlEditor.setValue(code.html);
-      cssEditor.setValue(code.css);
-      jsEditor.setValue(code.js);
-      updateOutput();
-    } catch (error) {
-      showNotification('Invalid shared code.');
-    }
-  }
-
-  // Trigger initial output update
-  updateOutput();
-
-  // Remove the welcome overlay after a few seconds
-  setTimeout(() => {
-    const welcomeOverlay = document.getElementById('welcome-overlay');
-    if (welcomeOverlay) {
-      welcomeOverlay.style.display = 'none';
-    }
-  }, 3000); // Matches the fadeOut animation time
-
-  // Initialize resizers and call only after DOM is fully loaded
-  initializeResizers();
-});
 
 // chat bot code
 document.addEventListener("DOMContentLoaded", function () {
@@ -795,9 +845,9 @@ function handleMouseMove(e) {
   gridContainer.style.gridTemplateColumns = newColumns.map(width => `${width}px`).join(' ');
   
   // Refresh CodeMirror editors to adjust to new size
-  htmlEditor.refresh();
-  cssEditor.refresh();
-  jsEditor.refresh();
+  window.htmlEditor.refresh();
+  window.cssEditor.refresh();
+  window.jsEditor.refresh();
   
   // Force a redraw of the output
   updateOutput();
@@ -829,9 +879,9 @@ function handleMouseUp() {
 function refreshAllEditors() {
   // Delay the refresh slightly to allow layout changes to complete
   setTimeout(() => {
-    htmlEditor.refresh();
-    cssEditor.refresh();
-    jsEditor.refresh();
+    window.htmlEditor.refresh();
+    window.cssEditor.refresh();
+    window.jsEditor.refresh();
     
     // Force a redraw of the output
     updateOutput();
@@ -993,9 +1043,9 @@ function startLiveSession() {
     
     // Initialize the session data
     firebaseRef.set({
-      html: htmlEditor.getValue(),
-      css: cssEditor.getValue(),
-      js: jsEditor.getValue(),
+      html: window.htmlEditor.getValue(),
+      css: window.cssEditor.getValue(),
+      js: window.jsEditor.getValue(),
       lastUpdate: Date.now(),
       updatedBy: 'host',
       active: true, // Add active status flag
@@ -1159,9 +1209,9 @@ function disconnectFromSession() {
   }
   
   // Remove change listeners from editors
-  htmlEditor.off('changes', handleHtmlChanges);
-  cssEditor.off('changes', handleCssChanges);
-  jsEditor.off('changes', handleJsChanges);
+  window.htmlEditor.off('changes', handleHtmlChanges);
+  window.cssEditor.off('changes', handleCssChanges);
+  window.jsEditor.off('changes', handleJsChanges);
   
   // Update UI
   const shareButton = document.getElementById('share-button');
@@ -1231,9 +1281,9 @@ function setupLiveListeners() {
     isProcessingRemoteChange = true;
     
     // Update editors with remote data
-    htmlEditor.setValue(data.html);
-    cssEditor.setValue(data.css);
-    jsEditor.setValue(data.js);
+    window.htmlEditor.setValue(data.html);
+    window.cssEditor.setValue(data.css);
+    window.jsEditor.setValue(data.js);
     
     // Update output
     updateOutput();
@@ -1249,9 +1299,9 @@ function generateSessionId() {
 
 // Set up local change listeners
 function setupLocalChangeListeners() {
-  htmlEditor.on('changes', handleHtmlChanges);
-  cssEditor.on('changes', handleCssChanges);
-  jsEditor.on('changes', handleJsChanges);
+  window.htmlEditor.on('changes', handleHtmlChanges);
+  window.cssEditor.on('changes', handleCssChanges);
+  window.jsEditor.on('changes', handleJsChanges);
 }
 
 // Handle HTML editor changes
@@ -1263,7 +1313,7 @@ function handleHtmlChanges(instance, changes) {
   
   // Update Firebase with the new HTML content
   firebaseRef.update({
-    html: htmlEditor.getValue(),
+    html: window.htmlEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1278,7 +1328,7 @@ function handleCssChanges(instance, changes) {
   
   // Update Firebase with the new CSS content
   firebaseRef.update({
-    css: cssEditor.getValue(),
+    css: window.cssEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1293,7 +1343,7 @@ function handleJsChanges(instance, changes) {
   
   // Update Firebase with the new JS content
   firebaseRef.update({
-    js: jsEditor.getValue(),
+    js: window.jsEditor.getValue(),
     lastUpdate: Date.now(),
     updatedBy: lastUpdatedBy
   });
@@ -1458,11 +1508,11 @@ function adjustForScreenSize() {
     const isSmallMobile = width <= 480;
     
     // Refresh CodeMirror editors to ensure proper rendering
-    if (htmlEditor && cssEditor && jsEditor) {
+    if (window.htmlEditor && window.cssEditor && window.jsEditor) {
         setTimeout(() => {
-            htmlEditor.refresh();
-            cssEditor.refresh();
-            jsEditor.refresh();
+            window.htmlEditor.refresh();
+            window.cssEditor.refresh();
+            window.jsEditor.refresh();
         }, 100);
     }
     
