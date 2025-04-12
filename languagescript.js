@@ -95,13 +95,77 @@ window.addEventListener('DOMContentLoaded', function() {
         console.log('Firebase SDK not available');
     }
     
-    // Check for live session in URL when loading the page
+    // Check URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const liveSessionId = urlParams.get('live');
+    const sharedCode = urlParams.get('code');
+    const shortCode = urlParams.get('s');
     
     if (liveSessionId) {
         // Join existing live session
         joinLiveSession(liveSessionId);
+    } else if (shortCode) {
+        // If we have a short code, try to resolve it
+        if (typeof firebase !== 'undefined') {
+            const db = firebase.database();
+            db.ref(`shortUrls/${shortCode}`).once('value')
+                .then(snapshot => {
+                    const data = snapshot.val();
+                    if (data && data.original) {
+                        // Extract the code parameter from the original URL
+                        const originalUrl = new URL(data.original);
+                        const originalParams = new URLSearchParams(originalUrl.search);
+                        const originalCode = originalParams.get('code');
+                        
+                        if (originalCode) {
+                            try {
+                                const codeData = JSON.parse(decodeURIComponent(originalCode));
+                                if (codeData.code) {
+                                    codeEditor.setValue(codeData.code);
+                                    
+                                    // Switch language if needed
+                                    if (codeData.language && codeData.language !== currentLanguage) {
+                                        document.getElementById('language-select').value = codeData.language;
+                                        handleLanguageChange({ target: { value: codeData.language } });
+                                    }
+                                }
+                            } catch (error) {
+                                console.error("Error parsing shortened code:", error);
+                                showNotification('Invalid shared code in shortened URL.');
+                            }
+                        }
+                    } else {
+                        showNotification('Shortened URL not found or expired.');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error resolving short URL:", error);
+                    showNotification('Error loading shared code.');
+                });
+        }
+    } else if (sharedCode) {
+        try {
+            const codeData = JSON.parse(decodeURIComponent(sharedCode));
+            if (codeData.code) {
+                codeEditor.setValue(codeData.code);
+                
+                // Switch language if needed
+                if (codeData.language && codeData.language !== currentLanguage) {
+                    document.getElementById('language-select').value = codeData.language;
+                    handleLanguageChange({ target: { value: codeData.language } });
+                }
+            } else {
+                // Legacy format - plain code string
+                codeEditor.setValue(decodeURIComponent(sharedCode));
+            }
+        } catch (error) {
+            // Try legacy format where code wasn't JSON
+            try {
+                codeEditor.setValue(decodeURIComponent(sharedCode));
+            } catch (e) {
+                showNotification('Invalid shared code.');
+            }
+        }
     }
 });
 
@@ -419,9 +483,22 @@ function initializeEventListeners() {
     
     document.getElementById('share-copy').addEventListener('click', function() {
         shareDropdown.style.display = 'none';
-        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${encodeURIComponent(codeEditor.getValue())}`;
-        navigator.clipboard.writeText(shareUrl);
-        showNotification('Link copied to clipboard!');
+        const code = codeEditor.getValue();
+        const codeParam = encodeURIComponent(JSON.stringify({
+            code: code,
+            language: currentLanguage
+        }));
+        const shareUrl = `${window.location.origin}${window.location.pathname}?code=${codeParam}`;
+        
+        // Shorten the URL
+        shortenUrl(shareUrl).then(shortUrl => {
+            navigator.clipboard.writeText(shortUrl || shareUrl);
+            showNotification('Link copied to clipboard!');
+        }).catch(error => {
+            console.error("Error shortening URL:", error);
+            navigator.clipboard.writeText(shareUrl);
+            showNotification('Link copied to clipboard!');
+        });
     });
     
     document.getElementById('share-live').addEventListener('click', function() {
@@ -1712,4 +1789,51 @@ function logActivity(userName, userAvatar, action, target, status) {
     database.ref('activity').push(activityData)
         .then(() => console.log('Activity logged:', action))
         .catch(err => console.error('Error logging activity:', err));
+}
+
+// Function to shorten URLs without using external services
+async function shortenUrl(longUrl) {
+    try {
+        // If Firebase is available, use it to store and retrieve shortened URLs
+        if (typeof firebase !== 'undefined') {
+            const db = firebase.database();
+            const urlHash = await generateHash(longUrl);
+            const shortCode = urlHash.substring(0, 8); // Use first 8 characters of hash as short code
+            
+            // Store the mapping in Firebase
+            await db.ref(`shortUrls/${shortCode}`).set({
+                original: longUrl,
+                createdAt: Date.now()
+            });
+            
+            return `${window.location.origin}${window.location.pathname}?s=${shortCode}`;
+        } else {
+            // If Firebase isn't available, return the original URL
+            return longUrl;
+        }
+    } catch (error) {
+        console.error("Error shortening URL:", error);
+        return longUrl;
+    }
+}
+
+// Generate a hash for the URL
+async function generateHash(str) {
+    try {
+        // Use browser's crypto API to generate a hash
+        const msgBuffer = new TextEncoder().encode(str);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+    } catch (error) {
+        // Fallback to simple hashing if crypto API is not available
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(16);
+    }
 } 
