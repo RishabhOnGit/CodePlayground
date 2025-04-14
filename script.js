@@ -27,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Redirect to GitHub OAuth
         window.location.href = getGithubAuthUrl();
+        // Initiate GitHub login
+        initiateGithubLogin();
     });
     
     // Add event listener for logout button
@@ -776,8 +778,8 @@ function handleGitHubAuth() {
             showNotification('Connecting to GitHub...', 3000);
         }
         
-        // Redirect to GitHub OAuth
-        window.location.href = getGithubAuthUrl();
+        // Initiate GitHub login
+        initiateGithubLogin();
     });
     
     // Logout button click handler
@@ -916,6 +918,7 @@ function showLoginRequiredMessage() {
         this.style.backgroundColor = '#e0e0e0';
         this.disabled = true;
         
+        // Directly use the initiateGithubLogin function
         // Show user-friendly notification
         if (typeof showNotification === 'function') {
             showNotification('Connecting to GitHub...', 3000);
@@ -923,6 +926,8 @@ function showLoginRequiredMessage() {
         
         // Redirect to GitHub OAuth
         window.location.href = getGithubAuthUrl();
+        // Initiate GitHub login
+        initiateGithubLogin();
     });
     
     // Add a style for the animation
@@ -970,4 +975,13 @@ function showLoginRequiredMessage() {
             }, 500);
         }
     }, 10000);
+}
+
+// Define the missing getGithubAuthUrl function
+function getGithubAuthUrl() {
+    // This function should return the GitHub OAuth URL
+    // Since we already have initiateGithubLogin(), we'll just use that instead
+    console.log("getGithubAuthUrl called, using initiateGithubLogin instead");
+    initiateGithubLogin();
+    return ''; // Return empty string as we're handling redirect in initiateGithubLogin
 }
