@@ -723,8 +723,68 @@
         window.location.href = 'admin-panel.html';
     });
 
+    async function submitFeedback(event) {
+        event.preventDefault();
+        
+        try {
+            // Check if Firebase is initialized
+            if (!firebase || !firebase.database) {
+                throw new Error('Firebase is not initialized');
+            }
+
+            // Check if user is logged in
+            const username = localStorage.getItem('github_user_name');
+            if (!username) {
+                alert('Please login with GitHub to submit feedback');
+                hidePopups();
+                return;
+            }
+            
+            const feedbackType = document.getElementById('feedback-type').value;
+            const feedbackMessage = document.getElementById('feedback-message').value;
+            
+            if (!feedbackMessage.trim()) {
+                alert('Please enter your feedback message');
+                return;
+            }
+
+            // Create feedback object
+            const feedback = {
+                type: feedbackType,
+                message: feedbackMessage.trim(),
+                username: username,
+                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                status: 'pending'
+            };
+
+            // Get database reference and push feedback
+            const db = firebase.database();
+            const feedbackRef = db.ref('feedback');
+            
+            // Use set with push key instead of push directly
+            const newFeedbackKey = feedbackRef.push().key;
+            await feedbackRef.child(newFeedbackKey).set(feedback);
+            
+            // Success
+            alert('Thank you for your feedback!');
+            document.getElementById('feedback-message').value = '';
+            hidePopups();
+            
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Error submitting feedback. Please try again.');
+        }
+    }
+
+    // Update showPopup function to ensure Firebase is available
     function showPopup(type) {
         if (type === 'feedback') {
+            // Check if Firebase is available
+            if (!firebase || !firebase.database) {
+                alert('Unable to load feedback system. Please try again later.');
+                return;
+            }
+            
             const username = localStorage.getItem('github_user_name');
             if (!username) {
                 alert('Please login with GitHub to submit feedback');
@@ -764,54 +824,6 @@
         // Initialize Firebase if not already initialized
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
-        }
-    }
-
-    async function submitFeedback(event) {
-        event.preventDefault();
-        
-        // Check if user is logged in
-        const username = localStorage.getItem('github_user_name');
-        if (!username) {
-            alert('Please login with GitHub to submit feedback');
-            hidePopups();
-            return;
-        }
-        
-        const feedbackType = document.getElementById('feedback-type').value;
-        const feedbackMessage = document.getElementById('feedback-message').value;
-        
-        if (!feedbackMessage.trim()) {
-            alert('Please enter your feedback message');
-            return;
-        }
-
-        try {
-            // Create feedback object
-            const feedback = {
-                type: feedbackType,
-                message: feedbackMessage,
-                username: username,
-                timestamp: new Date().toISOString(),
-                status: 'pending'
-            };
-            
-            // Get reference to feedback in database
-            const feedbackRef = firebase.database().ref('feedback');
-            
-            // Push new feedback to database
-            await feedbackRef.push(feedback);
-            
-            // Show success message
-            alert('Thank you for your feedback!');
-            
-            // Clear form and close popup
-            document.getElementById('feedback-message').value = '';
-            hidePopups();
-            
-        } catch (error) {
-            console.error('Error submitting feedback:', error);
-            alert('Error submitting feedback. Please try again.');
         }
     }
 
