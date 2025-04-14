@@ -19,7 +19,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
@@ -485,6 +485,25 @@
             }
         }
     </style>
+
+    <!-- Initialize Firebase -->
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-3XDB0vSiQlbGL-Sa9RFmT_aVHHhbrjg",
+            authDomain: "playground-f2d18.firebaseapp.com",
+            databaseURL: "https://playground-f2d18-default-rtdb.firebaseio.com",
+            projectId: "playground-f2d18",
+            storageBucket: "playground-f2d18.appspot.com",
+            messagingSenderId: "549060916225",
+            appId: "1:549060916225:web:c34080d58e0747c09afc00"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    </script>
 </head>
 <body>
     <!-- Hamburger Menu -->
@@ -727,8 +746,8 @@
         event.preventDefault();
         
         try {
-            // Check if Firebase is initialized
-            if (!firebase || !firebase.database) {
+            // Ensure Firebase is initialized
+            if (!firebase.apps.length) {
                 throw new Error('Firebase is not initialized');
             }
 
@@ -753,17 +772,13 @@
                 type: feedbackType,
                 message: feedbackMessage.trim(),
                 username: username,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
+                timestamp: Date.now(),
                 status: 'pending'
             };
 
-            // Get database reference and push feedback
+            // Get database reference
             const db = firebase.database();
-            const feedbackRef = db.ref('feedback');
-            
-            // Use set with push key instead of push directly
-            const newFeedbackKey = feedbackRef.push().key;
-            await feedbackRef.child(newFeedbackKey).set(feedback);
+            await db.ref('feedback').push(feedback);
             
             // Success
             alert('Thank you for your feedback!');
@@ -807,24 +822,6 @@
         document.querySelectorAll('.popup').forEach(popup => {
             popup.style.display = 'none';
         });
-    }
-
-    // Add Firebase initialization if not already present
-    if (typeof firebase === 'undefined') {
-        const firebaseConfig = {
-            apiKey: "AIzaSyC-3XDB0vSiQlbGL-Sa9RFmT_aVHHhbrjg",
-            authDomain: "playground-f2d18.firebaseapp.com",
-            databaseURL: "https://playground-f2d18-default-rtdb.firebaseio.com",
-            projectId: "playground-f2d18",
-            storageBucket: "playground-f2d18.appspot.com",
-            messagingSenderId: "549060916225",
-            appId: "1:549060916225:web:c34080d58e0747c09afc00"
-        };
-        
-        // Initialize Firebase if not already initialized
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
     }
 
     // Close popups when clicking escape key
