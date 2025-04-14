@@ -743,15 +743,40 @@
         const feedbackType = document.getElementById('feedback-type').value;
         const feedbackMessage = document.getElementById('feedback-message').value;
         
-        // Here you can implement the actual feedback submission
-        // For now, we'll just show a success message
-        alert('Thank you for your feedback! We appreciate your input.');
+        // Get current user info if logged in
+        const username = localStorage.getItem('github_user_name') || 'Anonymous';
         
-        // Clear the form
-        document.getElementById('feedback-message').value = '';
+        // Create feedback object
+        const feedback = {
+            type: feedbackType,
+            message: feedbackMessage,
+            username: username,
+            timestamp: new Date().toISOString(),
+            status: 'new' // For tracking feedback status
+        };
         
-        // Hide the popup
-        hidePopups();
+        try {
+            // Save to Firebase
+            firebase.database().ref('feedback').push(feedback)
+                .then(() => {
+                    // Show success message
+                    alert('Thank you for your feedback! We appreciate your input.');
+                    
+                    // Clear the form
+                    document.getElementById('feedback-message').value = '';
+                    document.getElementById('feedback-type').value = 'suggestion';
+                    
+                    // Hide the popup
+                    hidePopups();
+                })
+                .catch(error => {
+                    console.error('Error saving feedback:', error);
+                    alert('There was an error submitting your feedback. Please try again.');
+                });
+        } catch (error) {
+            console.error('Error:', error);
+            alert('There was an error submitting your feedback. Please try again.');
+        }
     }
 
     // Close popups when clicking escape key
