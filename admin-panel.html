@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#1e1e1e">
     <title>Admin Panel - Code Playground</title>
 
@@ -295,39 +295,98 @@
         
         /* Responsive styles */
         @media (max-width: 768px) {
+            body {
+                padding-top: 50px;
+            }
+            
             header {
-                padding: 10px;
+                height: 50px;
+                padding: 5px 10px;
             }
             
             .header-title h1 {
-                font-size: 1.1rem;
-            }
-            
-            .home-button {
-                margin-left: 8px;
-                padding: 4px 8px;
-                font-size: 0.8rem;
+                font-size: 1rem;
             }
             
             .user-account {
-                padding: 4px 6px;
-                gap: 6px;
+                padding: 2px 5px;
             }
             
             .user-avatar {
-                width: 24px;
-                height: 24px;
+                width: 20px;
+                height: 20px;
             }
             
             #user-name {
-                max-width: 60px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                font-size: 0.8rem;
+                max-width: 50px;
             }
             
             .logout-button {
-                padding: 4px 6px;
+                padding: 2px 5px;
+                font-size: 0.7rem;
+            }
+            
+            .home-button {
+                padding: 2px 5px;
+                font-size: 0.7rem;
+                margin-left: 5px;
+            }
+            
+            main {
+                padding: 5px;
+            }
+            
+            .card {
+                padding: 10px;
+            }
+            
+            .card-header h2 {
+                font-size: 0.9rem;
+            }
+            
+            .stat-value {
+                font-size: 1.2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.7rem;
+            }
+            
+            .data-table th, .data-table td {
+                padding: 8px 10px;
+                font-size: 0.8rem;
+            }
+            
+            .modal-content {
+                width: 100%;
+                margin: 0;
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .modal-header {
+                padding: 10px 15px;
+            }
+            
+            .modal-body {
+                padding: 15px;
+            }
+            
+            .participant-card {
+                padding: 10px;
+            }
+            
+            .participant-avatar {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .participant-name {
+                font-size: 0.9rem;
+            }
+            
+            .participant-status {
                 font-size: 0.7rem;
             }
             
@@ -391,6 +450,29 @@
                 display: block;
                 width: 100%;
                 overflow-x: auto;
+            }
+        }
+        
+        /* Add these styles for very small screens */
+        @media (max-width: 360px) {
+            .header-title h1 {
+                font-size: 0.9rem;
+            }
+            
+            #user-name {
+                display: none;
+            }
+            
+            .user-account {
+                padding: 2px;
+            }
+            
+            .card-header h2 {
+                font-size: 0.8rem;
+            }
+            
+            .stat-value {
+                font-size: 1rem;
             }
         }
         
