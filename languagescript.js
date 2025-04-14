@@ -167,6 +167,14 @@ window.addEventListener('DOMContentLoaded', function() {
             }
         }
     }
+    
+    // Check if the user has seen the language compiler tour
+    if (!localStorage.getItem('language_tour_shown')) {
+        // Show tour popup after a short delay to ensure UI is fully loaded
+        setTimeout(() => {
+            showLanguageTourPopup();
+        }, 1500);
+    }
 });
 
 // Track page view
@@ -1752,4 +1760,207 @@ async function generateHash(str) {
         }
         return Math.abs(hash).toString(16);
     }
+}
+
+// Function to show the language compiler tour popup
+function showLanguageTourPopup() {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'tour-overlay';
+    
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'tour-popup';
+    
+    // Add popup content
+    popup.innerHTML = `
+        <div class="tour-header">
+            <h3>Welcome to the Language Compiler! 👋</h3>
+        </div>
+        <div class="tour-content">
+            <p>Would you like a quick tour to learn how to use this coding environment?</p>
+        </div>
+        <div class="tour-buttons">
+            <button id="decline-tour" class="tour-button secondary">No, Thanks</button>
+            <button id="accept-tour" class="tour-button primary">Take the Tour</button>
+        </div>
+    `;
+    
+    // Append elements to the document
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+    
+    // Add event listeners to buttons
+    document.getElementById('accept-tour').addEventListener('click', () => {
+        // Remove popup and overlay
+        document.body.removeChild(popup);
+        document.body.removeChild(overlay);
+        
+        // Start the tour
+        startLanguageTour();
+        
+        // Mark tour as shown in localStorage
+        localStorage.setItem('language_tour_shown', 'true');
+    });
+    
+    document.getElementById('decline-tour').addEventListener('click', () => {
+        // Remove popup and overlay
+        document.body.removeChild(popup);
+        document.body.removeChild(overlay);
+        
+        // Mark tour as shown in localStorage
+        localStorage.setItem('language_tour_shown', 'true');
+    });
+}
+
+// Function to start the interactive language compiler tour
+function startLanguageTour() {
+    // Array of tour steps with element selectors and descriptions
+    const tourSteps = [
+        {
+            element: '#language-select',
+            title: 'Language Selector',
+            description: 'Choose your programming language from this dropdown. Currently supported: Python and C.'
+        },
+        {
+            element: '.CodeMirror',
+            title: 'Code Editor',
+            description: 'Write your code here. The editor provides syntax highlighting and auto-completion for the selected language.'
+        },
+        {
+            element: '#run-button',
+            title: 'Run Button',
+            description: 'Click here to execute your code and see the output in the terminal below.'
+        },
+        {
+            element: '#terminal',
+            title: 'Terminal',
+            description: 'View your program output here. You can also provide input to your program when prompted.'
+        },
+        {
+            element: '#save-button',
+            title: 'Save Button',
+            description: 'Save your code to GitHub for future access.'
+        },
+        {
+            element: '#load-button',
+            title: 'Load Button',
+            description: 'Load previously saved code from your GitHub repository.'
+        },
+        {
+            element: '#share-button',
+            title: 'Share Button',
+            description: 'Share your code with others or start a live coding session.'
+        },
+        {
+            element: '#new-button',
+            title: 'New Button',
+            description: 'Start a new file with the default code template for the selected language.'
+        },
+        {
+            element: '.compiler-header',
+            title: 'Header Controls',
+            description: 'Access your account and additional options from here.'
+        }
+    ];
+    
+    // Initialize tour variables
+    let currentStep = 0;
+    
+    // Create tour UI elements
+    const tourHighlight = document.createElement('div');
+    tourHighlight.className = 'tour-highlight';
+    
+    const tourTooltip = document.createElement('div');
+    tourTooltip.className = 'tour-tooltip';
+    
+    // Add elements to the document
+    document.body.appendChild(tourHighlight);
+    document.body.appendChild(tourTooltip);
+    
+    // Function to show a specific tour step
+    function showTourStep(stepIndex) {
+        // Get the current step
+        const step = tourSteps[stepIndex];
+        
+        // Get element position
+        const element = document.querySelector(step.element);
+        if (!element) {
+            console.error(`Tour element not found: ${step.element}`);
+            if (stepIndex < tourSteps.length - 1) {
+                showTourStep(stepIndex + 1);
+            } else {
+                endTour();
+            }
+            return;
+        }
+        
+        const rect = element.getBoundingClientRect();
+        
+        // Position highlight
+        tourHighlight.style.top = `${rect.top + window.scrollY}px`;
+        tourHighlight.style.left = `${rect.left + window.scrollX}px`;
+        tourHighlight.style.width = `${rect.width}px`;
+        tourHighlight.style.height = `${rect.height}px`;
+        tourHighlight.style.display = 'block';
+        
+        // Position tooltip
+        let tooltipTop = rect.bottom + window.scrollY + 10;
+        let tooltipLeft = rect.left + window.scrollX;
+        
+        // Adjust tooltip if it would go off-screen
+        if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
+            tooltipTop = rect.top + window.scrollY - 150 - 10;
+        }
+        
+        if (tooltipLeft + 300 > window.innerWidth) {
+            tooltipLeft = window.innerWidth - 300 - 10;
+        }
+        
+        tourTooltip.style.top = `${tooltipTop}px`;
+        tourTooltip.style.left = `${tooltipLeft}px`;
+        
+        // Update tooltip content
+        tourTooltip.innerHTML = `
+            <div class="tooltip-header">
+                <h4>${step.title}</h4>
+            </div>
+            <div class="tooltip-content">
+                <p>${step.description}</p>
+            </div>
+            <div class="tooltip-buttons">
+                ${stepIndex > 0 ? '<button id="prev-step" class="tour-button secondary">Previous</button>' : ''}
+                ${stepIndex < tourSteps.length - 1 ? 
+                    '<button id="next-step" class="tour-button primary">Next</button>' : 
+                    '<button id="end-tour" class="tour-button primary">Finish Tour</button>'}
+            </div>
+        `;
+        
+        tourTooltip.style.display = 'block';
+        
+        // Add event listeners to buttons
+        if (stepIndex > 0) {
+            document.getElementById('prev-step').addEventListener('click', () => {
+                showTourStep(stepIndex - 1);
+            });
+        }
+        
+        if (stepIndex < tourSteps.length - 1) {
+            document.getElementById('next-step').addEventListener('click', () => {
+                showTourStep(stepIndex + 1);
+            });
+        } else {
+            document.getElementById('end-tour').addEventListener('click', endTour);
+        }
+    }
+    
+    // Function to end the tour
+    function endTour() {
+        // Remove tour elements
+        document.body.removeChild(tourHighlight);
+        document.body.removeChild(tourTooltip);
+    }
+    
+    // Start the tour with the first step
+    showTourStep(currentStep);
 } 

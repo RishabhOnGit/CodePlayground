@@ -59,6 +59,211 @@ function displayUserInfo() {
     
     document.getElementById("user-name").textContent = username;
     document.getElementById("user-avatar").src = avatarUrl;
+    
+    // Check if this is the first login (or if tour hasn't been shown)
+    if (!localStorage.getItem('tour_shown')) {
+        // Show tour popup after a short delay to ensure UI is fully loaded
+        setTimeout(() => {
+            showTourPopup();
+        }, 1000);
+    }
+}
+
+// Function to show the tour popup
+function showTourPopup() {
+    // Create overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'tour-overlay';
+    
+    // Create popup container
+    const popup = document.createElement('div');
+    popup.className = 'tour-popup';
+    
+    // Add popup content
+    popup.innerHTML = `
+        <div class="tour-header">
+            <h3>Welcome to Code Playground! 👋</h3>
+        </div>
+        <div class="tour-content">
+            <p>Would you like a quick tour to explore the features of this platform?</p>
+        </div>
+        <div class="tour-buttons">
+            <button id="decline-tour" class="tour-button secondary">No, Thanks</button>
+            <button id="accept-tour" class="tour-button primary">Take the Tour</button>
+        </div>
+    `;
+    
+    // Append elements to the document
+    document.body.appendChild(overlay);
+    document.body.appendChild(popup);
+    
+    // Add event listeners to buttons
+    document.getElementById('accept-tour').addEventListener('click', () => {
+        // Remove popup and overlay
+        document.body.removeChild(popup);
+        document.body.removeChild(overlay);
+        
+        // Start the tour
+        startTour();
+        
+        // Mark tour as shown in localStorage
+        localStorage.setItem('tour_shown', 'true');
+    });
+    
+    document.getElementById('decline-tour').addEventListener('click', () => {
+        // Remove popup and overlay
+        document.body.removeChild(popup);
+        document.body.removeChild(overlay);
+        
+        // Mark tour as shown in localStorage
+        localStorage.setItem('tour_shown', 'true');
+    });
+}
+
+// Function to start the interactive tour
+function startTour() {
+    // Array of tour steps with element selectors and descriptions
+    const tourSteps = [
+        {
+            element: '.cards-container',
+            title: 'Feature Cards',
+            description: 'These cards showcase the different coding features available in our platform.'
+        },
+        {
+            element: '#start-button',
+            title: 'Web Development',
+            description: 'Click here to start coding HTML, CSS, and JavaScript in our interactive editor.'
+        },
+        {
+            element: '#language-button',
+            title: 'Code Compiler',
+            description: 'Click here to code in Python, C, and other programming languages.'
+        },
+        {
+            element: '#github-login',
+            title: 'GitHub Login',
+            description: 'Login with GitHub to save your projects and access more features.',
+            isHidden: true // Skip this step if the user is already logged in
+        },
+        {
+            element: '#user-info',
+            title: 'User Profile',
+            description: 'View your profile and logout from here.'
+        }
+    ];
+    
+    // Initialize tour variables
+    let currentStep = 0;
+    
+    // Create tour UI elements
+    const tourHighlight = document.createElement('div');
+    tourHighlight.className = 'tour-highlight';
+    
+    const tourTooltip = document.createElement('div');
+    tourTooltip.className = 'tour-tooltip';
+    
+    // Add elements to the document
+    document.body.appendChild(tourHighlight);
+    document.body.appendChild(tourTooltip);
+    
+    // Function to show a specific tour step
+    function showTourStep(stepIndex) {
+        // Get the current step
+        const step = tourSteps[stepIndex];
+        
+        // Skip hidden steps
+        if (step.isHidden) {
+            if (document.querySelector(step.element).classList.contains('hidden')) {
+                // Move to next step if this element is hidden
+                if (stepIndex < tourSteps.length - 1) {
+                    showTourStep(stepIndex + 1);
+                } else {
+                    endTour();
+                }
+                return;
+            }
+        }
+        
+        // Get element position
+        const element = document.querySelector(step.element);
+        if (!element) {
+            console.error(`Tour element not found: ${step.element}`);
+            if (stepIndex < tourSteps.length - 1) {
+                showTourStep(stepIndex + 1);
+            } else {
+                endTour();
+            }
+            return;
+        }
+        
+        const rect = element.getBoundingClientRect();
+        
+        // Position highlight
+        tourHighlight.style.top = `${rect.top + window.scrollY}px`;
+        tourHighlight.style.left = `${rect.left + window.scrollX}px`;
+        tourHighlight.style.width = `${rect.width}px`;
+        tourHighlight.style.height = `${rect.height}px`;
+        tourHighlight.style.display = 'block';
+        
+        // Position tooltip
+        let tooltipTop = rect.bottom + window.scrollY + 10;
+        let tooltipLeft = rect.left + window.scrollX;
+        
+        // Adjust tooltip if it would go off-screen
+        if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
+            tooltipTop = rect.top + window.scrollY - 150 - 10;
+        }
+        
+        if (tooltipLeft + 300 > window.innerWidth) {
+            tooltipLeft = window.innerWidth - 300 - 10;
+        }
+        
+        tourTooltip.style.top = `${tooltipTop}px`;
+        tourTooltip.style.left = `${tooltipLeft}px`;
+        
+        // Update tooltip content
+        tourTooltip.innerHTML = `
+            <div class="tooltip-header">
+                <h4>${step.title}</h4>
+            </div>
+            <div class="tooltip-content">
+                <p>${step.description}</p>
+            </div>
+            <div class="tooltip-buttons">
+                ${stepIndex > 0 ? '<button id="prev-step" class="tour-button secondary">Previous</button>' : ''}
+                ${stepIndex < tourSteps.length - 1 ? 
+                    '<button id="next-step" class="tour-button primary">Next</button>' : 
+                    '<button id="end-tour" class="tour-button primary">Finish Tour</button>'}
+            </div>
+        `;
+        
+        tourTooltip.style.display = 'block';
+        
+        // Add event listeners to buttons
+        if (stepIndex > 0) {
+            document.getElementById('prev-step').addEventListener('click', () => {
+                showTourStep(stepIndex - 1);
+            });
+        }
+        
+        if (stepIndex < tourSteps.length - 1) {
+            document.getElementById('next-step').addEventListener('click', () => {
+                showTourStep(stepIndex + 1);
+            });
+        } else {
+            document.getElementById('end-tour').addEventListener('click', endTour);
+        }
+    }
+    
+    // Function to end the tour
+    function endTour() {
+        // Remove tour elements
+        document.body.removeChild(tourHighlight);
+        document.body.removeChild(tourTooltip);
+    }
+    
+    // Start the tour with the first step
+    showTourStep(currentStep);
 }
 
 // Function to handle logout

@@ -36,6 +36,14 @@ window.addEventListener('load', () => {
     url.searchParams.delete('fromLanding');
     window.history.replaceState({}, document.title, url.pathname);
   }
+  
+  // Check if the user has seen the playground tour
+  if (!localStorage.getItem('playground_tour_shown')) {
+    // Show tour popup after a short delay to ensure UI is fully loaded
+    setTimeout(() => {
+      showPlaygroundTourPopup();
+    }, 1500);
+  }
 });
 
 // GitHub configuration
@@ -2093,4 +2101,207 @@ function isDevRelatedQuestion(input) {
     
     // Check if the input contains any dev keywords
     return devKeywords.some(keyword => text.includes(keyword));
+}
+
+// Function to show the playground tour popup
+function showPlaygroundTourPopup() {
+  // Create overlay
+  const overlay = document.createElement('div');
+  overlay.className = 'tour-overlay';
+  
+  // Create popup container
+  const popup = document.createElement('div');
+  popup.className = 'tour-popup';
+  
+  // Add popup content
+  popup.innerHTML = `
+    <div class="tour-header">
+      <h3>Welcome to the Code Playground! 👋</h3>
+    </div>
+    <div class="tour-content">
+      <p>Would you like a quick tour to learn how to use this coding environment?</p>
+    </div>
+    <div class="tour-buttons">
+      <button id="decline-tour" class="tour-button secondary">No, Thanks</button>
+      <button id="accept-tour" class="tour-button primary">Take the Tour</button>
+    </div>
+  `;
+  
+  // Append elements to the document
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+  
+  // Add event listeners to buttons
+  document.getElementById('accept-tour').addEventListener('click', () => {
+    // Remove popup and overlay
+    document.body.removeChild(popup);
+    document.body.removeChild(overlay);
+    
+    // Start the tour
+    startPlaygroundTour();
+    
+    // Mark tour as shown in localStorage
+    localStorage.setItem('playground_tour_shown', 'true');
+  });
+  
+  document.getElementById('decline-tour').addEventListener('click', () => {
+    // Remove popup and overlay
+    document.body.removeChild(popup);
+    document.body.removeChild(overlay);
+    
+    // Mark tour as shown in localStorage
+    localStorage.setItem('playground_tour_shown', 'true');
+  });
+}
+
+// Function to start the interactive playground tour
+function startPlaygroundTour() {
+  // Array of tour steps with element selectors and descriptions
+  const tourSteps = [
+    {
+      element: '.editor-tabs',
+      title: 'Editor Tabs',
+      description: 'Switch between HTML, CSS, and JavaScript editors to write your code.'
+    },
+    {
+      element: '.code-editor:first-child',
+      title: 'Code Editor',
+      description: 'Write your code here. The editor has syntax highlighting and auto-completion.'
+    },
+    {
+      element: '#output',
+      title: 'Live Preview',
+      description: 'See your code execution in real-time as you type.'
+    },
+    {
+      element: '.column-controls',
+      title: 'Layout Controls',
+      description: 'Adjust the layout of editors and preview to suit your needs.'
+    },
+    {
+      element: '.control-buttons',
+      title: 'Control Buttons',
+      description: 'Save your project, share with others, or create a new one.'
+    },
+    {
+      element: '#save-button',
+      title: 'Save Project',
+      description: 'Save your project to GitHub for future access.'
+    },
+    {
+      element: '#share-button',
+      title: 'Share Project',
+      description: 'Start a live sharing session or get a link to your code.'
+    },
+    {
+      element: '#new-button',
+      title: 'New Project',
+      description: 'Start a fresh project with a clean slate.'
+    },
+    {
+      element: '.playground-header',
+      title: 'Header Controls',
+      description: 'Access settings, your account, and theme options from here.'
+    }
+  ];
+  
+  // Initialize tour variables
+  let currentStep = 0;
+  
+  // Create tour UI elements
+  const tourHighlight = document.createElement('div');
+  tourHighlight.className = 'tour-highlight';
+  
+  const tourTooltip = document.createElement('div');
+  tourTooltip.className = 'tour-tooltip';
+  
+  // Add elements to the document
+  document.body.appendChild(tourHighlight);
+  document.body.appendChild(tourTooltip);
+  
+  // Function to show a specific tour step
+  function showTourStep(stepIndex) {
+    // Get the current step
+    const step = tourSteps[stepIndex];
+    
+    // Get element position
+    const element = document.querySelector(step.element);
+    if (!element) {
+      console.error(`Tour element not found: ${step.element}`);
+      if (stepIndex < tourSteps.length - 1) {
+        showTourStep(stepIndex + 1);
+      } else {
+        endTour();
+      }
+      return;
+    }
+    
+    const rect = element.getBoundingClientRect();
+    
+    // Position highlight
+    tourHighlight.style.top = `${rect.top + window.scrollY}px`;
+    tourHighlight.style.left = `${rect.left + window.scrollX}px`;
+    tourHighlight.style.width = `${rect.width}px`;
+    tourHighlight.style.height = `${rect.height}px`;
+    tourHighlight.style.display = 'block';
+    
+    // Position tooltip
+    let tooltipTop = rect.bottom + window.scrollY + 10;
+    let tooltipLeft = rect.left + window.scrollX;
+    
+    // Adjust tooltip if it would go off-screen
+    if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
+      tooltipTop = rect.top + window.scrollY - 150 - 10;
+    }
+    
+    if (tooltipLeft + 300 > window.innerWidth) {
+      tooltipLeft = window.innerWidth - 300 - 10;
+    }
+    
+    tourTooltip.style.top = `${tooltipTop}px`;
+    tourTooltip.style.left = `${tooltipLeft}px`;
+    
+    // Update tooltip content
+    tourTooltip.innerHTML = `
+      <div class="tooltip-header">
+        <h4>${step.title}</h4>
+      </div>
+      <div class="tooltip-content">
+        <p>${step.description}</p>
+      </div>
+      <div class="tooltip-buttons">
+        ${stepIndex > 0 ? '<button id="prev-step" class="tour-button secondary">Previous</button>' : ''}
+        ${stepIndex < tourSteps.length - 1 ? 
+          '<button id="next-step" class="tour-button primary">Next</button>' : 
+          '<button id="end-tour" class="tour-button primary">Finish Tour</button>'}
+      </div>
+    `;
+    
+    tourTooltip.style.display = 'block';
+    
+    // Add event listeners to buttons
+    if (stepIndex > 0) {
+      document.getElementById('prev-step').addEventListener('click', () => {
+        showTourStep(stepIndex - 1);
+      });
+    }
+    
+    if (stepIndex < tourSteps.length - 1) {
+      document.getElementById('next-step').addEventListener('click', () => {
+        showTourStep(stepIndex + 1);
+      });
+    } else {
+      document.getElementById('end-tour').addEventListener('click', endTour);
+    }
+  }
+  
+  // Function to end the tour
+  function endTour() {
+    // Remove tour elements
+    document.body.removeChild(tourHighlight);
+    document.body.removeChild(tourTooltip);
+  }
+  
+  // Start the tour with the first step
+  showTourStep(currentStep);
 }
