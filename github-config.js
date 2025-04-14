@@ -11,6 +11,33 @@ const githubConfig = {
 function initiateGithubLogin() {
     console.log("Initiating GitHub login with redirect URI:", githubConfig.redirectUri);
     
+    // Show notification about potential delays
+    if (typeof showNotification === 'function') {
+        showNotification('Redirecting to GitHub for login. This may take a moment.', 5000);
+    } else {
+        // Create a temporary notification if showNotification function is not available
+        const notification = document.createElement('div');
+        notification.style.position = 'fixed';
+        notification.style.top = '80px';
+        notification.style.left = '50%';
+        notification.style.transform = 'translateX(-50%)';
+        notification.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        notification.style.color = 'white';
+        notification.style.padding = '10px 15px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '9999';
+        notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.3)';
+        notification.textContent = 'Redirecting to GitHub for login. This may take a moment.';
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            if (document.body.contains(notification)) {
+                document.body.removeChild(notification);
+            }
+        }, 3000);
+    }
+    
     // Construct the GitHub authorization URL
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${githubConfig.clientId}&redirect_uri=${encodeURIComponent(githubConfig.redirectUri)}&scope=${githubConfig.scope}`;
     
@@ -92,4 +119,4 @@ async function createFileInRepo(accessToken, repoFullName, path, content) {
         console.error('Error creating file in repo:', error);
         return false;
     }
-} 
+}

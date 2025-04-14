@@ -14,7 +14,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener for GitHub login button
     document.getElementById("github-login").addEventListener("click", function() {
-        initiateGithubLogin();
+        // Change button appearance to indicate loading
+        const originalContent = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+        this.style.backgroundColor = '#e0e0e0';
+        this.disabled = true;
+        
+        // Show user-friendly notification
+        if (typeof showNotification === 'function') {
+            showNotification('Connecting to GitHub...', 3000);
+        }
+        
+        // Redirect to GitHub OAuth
+        window.location.href = getGithubAuthUrl();
     });
     
     // Add event listener for logout button
@@ -59,6 +71,20 @@ function displayUserInfo() {
     
     document.getElementById("user-name").textContent = username;
     document.getElementById("user-avatar").src = avatarUrl;
+    
+    // Check if tour should be shown immediately (set by admin panel)
+    if (localStorage.getItem('show_tour_immediately') === 'true') {
+        // Clear the flag
+        localStorage.removeItem('show_tour_immediately');
+        // Also clear the normal tour flag to ensure it gets shown
+        localStorage.removeItem('tour_shown');
+        
+        // Show tour popup immediately
+        setTimeout(() => {
+            showTourPopup();
+        }, 1000);
+        return;
+    }
     
     // Check for tour settings in Firebase first (if available)
     if (typeof firebase !== 'undefined' && firebase.database) {
@@ -739,6 +765,17 @@ function handleNavigation() {
 function handleGitHubAuth() {
     // Login button click handler
     document.getElementById("github-login").addEventListener("click", function() {
+        // Change button appearance to indicate loading
+        const originalContent = this.innerHTML;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+        this.style.backgroundColor = '#e0e0e0';
+        this.disabled = true;
+        
+        // Show user-friendly notification
+        if (typeof showNotification === 'function') {
+            showNotification('Connecting to GitHub...', 3000);
+        }
+        
         // Redirect to GitHub OAuth
         window.location.href = getGithubAuthUrl();
     });
@@ -866,6 +903,7 @@ function showLoginRequiredMessage() {
         <div style="font-size: 14px; margin-bottom: 10px;">You need to log in with GitHub to join live sessions</div>
         <button id="login-prompt-button" style="background: white; color: #ff5722; border: none; padding: 5px 15px; 
             border-radius: 4px; cursor: pointer; font-weight: bold;">Login Now</button>
+        <div style="font-size: 12px; margin-top: 8px; opacity: 0.9;">Note: Authentication may take a few moments</div>
     `;
     
     // Add to document
@@ -873,7 +911,18 @@ function showLoginRequiredMessage() {
     
     // Add click handler for the login button in the message
     document.getElementById('login-prompt-button').addEventListener('click', function() {
-        initiateGithubLogin();
+        // Change button appearance to indicate loading
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting...';
+        this.style.backgroundColor = '#e0e0e0';
+        this.disabled = true;
+        
+        // Show user-friendly notification
+        if (typeof showNotification === 'function') {
+            showNotification('Connecting to GitHub...', 3000);
+        }
+        
+        // Redirect to GitHub OAuth
+        window.location.href = getGithubAuthUrl();
     });
     
     // Add a style for the animation

@@ -66,12 +66,49 @@
             max-width: 90%;
             overflow-wrap: break-word;
         }
+        .message.error {
+            color: #f44336;
+        }
+        
+        .timeout-message {
+            margin-top: 15px;
+            padding: 10px 15px;
+            color: #ffffff;
+            font-style: normal;
+            background-color: rgba(255, 152, 0, 0.8);
+            border-radius: 5px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            max-width: 90%;
+            text-align: center;
+            display: none;
+        }
+        
+        .return-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 8px 16px;
+            background-color: #4285f4;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .return-link:hover {
+            background-color: #3367d6;
+        }
     </style>
 </head>
 <body>
     <div class="loading">
         <div class="spinner"></div>
-        <div class="message">Completing authentication...</div>
+        <div class="message">Authenticating with GitHub...</div>
+        <div class="timeout-message">
+            <strong>Authentication is taking longer than expected.</strong><br>
+            This might be due to network issues or GitHub service delays.<br>
+            You can wait or go back and try again in a few moments.
+        </div>
     </div>
 
     <!-- Include GitHub config -->
@@ -238,11 +275,18 @@
                 const code = getUrlParam('code');
                 const error = getUrlParam('error');
                 
+                // Set a timeout to show the timeout message after 8 seconds
+                const timeoutId = setTimeout(() => {
+                    document.querySelector('.timeout-message').style.display = 'block';
+                }, 8000);
+                
                 if (error) {
+                    clearTimeout(timeoutId); // Clear the timeout
                     throw new Error(`GitHub authentication error: ${error}`);
                 }
                 
                 if (!code) {
+                    clearTimeout(timeoutId); // Clear the timeout
                     throw new Error('No authorization code received from GitHub');
                 }
 
@@ -250,6 +294,7 @@
                 const authData = await exchangeCodeForToken(code);
                 
                 if (!authData || !authData.access_token) {
+                    clearTimeout(timeoutId); // Clear the timeout
                     throw new Error('Failed to obtain access token');
                 }
                 
@@ -258,6 +303,9 @@
                 
                 // Create GitHub repository and folders
                 const repoData = await createGitHubRepo(authData.access_token);
+                
+                // Clear the timeout when successful
+                clearTimeout(timeoutId);
                 
                 // Update UI to show success
                 document.querySelector('.spinner').style.display = 'none';

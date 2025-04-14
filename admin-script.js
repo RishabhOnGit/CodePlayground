@@ -442,6 +442,15 @@ function toggleUserTour(userId, userName, enableTour) {
         }).then(() => {
             console.log(`Tour ${action}d for user ${userId}`);
             showNotification(`Tour ${action}d for user successfully`);
+            
+            // If current admin user is also the target user, immediately show the tour
+            const currentUser = localStorage.getItem('github_user_name');
+            if (currentUser === userId && enableTour) {
+                // Create a flag in localStorage to force immediate tour display
+                localStorage.setItem('show_tour_immediately', 'true');
+                showNotification(`Tour will be shown on your next page view`);
+            }
+            
             // Reload users data to update the table
             loadUsersData();
         }).catch(error => {

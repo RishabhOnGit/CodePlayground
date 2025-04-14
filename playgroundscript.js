@@ -37,6 +37,20 @@ window.addEventListener('load', () => {
     window.history.replaceState({}, document.title, url.pathname);
   }
   
+  // Check if tour should be shown immediately (set by admin panel)
+  if (localStorage.getItem('show_tour_immediately') === 'true') {
+    // Clear the flag
+    localStorage.removeItem('show_tour_immediately');
+    // Also clear the normal tour flag to ensure it gets shown
+    localStorage.removeItem('playground_tour_shown');
+    
+    // Show tour popup immediately
+    setTimeout(() => {
+      showPlaygroundTourPopup();
+    }, 1000);
+    return;
+  }
+  
   // Get username from localStorage if available
   const username = localStorage.getItem('github_user_name');
   
