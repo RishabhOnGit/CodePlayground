@@ -1,10 +1,10 @@
 // Firebase Configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBOEl_rNQXqn9T_lM7LM-bGtVHm2M1ynHE",
+  apiKey: "AIzaSyDCxSjzHa0oqU-ktfnaN5sfmrD2fnEcvlE",
   authDomain: "playground-f2d18.firebaseapp.com",
-  databaseURL: "https://playground-f2d18-default-rtdb.firebaseio.com",
+  databaseURL: "https://playground-f2d18-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "playground-f2d18",
-  storageBucket: "playground-f2d18.appspot.com",
+  storageBucket: "playground-f2d18.firebasestorage.app",
   messagingSenderId: "549060916225",
   appId: "1:549060916225:web:c34080d58e0747c09afc00"
 };

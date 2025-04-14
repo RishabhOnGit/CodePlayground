@@ -19,6 +19,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
     
@@ -745,7 +749,25 @@
         });
     }
 
-    function submitFeedback(event) {
+    // Add Firebase initialization if not already present
+    if (typeof firebase === 'undefined') {
+        const firebaseConfig = {
+            apiKey: "AIzaSyC-3XDB0vSiQlbGL-Sa9RFmT_aVHHhbrjg",
+            authDomain: "playground-f2d18.firebaseapp.com",
+            databaseURL: "https://playground-f2d18-default-rtdb.firebaseio.com",
+            projectId: "playground-f2d18",
+            storageBucket: "playground-f2d18.appspot.com",
+            messagingSenderId: "549060916225",
+            appId: "1:549060916225:web:c34080d58e0747c09afc00"
+        };
+        
+        // Initialize Firebase if not already initialized
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+    }
+
+    async function submitFeedback(event) {
         event.preventDefault();
         
         // Check if user is logged in
@@ -764,47 +786,33 @@
             return;
         }
 
-        // Get current timestamp
-        const timestamp = new Date().toISOString();
-        
-        // Create feedback object
-        const feedback = {
-            type: feedbackType,
-            message: feedbackMessage,
-            username: username,
-            timestamp: timestamp,
-            status: 'pending' // Can be 'pending', 'reviewed', 'resolved'
-        };
-
-        // Initialize Firebase if not already initialized
-        if (!window.firebase || !firebase.apps.length) {
-            try {
-                firebase.initializeApp(firebaseConfig);
-            } catch (error) {
-                console.error('Firebase initialization error:', error);
-                alert('Error initializing feedback system. Please try again later.');
-                return;
-            }
+        try {
+            // Create feedback object
+            const feedback = {
+                type: feedbackType,
+                message: feedbackMessage,
+                username: username,
+                timestamp: new Date().toISOString(),
+                status: 'pending'
+            };
+            
+            // Get reference to feedback in database
+            const feedbackRef = firebase.database().ref('feedback');
+            
+            // Push new feedback to database
+            await feedbackRef.push(feedback);
+            
+            // Show success message
+            alert('Thank you for your feedback!');
+            
+            // Clear form and close popup
+            document.getElementById('feedback-message').value = '';
+            hidePopups();
+            
+        } catch (error) {
+            console.error('Error submitting feedback:', error);
+            alert('Error submitting feedback. Please try again.');
         }
-        
-        // Get database reference
-        const database = firebase.database();
-        
-        // Save to Firebase with error handling
-        database.ref('feedback').push(feedback)
-            .then(() => {
-                alert('Thank you for your feedback!');
-                document.getElementById('feedback-message').value = '';
-                hidePopups();
-            })
-            .catch(error => {
-                console.error('Error saving feedback:', error);
-                if (error.code === 'PERMISSION_DENIED') {
-                    alert('You do not have permission to submit feedback. Please make sure you are logged in.');
-                } else {
-                    alert('Error submitting feedback. Please try again later.');
-                }
-            });
     }
 
     // Close popups when clicking escape key
@@ -839,30 +847,7 @@
         menu.classList.remove('active');
         menuItems.classList.remove('show');
     });
-
-    // Add this to ensure Firebase is properly loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check if Firebase config exists
-        if (typeof firebaseConfig === 'undefined') {
-            console.error('Firebase configuration is missing');
-        } else {
-            // Initialize Firebase
-            try {
-                if (!firebase.apps.length) {
-                    firebase.initializeApp(firebaseConfig);
-                }
-                console.log('Firebase initialized successfully');
-            } catch (error) {
-                console.error('Firebase initialization error:', error);
-            }
-        }
-    });
     </script>
-
-    <!-- Add Firebase SDK before your custom scripts -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <script src="firebase-config.js"></script>
 
 </body>
 </html>
