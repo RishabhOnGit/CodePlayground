@@ -23,6 +23,308 @@
     <link rel="stylesheet" href="style.css">
     
     <style>
+        /* Info buttons styles */
+        .info-buttons {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            margin-top: 180px;  /* Position below the title */
+        }
+        
+        .info-button {
+            padding: 8px 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            color: #ffd4f7;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            font-family: 'Poppins', sans-serif;
+            letter-spacing: 0.5px;
+        }
+        
+        .info-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .info-button:active {
+            transform: translateY(0);
+        }
+
+        /* Update responsive styles */
+        @media (max-width: 768px) {
+            .info-buttons {
+                margin-top: 150px;  /* Slightly less space on mobile */
+                gap: 10px;
+            }
+            
+            .info-button {
+                padding: 6px 15px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .info-buttons {
+                margin-top: 130px;
+                width: 90%;
+                justify-content: center;
+            }
+        }
+
+        /* Updated Popup styles */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(31, 9, 43, 0.85);
+            z-index: 2000;
+            backdrop-filter: blur(8px);
+        }
+        
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(45, 13, 63, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            z-index: 2001;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            color: #ffd4f7;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .popup-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: white;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .popup-close {
+            background: none;
+            border: none;
+            color: #ffd4f7;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .popup-close:hover {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: rotate(90deg);
+        }
+        
+        .popup-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .popup-content ul {
+            padding-left: 20px;
+            margin: 15px 0;
+        }
+
+        .popup-content li {
+            margin: 10px 0;
+            list-style-type: none;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .popup-content li:before {
+            content: '•';
+            color: #ffd4f7;
+            font-size: 1.5em;
+            position: absolute;
+            left: 0;
+            top: -2px;
+        }
+
+        /* Updated Feedback Form Styles */
+        .popup-content form {
+            margin-top: 25px;
+        }
+
+        .popup-content .form-group {
+            margin-bottom: 25px;
+        }
+
+        .popup-content label {
+            display: block;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .popup-content select,
+        .popup-content textarea {
+            width: 100%;
+            padding: 15px;
+            background-color: rgba(26, 14, 38, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            color: white;
+            font-size: 1rem;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            resize: vertical;
+        }
+
+        .popup-content select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 15px;
+            padding-right: 45px;
+            cursor: pointer;
+        }
+
+        .popup-content select:focus,
+        .popup-content textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-content textarea {
+            min-height: 150px;
+        }
+
+        .popup-content select option {
+            background-color: #1a0e26;
+            color: white;
+            padding: 10px;
+        }
+
+        .popup-content button[type="submit"] {
+            background-color: #6a1b9a;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            width: auto;
+            display: inline-block;
+        }
+
+        .popup-content button[type="submit"]:hover {
+            background-color: #7b1fa2;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .popup-content button[type="submit"]:active {
+            transform: translateY(0);
+        }
+
+        /* Update popup background for feedback */
+        #feedback-popup {
+            background-color: #2D1543;
+        }
+
+        #feedback-popup .popup-header {
+            border-bottom-color: rgba(255, 255, 255, 0.1);
+        }
+
+        #feedback-popup .popup-close {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        #feedback-popup .popup-close:hover {
+            opacity: 1;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animation for popup */
+        @keyframes popupFadeIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -48%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        .popup.show {
+            animation: popupFadeIn 0.3s ease forwards;
+        }
+
+        @media (max-width: 480px) {
+            .popup {
+                padding: 20px;
+                width: 95%;
+            }
+
+            .popup-title {
+                font-size: 1.5rem;
+            }
+
+            .popup-content {
+                font-size: 1rem;
+            }
+        }
+
         /* GitHub login button styles */
         .github-login {
             display: flex;
@@ -63,9 +365,212 @@
         .hidden {
             display: none !important;
         }
+
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            cursor: pointer;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-menu:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .hamburger-icon {
+            width: 24px;
+            height: 18px;
+            position: relative;
+            transform: rotate(0deg);
+            transition: .5s ease-in-out;
+        }
+
+        .hamburger-icon span {
+            display: block;
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background: #ffd4f7;
+            border-radius: 2px;
+            opacity: 1;
+            left: 0;
+            transform: rotate(0deg);
+            transition: .25s ease-in-out;
+        }
+
+        .hamburger-icon span:nth-child(1) { top: 0px; }
+        .hamburger-icon span:nth-child(2) { top: 8px; }
+        .hamburger-icon span:nth-child(3) { top: 16px; }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(1) {
+            top: 8px;
+            transform: rotate(135deg);
+        }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            left: -60px;
+        }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(3) {
+            top: 8px;
+            transform: rotate(-135deg);
+        }
+
+        /* Menu Items Styles */
+        .menu-items {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background-color: rgba(74, 20, 140, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .menu-items.show {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .menu-items .info-button {
+            width: 150px;
+            text-align: left;
+            padding: 12px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+        }
+
+        .menu-items .info-button i {
+            font-size: 1.1em;
+            width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .menu-items {
+                right: 10px;
+                left: 10px;
+                border-radius: 10px;
+            }
+
+            .menu-items .info-button {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
+    <!-- Hamburger Menu -->
+    <div class="hamburger-menu" onclick="toggleMenu()">
+        <div class="hamburger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- Menu Items -->
+    <div class="menu-items">
+        <button class="info-button" onclick="showPopup('about')">
+            <i class="fas fa-info-circle"></i>About
+        </button>
+        <button class="info-button" onclick="showPopup('contact')">
+            <i class="fas fa-envelope"></i>Contact
+        </button>
+        <button class="info-button" onclick="showPopup('feedback')">
+            <i class="fas fa-comment"></i>Feedback
+        </button>
+    </div>
+
+    <!-- Popup Overlay -->
+    <div id="popup-overlay" class="popup-overlay" onclick="hidePopups()"></div>
+
+    <!-- About Popup -->
+    <div id="about-popup" class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">About Code Playground</h2>
+            <button class="popup-close" onclick="hidePopups()">&times;</button>
+        </div>
+        <div class="popup-content">
+            <p>Welcome to Code Playground - your interactive coding environment!</p>
+            <p>Features:</p>
+            <ul>
+                <li>Web Development with HTML, CSS, and JavaScript</li>
+                <li>Multiple programming language support (Python, C)</li>
+                <li>Real-time code execution</li>
+                <li>Live collaboration</li>
+                <li>GitHub integration for saving your work</li>
+            </ul>
+            <p>Start coding, experimenting, and learning today!</p>
+        </div>
+    </div>
+
+    <!-- Contact Popup -->
+    <div id="contact-popup" class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">Contact Us</h2>
+            <button class="popup-close" onclick="hidePopups()">&times;</button>
+        </div>
+        <div class="popup-content">
+            <p>Get in touch with us:</p>
+            <ul>
+                <li>Email: support@codeplayground.com</li>
+                <li>GitHub: github.com/codeplayground</li>
+                <li>Twitter: @codeplayground</li>
+            </ul>
+            <p>We're here to help! Feel free to reach out with any questions or concerns.</p>
+        </div>
+    </div>
+
+    <!-- Feedback Popup -->
+    <div id="feedback-popup" class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">Send Feedback</h2>
+            <button class="popup-close" onclick="hidePopups()">&times;</button>
+        </div>
+        <div class="popup-content">
+            <p>We value your feedback! Help us improve Code Playground:</p>
+            <form id="feedback-form" onsubmit="submitFeedback(event)">
+                <div class="form-group">
+                    <label for="feedback-type">Type of Feedback:</label>
+                    <select id="feedback-type">
+                        <option value="suggestion">Suggestion</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="feedback-message">Your Feedback:</label>
+                    <textarea id="feedback-message" rows="6"></textarea>
+                </div>
+                <button type="submit">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Landing Page Container -->
     <div class="landing-container">
@@ -82,6 +587,7 @@
         </div>
 
         <h1>🚀 Code Playground</h1>
+        
         <div class="typing-container">
             <div id="typing-text-wrapper">
                 <span id="typing-text"></span>
@@ -211,6 +717,114 @@
     // Add click handler for admin button in user info
     document.getElementById('admin-panel-btn').addEventListener('click', function() {
         window.location.href = 'admin-panel.html';
+    });
+
+    function showPopup(type) {
+        if (type === 'feedback') {
+            const username = localStorage.getItem('github_user_name');
+            if (!username) {
+                alert('Please login with GitHub to submit feedback');
+                return;
+            }
+        }
+        
+        // Show overlay
+        document.getElementById('popup-overlay').style.display = 'block';
+        
+        // Show specific popup
+        document.getElementById(`${type}-popup`).style.display = 'block';
+    }
+
+    function hidePopups() {
+        // Hide overlay
+        document.getElementById('popup-overlay').style.display = 'none';
+        
+        // Hide all popups
+        document.querySelectorAll('.popup').forEach(popup => {
+            popup.style.display = 'none';
+        });
+    }
+
+    function submitFeedback(event) {
+        event.preventDefault();
+        
+        // Check if user is logged in
+        const username = localStorage.getItem('github_user_name');
+        if (!username) {
+            alert('Please login with GitHub to submit feedback');
+            hidePopups();
+            return;
+        }
+        
+        const feedbackType = document.getElementById('feedback-type').value;
+        const feedbackMessage = document.getElementById('feedback-message').value;
+        
+        if (!feedbackMessage.trim()) {
+            alert('Please enter your feedback message');
+            return;
+        }
+
+        // Get current timestamp
+        const timestamp = new Date().toISOString();
+        
+        // Create feedback object
+        const feedback = {
+            type: feedbackType,
+            message: feedbackMessage,
+            username: username,
+            timestamp: timestamp,
+            status: 'pending' // Can be 'pending', 'reviewed', 'resolved'
+        };
+        
+        // Save to Firebase
+        try {
+            firebase.database().ref('feedback').push(feedback)
+                .then(() => {
+                    alert('Thank you for your feedback!');
+                    document.getElementById('feedback-message').value = '';
+                    hidePopups();
+                })
+                .catch(error => {
+                    console.error('Error saving feedback:', error);
+                    alert('Error submitting feedback. Please try again.');
+                });
+        } catch (error) {
+            console.error('Firebase error:', error);
+            alert('Error submitting feedback. Please try again.');
+        }
+    }
+
+    // Close popups when clicking escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            hidePopups();
+        }
+    });
+
+    function toggleMenu() {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        menu.classList.toggle('active');
+        menuItems.classList.toggle('show');
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        
+        if (!menu.contains(event.target) && !menuItems.contains(event.target)) {
+            menu.classList.remove('active');
+            menuItems.classList.remove('show');
+        }
+    });
+
+    // Close menu when scrolling
+    document.addEventListener('scroll', function() {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        menu.classList.remove('active');
+        menuItems.classList.remove('show');
     });
     </script>
 
