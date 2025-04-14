@@ -93,9 +93,298 @@
         #feedback-login-required .github-login i {
             font-size: 1.2rem;
         }
+
+        /* Hamburger Menu Styles */
+        .hamburger-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1001;
+            cursor: pointer;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s ease;
+        }
+
+        .hamburger-menu:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .hamburger-icon {
+            width: 24px;
+            height: 18px;
+            position: relative;
+            transform: rotate(0deg);
+            transition: .5s ease-in-out;
+        }
+
+        .hamburger-icon span {
+            display: block;
+            position: absolute;
+            height: 2px;
+            width: 100%;
+            background: #ffd4f7;
+            border-radius: 2px;
+            opacity: 1;
+            left: 0;
+            transform: rotate(0deg);
+            transition: .25s ease-in-out;
+        }
+
+        .hamburger-icon span:nth-child(1) { top: 0px; }
+        .hamburger-icon span:nth-child(2) { top: 8px; }
+        .hamburger-icon span:nth-child(3) { top: 16px; }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(1) {
+            top: 8px;
+            transform: rotate(135deg);
+        }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            left: -60px;
+        }
+
+        .hamburger-menu.active .hamburger-icon span:nth-child(3) {
+            top: 8px;
+            transform: rotate(-135deg);
+        }
+
+        /* Menu Items Styles */
+        .menu-items {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background-color: rgba(74, 20, 140, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            transform: translateY(-20px);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .menu-items.show {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .menu-items .info-button {
+            width: 150px;
+            text-align: left;
+            padding: 12px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffd4f7;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-items .info-button:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .menu-items .info-button i {
+            font-size: 1.1em;
+            width: 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 480px) {
+            .menu-items {
+                right: 10px;
+                left: 10px;
+                border-radius: 10px;
+            }
+
+            .menu-items .info-button {
+                width: 100%;
+            }
+        }
+
+        /* Popup Overlay */
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 999;
+        }
+
+        /* Common Popup Styles */
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(74, 20, 140, 0.95);
+            border-radius: 15px;
+            min-width: 320px;
+            max-width: 90%;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            color: #ffd4f7;
+        }
+
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .popup-title {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .popup-close {
+            background: none;
+            border: none;
+            color: #ffd4f7;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .popup-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
+        }
+
+        .popup-content {
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffd4f7;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+            outline: none;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #ffd4f7;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .result-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .result-message.success {
+            background: rgba(46, 213, 115, 0.2);
+            color: #2ed573;
+        }
+
+        .result-message.error {
+            background: rgba(255, 71, 87, 0.2);
+            color: #ff4757;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Hamburger Menu -->
+    <div class="hamburger-menu" onclick="toggleMenu()">
+        <div class="hamburger-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- Menu Items -->
+    <div class="menu-items">
+        <button class="info-button" onclick="showPopup('about')">
+            <i class="fas fa-info-circle"></i>About
+        </button>
+        <button class="info-button" onclick="showPopup('contact')">
+            <i class="fas fa-envelope"></i>Contact
+        </button>
+        <button class="info-button" onclick="showPopup('feedback')">
+            <i class="fas fa-comment"></i>Feedback
+        </button>
+    </div>
 
     <!-- Landing Page Container -->
     <div class="landing-container">
@@ -244,6 +533,45 @@
     });
     </script>
 
+    <!-- Popup Overlay -->
+    <div id="popup-overlay" class="popup-overlay" onclick="hidePopups()"></div>
+
+    <!-- About Popup -->
+    <div id="about-popup" class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">About Code Playground</h2>
+            <button class="popup-close" onclick="hidePopups()">&times;</button>
+        </div>
+        <div class="popup-content">
+            <p>Welcome to Code Playground - your ultimate coding companion! 🚀</p>
+            <p>Code Playground is a powerful web-based development environment that lets you:</p>
+            <ul>
+                <li>Write and test HTML, CSS, and JavaScript code in real-time</li>
+                <li>Compile and run code in multiple programming languages</li>
+                <li>Save your work and share it with others</li>
+                <li>Learn and experiment with coding in a fun, interactive way</li>
+            </ul>
+            <p>Built with ❤️ for developers of all skill levels.</p>
+        </div>
+    </div>
+
+    <!-- Contact Popup -->
+    <div id="contact-popup" class="popup">
+        <div class="popup-header">
+            <h2 class="popup-title">Contact Us</h2>
+            <button class="popup-close" onclick="hidePopups()">&times;</button>
+        </div>
+        <div class="popup-content">
+            <p>Have questions or need assistance? Here's how you can reach us:</p>
+            <ul>
+                <li><i class="fas fa-envelope"></i> Email: support@codeplayground.com</li>
+                <li><i class="fab fa-github"></i> GitHub: <a href="https://github.com/Rishabh672003/Programming-Notes" target="_blank">Programming-Notes</a></li>
+                <li><i class="fab fa-discord"></i> Discord: Join our community</li>
+            </ul>
+            <p>We typically respond within 24 hours during business days.</p>
+        </div>
+    </div>
+
     <!-- Feedback Popup -->
     <div id="feedback-popup" class="popup">
         <div class="popup-header">
@@ -381,6 +709,44 @@
             submitButton.classList.remove('loading');
             submitButton.disabled = false;
         }
+    }
+    </script>
+
+    <script>
+    function toggleMenu() {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        menu.classList.toggle('active');
+        menuItems.classList.toggle('show');
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        
+        if (!menu.contains(event.target) && !menuItems.contains(event.target)) {
+            menu.classList.remove('active');
+            menuItems.classList.remove('show');
+        }
+    });
+
+    // Close menu when scrolling
+    document.addEventListener('scroll', function() {
+        const menu = document.querySelector('.hamburger-menu');
+        const menuItems = document.querySelector('.menu-items');
+        menu.classList.remove('active');
+        menuItems.classList.remove('show');
+    });
+    </script>
+
+    <script>
+    // Add this function to hide all popups
+    function hidePopups() {
+        document.getElementById('popup-overlay').style.display = 'none';
+        document.querySelectorAll('.popup').forEach(popup => {
+            popup.style.display = 'none';
+        });
     }
     </script>
 
