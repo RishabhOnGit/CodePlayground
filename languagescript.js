@@ -1,12 +1,10 @@
-// Constants for Judge0 API
-const JUDGE0_API_URL = "https://judge0-ce.p.rapidapi.com";
-const JUDGE0_API_KEY = "b0a088b6d8msh733baa51a484274p160c8djsnd292d46be2bf";
-const JUDGE0_API_HOST = "judge0-ce.p.rapidapi.com";
+// Constants for Piston API (free and open source)
+const PISTON_API_URL = "https://emkc.org/api/v2/piston";
 
-// Language IDs for Judge0 API
+// Language identifiers for Piston API
 const LANGUAGE_IDS = {
-    "c": 50,      // C (GCC 9.2.0)
-    "python": 71  // Python (3.8.1)
+    "python": "python",  // Python 3
+    "c": "c"            // C via GCC
 };
 
 // GitHub configuration
@@ -648,6 +646,9 @@ function handleLanguageChange(event) {
 // Set default Python code
 function setPythonDefaultCode() {
     const defaultCode = `# Welcome to Language Playground
+# NOTE: We are currently experiencing issues with input() functions.
+# We are working on fixing this. Please feel free to use other features.
+
 print("Welcome to Language Playground!")
 print("Start coding in Python here...")`;
     
@@ -657,6 +658,9 @@ print("Start coding in Python here...")`;
 // Set default C code
 function setCDefaultCode() {
     const defaultCode = `// Welcome to Language Playground
+// NOTE: We are currently experiencing issues with scanf() functions.
+// We are working on fixing this. Please feel free to use other features.
+
 #include <stdio.h>
 
 int main() {
@@ -809,27 +813,43 @@ async function executeCodeWithInputs(code, stdin, terminalContent) {
         // Clear previous results
         terminalContent.innerHTML = '<div class="terminal-line">Compiling and executing code...</div>';
         
-        // Create a submission
-        const submission = await createSubmission(code, stdin);
+        // Get language from current selection
+        const language = LANGUAGE_IDS[currentLanguage];
         
-        if (!submission || !submission.token) {
-            throw new Error("Failed to create submission. API may be unavailable.");
+        if (!language) {
+            throw new Error(`Language not supported: ${currentLanguage}`);
         }
         
-        // Check submission status
-        let result = await getSubmissionResult(submission.token);
+        // Execute code with Piston API
+        const response = await fetch(`${PISTON_API_URL}/execute`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                language: language,
+                version: "*",
+                files: [
+                    {
+                        content: code
+                    }
+                ],
+                stdin: stdin || "",
+                compile_timeout: 10000,
+                run_timeout: 5000
+            })
+        });
         
-        // Wait for compilation and execution
-        let attempts = 0;
-        while (result.status && result.status.id <= 2 && attempts < 10) { // In progress or queued (with timeout)
-            // Show waiting message
-            terminalContent.innerHTML = `<div class="terminal-line">Waiting for execution (${attempts + 1}/10)...</div>`;
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            result = await getSubmissionResult(submission.token);
-            attempts++;
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("API error response:", errorText);
+            throw new Error(`API error: ${response.status} ${response.statusText}`);
         }
         
-        // Display the results
+        // Get the result directly
+        const result = await response.json();
+        
+        // Display the results using our Piston-compatible displayResults function
         displayResults(result, terminalContent);
         
         // For debugging
@@ -850,74 +870,6 @@ async function executeCodeWithInputs(code, stdin, terminalContent) {
     }
 }
 
-// Create a code submission
-async function createSubmission(code, stdin) {
-    const languageId = LANGUAGE_IDS[currentLanguage];
-    
-    if (!languageId) {
-        throw new Error(`Language ID not found for ${currentLanguage}`);
-    }
-    
-    try {
-        console.log(`Creating submission for language ID: ${languageId}`);
-        console.log(`Code length: ${code.length} characters`);
-        console.log(`Stdin: ${stdin || "None provided"}`);
-        
-        const response = await fetch(`${JUDGE0_API_URL}/submissions?base64_encoded=false&wait=false`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-RapidAPI-Key': JUDGE0_API_KEY,
-                'X-RapidAPI-Host': JUDGE0_API_HOST
-            },
-            body: JSON.stringify({
-                source_code: code,
-                language_id: languageId,
-                stdin: stdin || ""
-            })
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("API error response:", errorText);
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log("Submission created:", result);
-        return result;
-    } catch (error) {
-        console.error('Submission error:', error);
-        throw new Error(`Error submitting code: ${error.message}`);
-    }
-}
-
-// Get submission result
-async function getSubmissionResult(token) {
-    try {
-        console.log(`Getting result for token: ${token}`);
-        const response = await fetch(`${JUDGE0_API_URL}/submissions/${token}?base64_encoded=false`, {
-            headers: {
-                'X-RapidAPI-Key': JUDGE0_API_KEY,
-                'X-RapidAPI-Host': JUDGE0_API_HOST
-            }
-        });
-        
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("API error response:", errorText);
-            throw new Error(`API error: ${response.status} ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        console.log("Result status:", result.status);
-        return result;
-    } catch (error) {
-        console.error('Result error:', error);
-        throw new Error(`Error getting results: ${error.message}`);
-    }
-}
-
 // Display execution results
 function displayResults(result, terminalContent) {
     terminalContent.innerHTML = '';
@@ -930,59 +882,107 @@ function displayResults(result, terminalContent) {
         return;
     }
     
-    // Check for error in the response status
-    if (result.status && result.status.id >= 6) { // Error states in Judge0
-        const errorElement = document.createElement('div');
-        errorElement.className = 'terminal-line error';
-        errorElement.textContent = `Execution error: ${result.status.description}`;
-        terminalContent.appendChild(errorElement);
-    }
-    
-    // Check for compilation error
-    if (result.compile_output) {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'terminal-line error';
-        errorElement.textContent = result.compile_output;
-        terminalContent.appendChild(errorElement);
-    }
-    
-    // Check for runtime error
-    if (result.stderr) {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'terminal-line error';
-        errorElement.textContent = result.stderr;
-        terminalContent.appendChild(errorElement);
-    }
-    
-    // Show stdout
-    if (result.stdout) {
-        const outputLines = result.stdout.split('\n');
-        for (const line of outputLines) {
-            if (line.trim() || outputLines.length === 1) {
-                const outputElement = document.createElement('div');
-                outputElement.className = 'terminal-line';
-                
-                // Handle input prompts (simple detection)
-                if (line.includes('?') || line.toLowerCase().includes('enter') || line.toLowerCase().includes('input')) {
-                    outputElement.className += ' input-prompt';
+    // Check if there's a run object in the response (Piston API format)
+    if (result.run) {
+        // Check for compile errors (if available)
+        if (result.compile && result.compile.stderr) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = result.compile.stderr;
+            terminalContent.appendChild(errorElement);
+            return; // Stop processing if compile error
+        }
+        
+        // Check for runtime errors
+        if (result.run.stderr) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = result.run.stderr;
+            terminalContent.appendChild(errorElement);
+        }
+        
+        // Show stdout
+        if (result.run.stdout) {
+            const outputLines = result.run.stdout.split('\n');
+            for (const line of outputLines) {
+                if (line.trim() || outputLines.length === 1) {
+                    const outputElement = document.createElement('div');
+                    outputElement.className = 'terminal-line';
                     
-                    // Add to input queue for interactive input
-                    userInputQueue.push(line);
+                    // Handle input prompts (simple detection)
+                    if (line.includes('?') || line.toLowerCase().includes('enter') || line.toLowerCase().includes('input')) {
+                        outputElement.className += ' input-prompt';
+                        
+                        // Add to input queue for interactive input
+                        userInputQueue.push(line);
+                    }
+                    
+                    outputElement.textContent = line;
+                    terminalContent.appendChild(outputElement);
                 }
-                
-                outputElement.textContent = line;
-                terminalContent.appendChild(outputElement);
             }
         }
-    }
-    
-    // If no output at all, but execution was successful
-    if (!result.stdout && !result.stderr && !result.compile_output && 
-        result.status && result.status.id === 3) { // Success status
-        const noOutputElement = document.createElement('div');
-        noOutputElement.className = 'terminal-line';
-        noOutputElement.textContent = 'Program executed successfully with no output.';
-        terminalContent.appendChild(noOutputElement);
+        
+        // Check for exit code
+        if (result.run.code !== 0) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = `Program exited with code ${result.run.code}`;
+            terminalContent.appendChild(errorElement);
+        }
+        
+        // If no output but execution was successful
+        if (!result.run.stdout && !result.run.stderr && result.run.code === 0) {
+            const noOutputElement = document.createElement('div');
+            noOutputElement.className = 'terminal-line';
+            noOutputElement.textContent = 'Program executed successfully with no output.';
+            terminalContent.appendChild(noOutputElement);
+        }
+        
+        // Show execution time if available
+        if (result.run.time) {
+            const timeElement = document.createElement('div');
+            timeElement.className = 'terminal-line performance-info';
+            timeElement.textContent = `Execution time: ${result.run.time}ms`;
+            terminalContent.appendChild(timeElement);
+        }
+    } else {
+        // Check for error in the response status
+        if (result.status && result.status.id >= 6) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = `Execution error: ${result.status.description}`;
+            terminalContent.appendChild(errorElement);
+        }
+        
+        // Check for compilation error
+        if (result.compile_output) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = result.compile_output;
+            terminalContent.appendChild(errorElement);
+        }
+        
+        // Check for runtime error
+        if (result.stderr) {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'terminal-line error';
+            errorElement.textContent = result.stderr;
+            terminalContent.appendChild(errorElement);
+        }
+        
+        // Show stdout
+        if (result.stdout) {
+            const outputLines = result.stdout.split('\n');
+            for (const line of outputLines) {
+                if (line.trim() || outputLines.length === 1) {
+                    const outputElement = document.createElement('div');
+                    outputElement.className = 'terminal-line';
+                    outputElement.textContent = line;
+                    terminalContent.appendChild(outputElement);
+                }
+            }
+        }
     }
 }
 
