@@ -360,6 +360,117 @@
             background: rgba(255, 71, 87, 0.2);
             color: #ff4757;
         }
+
+        /* Updated Feedback Popup Styles */
+        #feedback-popup .popup-content {
+            padding: 25px;
+        }
+
+        #feedback-login-required {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        #feedback-login-required h3 {
+            margin: 0 0 20px 0;
+            font-size: 1.2rem;
+            color: #ffd4f7;
+        }
+
+        #feedback-form .form-group {
+            margin-bottom: 25px;
+        }
+
+        #feedback-form label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+            color: #ffd4f7;
+            font-size: 1rem;
+        }
+
+        #feedback-form select,
+        #feedback-form textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffd4f7;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        #feedback-form select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ffd4f7' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: calc(100% - 15px) center;
+            padding-right: 40px;
+        }
+
+        #feedback-form select:focus,
+        #feedback-form textarea:focus {
+            border-color: #ffd4f7;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 212, 247, 0.1);
+        }
+
+        #feedback-form textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        #feedback-form button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffd4f7;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        #feedback-form button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #feedback-form button[type="submit"].loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #feedback-form .result-message {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        #feedback-form .result-message.success {
+            background: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+            border: 1px solid rgba(46, 213, 115, 0.3);
+        }
+
+        #feedback-form .result-message.error {
+            background: rgba(255, 71, 87, 0.15);
+            color: #ff4757;
+            border: 1px solid rgba(255, 71, 87, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -579,27 +690,24 @@
             <button class="popup-close" onclick="hidePopups()">&times;</button>
         </div>
         <div class="popup-content">
-            <div id="feedback-login-required" style="display: none;">
-                <p>Please log in with GitHub to submit feedback:</p>
+            <div id="feedback-login-required">
+                <h3>Please log in with GitHub to submit feedback</h3>
                 <button class="github-login" onclick="loginWithGithub()">
                     <i class="fab fa-github"></i> Login with GitHub
                 </button>
             </div>
             <div id="feedback-form-container">
-                <p>We value your feedback! Help us improve Code Playground:</p>
                 <form id="feedback-form" onsubmit="submitFeedback(event)">
                     <!-- Web3Forms access key -->
                     <input type="hidden" name="access_key" value="84773365-fbe2-45f9-a602-975e98ab43ca">
-                    <!-- Add subject -->
                     <input type="hidden" name="subject" value="New Feedback from Code Playground">
-                    <!-- Add from_name to show in email -->
                     <input type="hidden" name="from_name" value="Code Playground Feedback">
-                    <!-- Add GitHub username -->
                     <input type="hidden" id="github-username" name="github_username" value="">
 
                     <div class="form-group">
-                        <label for="feedback-type">Type of Feedback:</label>
-                        <select id="feedback-type" name="feedback_type">
+                        <label for="feedback-type">Type of Feedback</label>
+                        <select id="feedback-type" name="feedback_type" required>
+                            <option value="">Select feedback type...</option>
                             <option value="suggestion">Suggestion</option>
                             <option value="bug">Bug Report</option>
                             <option value="feature">Feature Request</option>
@@ -607,10 +715,12 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="feedback-message">Your Feedback:</label>
-                        <textarea id="feedback-message" name="message" rows="6" required></textarea>
+                        <label for="feedback-message">Your Feedback</label>
+                        <textarea id="feedback-message" name="message" rows="6" placeholder="Tell us what you think..." required></textarea>
                     </div>
-                    <button type="submit" id="submit-button">Submit Feedback</button>
+                    <button type="submit" id="submit-button">
+                        <i class="fas fa-paper-plane"></i> Submit Feedback
+                    </button>
                     <div id="result" class="result-message"></div>
                 </form>
             </div>
@@ -618,7 +728,6 @@
     </div>
 
     <script>
-    // Add this to your existing script section
     function showPopup(type) {
         // Show overlay
         document.getElementById('popup-overlay').style.display = 'block';
@@ -629,7 +738,7 @@
 
         // If it's the feedback popup, check login status
         if (type === 'feedback') {
-            const isLoggedIn = window.githubUtils && window.githubUtils.isGithubAuthenticated();
+            const isLoggedIn = localStorage.getItem('github_user_name') !== null;
             const username = localStorage.getItem('github_user_name');
             
             const loginRequired = document.getElementById('feedback-login-required');
@@ -642,7 +751,6 @@
             } else {
                 loginRequired.style.display = 'none';
                 formContainer.style.display = 'block';
-                // Set the username in the hidden input
                 if (usernameInput) {
                     usernameInput.value = username;
                 }
