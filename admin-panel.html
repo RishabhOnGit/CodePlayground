@@ -734,9 +734,80 @@
                 justify-content: center;
             }
         }
+        
+        /* Add blur overlay styles */
+        .blur-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.3s ease;
+        }
+        
+        .blur-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .admin-check {
+            background-color: var(--secondary-bg);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .admin-check i {
+            font-size: 2.5rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        
+        .admin-check h2 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .admin-check p {
+            color: #999;
+            font-size: 0.9rem;
+        }
+        
+        .admin-check .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-top: 15px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+    <!-- Add blur overlay -->
+    <div class="blur-overlay" id="blur-overlay">
+        <div class="admin-check">
+            <i class="fas fa-shield-alt"></i>
+            <h2>Verifying Admin Access</h2>
+            <p>Please wait while we verify your admin privileges...</p>
+            <div class="loading"></div>
+        </div>
+    </div>
+    
     <!-- Notification Popup -->
     <div id="notification-popup" class="notification-popup"></div>
     
@@ -1066,9 +1137,12 @@
         });
         
         function checkAdminAccess() {
+            const blurOverlay = document.getElementById('blur-overlay');
+            
             // Check if user is admin through localStorage
             if (localStorage.getItem('isAdmin') === 'true') {
-                // User is admin, continue loading the page
+                // User is admin, hide the blur overlay
+                blurOverlay.classList.add('hidden');
                 console.log('Admin access granted through localStorage');
                 return;
             }
