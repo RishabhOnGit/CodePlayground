@@ -37,12 +37,56 @@ window.addEventListener('load', () => {
     window.history.replaceState({}, document.title, url.pathname);
   }
   
-  // Check if the user has seen the playground tour
-  if (!localStorage.getItem('playground_tour_shown')) {
-    // Show tour popup after a short delay to ensure UI is fully loaded
-    setTimeout(() => {
-      showPlaygroundTourPopup();
-    }, 1500);
+  // Get username from localStorage if available
+  const username = localStorage.getItem('github_user_name');
+  
+  // Check tour settings in Firebase first if user is logged in
+  if (username && typeof firebase !== 'undefined' && firebase.database) {
+    firebase.database().ref(`userTours/${username}`).once('value', snapshot => {
+      if (snapshot.exists()) {
+        const tourSettings = snapshot.val();
+        
+        // If tour is explicitly enabled by admin, show it regardless of localStorage
+        if (tourSettings.tourEnabled === true) {
+          // Clear local storage flag to force tour to show
+          localStorage.removeItem('playground_tour_shown');
+          
+          // Show tour popup after a short delay
+          setTimeout(() => {
+            showPlaygroundTourPopup();
+          }, 1500);
+          return;
+        }
+        
+        // If playgroundTourShown is explicitly set to true, respect that
+        if (tourSettings.playgroundTourShown === true) {
+          // Update localStorage to match Firebase
+          localStorage.setItem('playground_tour_shown', 'true');
+          return;
+        }
+      }
+      
+      // Fallback to localStorage check if Firebase doesn't have settings
+      // or if no explicit settings were found
+      checkLocalStorageForTour();
+    }).catch(error => {
+      console.error("Error checking tour settings:", error);
+      // Fallback to localStorage
+      checkLocalStorageForTour();
+    });
+  } else {
+    // If not logged in or Firebase is not available, use localStorage
+    checkLocalStorageForTour();
+  }
+  
+  function checkLocalStorageForTour() {
+    // Check if the user has seen the playground tour
+    if (!localStorage.getItem('playground_tour_shown')) {
+      // Show tour popup after a short delay to ensure UI is fully loaded
+      setTimeout(() => {
+        showPlaygroundTourPopup();
+      }, 1500);
+    }
   }
 });
 
@@ -2131,6 +2175,24 @@ function showPlaygroundTourPopup() {
   document.body.appendChild(overlay);
   document.body.appendChild(popup);
   
+  // Function to save tour state to Firebase
+  function saveTourState(shown) {
+    const username = localStorage.getItem('github_user_name');
+    
+    // Save to localStorage
+    localStorage.setItem('playground_tour_shown', 'true');
+    
+    // Save to Firebase if available and user is logged in
+    if (username && typeof firebase !== 'undefined' && firebase.database) {
+      firebase.database().ref(`userTours/${username}`).update({
+        playgroundTourShown: true,
+        lastUpdated: Date.now()
+      }).catch(error => {
+        console.error("Error saving playground tour state to Firebase:", error);
+      });
+    }
+  }
+  
   // Add event listeners to buttons
   document.getElementById('accept-tour').addEventListener('click', () => {
     // Remove popup and overlay
@@ -2140,8 +2202,8 @@ function showPlaygroundTourPopup() {
     // Start the tour
     startPlaygroundTour();
     
-    // Mark tour as shown in localStorage
-    localStorage.setItem('playground_tour_shown', 'true');
+    // Mark tour as shown
+    saveTourState(true);
   });
   
   document.getElementById('decline-tour').addEventListener('click', () => {
@@ -2149,8 +2211,8 @@ function showPlaygroundTourPopup() {
     document.body.removeChild(popup);
     document.body.removeChild(overlay);
     
-    // Mark tour as shown in localStorage
-    localStorage.setItem('playground_tour_shown', 'true');
+    // Mark tour as shown (but not taken)
+    saveTourState(false);
   });
 }
 
@@ -2174,9 +2236,19 @@ function startPlaygroundTour() {
       description: 'See your code execution in real-time as you type.'
     },
     {
+      element: '#home-button',
+      title: 'Home Button',
+      description: 'Return to the main page from here.'
+    },
+    {
       element: '.column-controls',
       title: 'Layout Controls',
       description: 'Adjust the layout of editors and preview to suit your needs.'
+    },
+    {
+      element: '#font-size-slider',
+      title: 'Font Size Control',
+      description: 'Adjust the font size of your code editor for better readability.'
     },
     {
       element: '.control-buttons',
@@ -2189,9 +2261,19 @@ function startPlaygroundTour() {
       description: 'Save your project to GitHub for future access.'
     },
     {
+      element: '#load-button',
+      title: 'Load Project',
+      description: 'Load your previously saved projects from GitHub.'
+    },
+    {
       element: '#share-button',
       title: 'Share Project',
       description: 'Start a live sharing session or get a link to your code.'
+    },
+    {
+      element: '#chat-toggle',
+      title: 'Playground AI',
+      description: 'Get coding help, explanations, and assistance from our AI assistant.'
     },
     {
       element: '#new-button',
@@ -2245,19 +2327,41 @@ function startPlaygroundTour() {
     tourHighlight.style.height = `${rect.height}px`;
     tourHighlight.style.display = 'block';
     
-    // Position tooltip
+    // Position tooltip - ensure it doesn't go off-screen
+    // First try to position below the element
     let tooltipTop = rect.bottom + window.scrollY + 10;
-    let tooltipLeft = rect.left + window.scrollX;
+    let tooltipLeft = rect.left + window.scrollX + (rect.width / 2) - 150; // Center the tooltip
     
-    // Adjust tooltip if it would go off-screen
+    // Make sure tooltip is visible on screen
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    
+    // If tooltip would go below viewport, position it above the element
     if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
       tooltipTop = rect.top + window.scrollY - 150 - 10;
     }
     
-    if (tooltipLeft + 300 > window.innerWidth) {
-      tooltipLeft = window.innerWidth - 300 - 10;
+    // Make sure tooltip doesn't go left of screen
+    if (tooltipLeft < 10) {
+      tooltipLeft = 10;
     }
     
+    // Make sure tooltip doesn't go right of screen
+    if (tooltipLeft + 300 > viewportWidth) {
+      tooltipLeft = viewportWidth - 310;
+    }
+    
+    // If tooltip is off the top of the screen, reposition it
+    if (tooltipTop < window.scrollY) {
+      tooltipTop = rect.bottom + window.scrollY + 10;
+      
+      // If it still doesn't fit, put it in the middle of the screen
+      if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
+        tooltipTop = window.scrollY + (viewportHeight / 2) - 75;
+      }
+    }
+    
+    // Apply the calculated position
     tourTooltip.style.top = `${tooltipTop}px`;
     tourTooltip.style.left = `${tooltipLeft}px`;
     
@@ -2292,6 +2396,14 @@ function startPlaygroundTour() {
       });
     } else {
       document.getElementById('end-tour').addEventListener('click', endTour);
+    }
+    
+    // Scroll element into view if needed
+    if (rect.top < 0 || rect.bottom > viewportHeight) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
     }
   }
   

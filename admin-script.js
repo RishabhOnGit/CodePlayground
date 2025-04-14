@@ -368,6 +368,27 @@ function loadUsersData() {
                 const statusClass = isActive ? 'status-active' : 'status-inactive';
                 statusCell.innerHTML = `<span class="status-badge ${statusClass}">${isActive ? 'Active' : 'Inactive'}</span>`;
                 
+                // Tour Status - NEW COLUMN
+                const tourCell = row.insertCell();
+                const tourStatus = user.tourEnabled ? 'Enabled' : 'Disabled';
+                const tourBtnClass = user.tourEnabled ? 'danger' : 'primary';
+                const tourBtnText = user.tourEnabled ? 'Disable' : 'Enable';
+                
+                // Create toggle button for tour
+                const toggleTourBtn = document.createElement('button');
+                toggleTourBtn.className = `action-button ${tourBtnClass}`;
+                toggleTourBtn.style.padding = '4px 8px';
+                toggleTourBtn.style.fontSize = '0.8rem';
+                toggleTourBtn.innerHTML = `<i class="fas fa-info-circle"></i> ${tourBtnText}`;
+                toggleTourBtn.title = `${tourBtnText} tour for this user`;
+                toggleTourBtn.setAttribute('data-user-id', user.id);
+                toggleTourBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent row click event
+                    toggleUserTour(user.id, user.name, !user.tourEnabled);
+                });
+                
+                tourCell.appendChild(toggleTourBtn);
+                
                 // Actions
                 const actionsCell = row.insertCell();
                 actionsCell.style.textAlign = 'right';
@@ -391,10 +412,45 @@ function loadUsersData() {
             // No users
             const row = usersTable.insertRow();
             const cell = row.insertCell();
-            cell.colSpan = 6; // Updated to account for the new actions column
+            cell.colSpan = 7; // Updated to account for the new tour column
             cell.textContent = 'No users found';
             cell.style.textAlign = 'center';
         }
+    });
+}
+
+// Toggle tour for a user
+function toggleUserTour(userId, userName, enableTour) {
+    if (!userId) return;
+    
+    // Get confirmation
+    const action = enableTour ? 'enable' : 'disable';
+    const confirmToggle = confirm(`Are you sure you want to ${action} the tour for user "${userName || userId}"?`);
+    if (!confirmToggle) return;
+    
+    // Update user record in Firebase
+    getFirebaseDatabase().ref(`users/${userId}`).update({
+        tourEnabled: enableTour
+    }).then(() => {
+        // Also update tour flags in Firebase to enforce this setting
+        getFirebaseDatabase().ref(`userTours/${userId}`).set({
+            tourEnabled: enableTour,
+            mainTourShown: !enableTour,
+            playgroundTourShown: !enableTour,
+            languageTourShown: !enableTour,
+            updatedAt: Date.now()
+        }).then(() => {
+            console.log(`Tour ${action}d for user ${userId}`);
+            showNotification(`Tour ${action}d for user successfully`);
+            // Reload users data to update the table
+            loadUsersData();
+        }).catch(error => {
+            console.error(`Error updating user tour flags:`, error);
+            showNotification(`Error: ${error.message}`);
+        });
+    }).catch(error => {
+        console.error(`Error ${action}ing tour for user:`, error);
+        showNotification(`Error: ${error.message}`);
     });
 }
 

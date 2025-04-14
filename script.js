@@ -60,12 +60,53 @@ function displayUserInfo() {
     document.getElementById("user-name").textContent = username;
     document.getElementById("user-avatar").src = avatarUrl;
     
-    // Check if this is the first login (or if tour hasn't been shown)
-    if (!localStorage.getItem('tour_shown')) {
-        // Show tour popup after a short delay to ensure UI is fully loaded
-        setTimeout(() => {
-            showTourPopup();
-        }, 1000);
+    // Check for tour settings in Firebase first (if available)
+    if (typeof firebase !== 'undefined' && firebase.database) {
+        firebase.database().ref(`userTours/${username}`).once('value', snapshot => {
+            if (snapshot.exists()) {
+                const tourSettings = snapshot.val();
+                
+                // If tour is explicitly enabled by admin, show it regardless of localStorage
+                if (tourSettings.tourEnabled === true) {
+                    // Clear local storage flags to force tour to show
+                    localStorage.removeItem('tour_shown');
+                    
+                    // Show tour popup after a short delay
+                    setTimeout(() => {
+                        showTourPopup();
+                    }, 1000);
+                    return;
+                }
+                
+                // If mainTourShown is explicitly set to true, respect that
+                if (tourSettings.mainTourShown === true) {
+                    // Update localStorage to match Firebase
+                    localStorage.setItem('tour_shown', 'true');
+                    return;
+                }
+            }
+            
+            // Fallback to localStorage check if Firebase doesn't have settings
+            // or if no explicit settings were found
+            checkLocalStorageForTour();
+        }).catch(error => {
+            console.error("Error checking tour settings:", error);
+            // Fallback to localStorage
+            checkLocalStorageForTour();
+        });
+    } else {
+        // If Firebase is not available, use localStorage
+        checkLocalStorageForTour();
+    }
+    
+    function checkLocalStorageForTour() {
+        // Check if this is the first login (or if tour hasn't been shown)
+        if (!localStorage.getItem('tour_shown')) {
+            // Show tour popup after a short delay to ensure UI is fully loaded
+            setTimeout(() => {
+                showTourPopup();
+            }, 1000);
+        }
     }
 }
 
@@ -97,6 +138,24 @@ function showTourPopup() {
     document.body.appendChild(overlay);
     document.body.appendChild(popup);
     
+    // Function to save tour state to Firebase
+    function saveTourState(shown) {
+        const username = localStorage.getItem('github_user_name');
+        
+        // Save to localStorage
+        localStorage.setItem('tour_shown', 'true');
+        
+        // Save to Firebase if available and user is logged in
+        if (username && typeof firebase !== 'undefined' && firebase.database) {
+            firebase.database().ref(`userTours/${username}`).update({
+                mainTourShown: true,
+                lastUpdated: Date.now()
+            }).catch(error => {
+                console.error("Error saving tour state to Firebase:", error);
+            });
+        }
+    }
+    
     // Add event listeners to buttons
     document.getElementById('accept-tour').addEventListener('click', () => {
         // Remove popup and overlay
@@ -106,8 +165,8 @@ function showTourPopup() {
         // Start the tour
         startTour();
         
-        // Mark tour as shown in localStorage
-        localStorage.setItem('tour_shown', 'true');
+        // Mark tour as shown
+        saveTourState(true);
     });
     
     document.getElementById('decline-tour').addEventListener('click', () => {
@@ -115,8 +174,8 @@ function showTourPopup() {
         document.body.removeChild(popup);
         document.body.removeChild(overlay);
         
-        // Mark tour as shown in localStorage
-        localStorage.setItem('tour_shown', 'true');
+        // Mark tour as shown (but not taken)
+        saveTourState(false);
     });
 }
 
@@ -205,19 +264,41 @@ function startTour() {
         tourHighlight.style.height = `${rect.height}px`;
         tourHighlight.style.display = 'block';
         
-        // Position tooltip
+        // Position tooltip - ensure it doesn't go off-screen
+        // First try to position below the element
         let tooltipTop = rect.bottom + window.scrollY + 10;
-        let tooltipLeft = rect.left + window.scrollX;
+        let tooltipLeft = rect.left + window.scrollX + (rect.width / 2) - 150; // Center the tooltip
         
-        // Adjust tooltip if it would go off-screen
+        // Make sure tooltip is visible on screen
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        
+        // If tooltip would go below viewport, position it above the element
         if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
             tooltipTop = rect.top + window.scrollY - 150 - 10;
         }
         
-        if (tooltipLeft + 300 > window.innerWidth) {
-            tooltipLeft = window.innerWidth - 300 - 10;
+        // Make sure tooltip doesn't go left of screen
+        if (tooltipLeft < 10) {
+            tooltipLeft = 10;
         }
         
+        // Make sure tooltip doesn't go right of screen
+        if (tooltipLeft + 300 > viewportWidth) {
+            tooltipLeft = viewportWidth - 310;
+        }
+        
+        // If tooltip is off the top of the screen, reposition it
+        if (tooltipTop < window.scrollY) {
+            tooltipTop = rect.bottom + window.scrollY + 10;
+            
+            // If it still doesn't fit, put it in the middle of the screen
+            if (tooltipTop + 150 > window.innerHeight + window.scrollY) {
+                tooltipTop = window.scrollY + (viewportHeight / 2) - 75;
+            }
+        }
+        
+        // Apply the calculated position
         tourTooltip.style.top = `${tooltipTop}px`;
         tourTooltip.style.left = `${tooltipLeft}px`;
         
@@ -252,6 +333,14 @@ function startTour() {
             });
         } else {
             document.getElementById('end-tour').addEventListener('click', endTour);
+        }
+        
+        // Scroll element into view if needed
+        if (rect.top < 0 || rect.bottom > viewportHeight) {
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
         }
     }
     
