@@ -728,6 +728,33 @@
     </div>
 
     <script>
+    // Function to check if user is logged in
+    function isUserLoggedIn() {
+        const username = localStorage.getItem('github_user_name');
+        const token = localStorage.getItem('github_access_token');
+        return username && token;
+    }
+
+    // Function to update feedback form visibility based on login status
+    function updateFeedbackFormVisibility() {
+        const loginRequired = document.getElementById('feedback-login-required');
+        const formContainer = document.getElementById('feedback-form-container');
+        const username = localStorage.getItem('github_user_name');
+        
+        if (isUserLoggedIn()) {
+            loginRequired.style.display = 'none';
+            formContainer.style.display = 'block';
+            // Update the hidden username field
+            const usernameInput = document.getElementById('github-username');
+            if (usernameInput) {
+                usernameInput.value = username;
+            }
+        } else {
+            loginRequired.style.display = 'block';
+            formContainer.style.display = 'none';
+        }
+    }
+
     function showPopup(type) {
         // Show overlay
         document.getElementById('popup-overlay').style.display = 'block';
@@ -736,25 +763,9 @@
         const popup = document.getElementById(`${type}-popup`);
         popup.style.display = 'block';
 
-        // If it's the feedback popup, check login status
+        // If it's the feedback popup, update form visibility
         if (type === 'feedback') {
-            const isLoggedIn = localStorage.getItem('github_user_name') !== null;
-            const username = localStorage.getItem('github_user_name');
-            
-            const loginRequired = document.getElementById('feedback-login-required');
-            const formContainer = document.getElementById('feedback-form-container');
-            const usernameInput = document.getElementById('github-username');
-            
-            if (!isLoggedIn) {
-                loginRequired.style.display = 'block';
-                formContainer.style.display = 'none';
-            } else {
-                loginRequired.style.display = 'none';
-                formContainer.style.display = 'block';
-                if (usernameInput) {
-                    usernameInput.value = username;
-                }
-            }
+            updateFeedbackFormVisibility();
         }
     }
 
@@ -762,10 +773,11 @@
         event.preventDefault();
         
         // Check if user is logged in
-        if (!window.githubUtils || !window.githubUtils.isGithubAuthenticated()) {
+        if (!isUserLoggedIn()) {
             const resultDiv = document.getElementById('result');
             resultDiv.textContent = 'Please log in to submit feedback';
             resultDiv.className = 'result-message error';
+            resultDiv.style.display = 'block';
             return;
         }
 
@@ -774,12 +786,12 @@
         const resultDiv = form.querySelector('#result');
         
         // Show loading state
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
         submitButton.classList.add('loading');
         submitButton.disabled = true;
         
         try {
             const formData = new FormData(form);
-            // Add username to the message
             const username = localStorage.getItem('github_user_name');
             formData.set('message', `Feedback from GitHub user: ${username}\n\n${formData.get('message')}`);
             
@@ -791,9 +803,9 @@
             const data = await response.json();
             
             if (data.success) {
-                // Show success message
                 resultDiv.textContent = 'Thank you for your feedback!';
                 resultDiv.className = 'result-message success';
+                resultDiv.style.display = 'block';
                 
                 // Clear the form
                 form.reset();
@@ -801,9 +813,10 @@
                 // Hide the popup after 2 seconds
                 setTimeout(() => {
                     hidePopups();
-                    // Reset the result message
+                    // Reset the result message and form
                     resultDiv.style.display = 'none';
                     resultDiv.textContent = '';
+                    submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
                 }, 2000);
             } else {
                 throw new Error('Form submission failed');
@@ -812,12 +825,29 @@
             console.error('Submission error:', error);
             resultDiv.textContent = 'Sorry, there was a problem submitting your feedback. Please try again.';
             resultDiv.className = 'result-message error';
+            resultDiv.style.display = 'block';
         } finally {
-            // Remove loading state
+            // Reset button state
             submitButton.classList.remove('loading');
             submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
         }
     }
+
+    // Add event listener for GitHub login success
+    window.addEventListener('github-login-success', function() {
+        updateFeedbackFormVisibility();
+    });
+
+    // Add event listener for GitHub logout
+    window.addEventListener('github-logout', function() {
+        updateFeedbackFormVisibility();
+    });
+
+    // Check login status when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        updateFeedbackFormVisibility();
+    });
     </script>
 
     <script>
