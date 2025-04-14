@@ -495,6 +495,50 @@
                 font-size: 16px;
             }
         }
+
+        /* Add styles for home button */
+        .home-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
+            color: #ffd4f7;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin: 25px auto 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .home-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
+        }
+
+        .home-button i {
+            font-size: 1.2rem;
+        }
+
+        #feedback-login-required {
+            text-align: center;
+            padding: 35px 25px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        #feedback-login-required h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            color: #ffd4f7;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -716,8 +760,8 @@
         <div class="popup-content">
             <div id="feedback-login-required">
                 <h3>Please log in with GitHub to submit feedback</h3>
-                <button class="github-login" onclick="loginWithGithub()">
-                    <i class="fab fa-github"></i> Login with GitHub
+                <button class="home-button" onclick="hidePopups()">
+                    <i class="fas fa-home"></i> Return Home
                 </button>
             </div>
             <div id="feedback-form-container">
