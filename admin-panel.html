@@ -1139,9 +1139,6 @@
         async function checkAdminAccess() {
             const blurOverlay = document.getElementById('blur-overlay');
             
-            // Show blur overlay immediately
-            blurOverlay.classList.remove('hidden');
-            
             try {
                 // Check if user is admin through localStorage
                 if (localStorage.getItem('isAdmin') === 'true') {
@@ -1152,13 +1149,8 @@
                     const isAdmin = await verifyAdminStatus();
                     
                     if (isAdmin) {
-                        // User is admin, hide the blur overlay with a fade effect
-                        blurOverlay.style.transition = 'opacity 0.5s ease';
-                        blurOverlay.style.opacity = '0';
-                        setTimeout(() => {
-                            blurOverlay.classList.add('hidden');
-                            blurOverlay.style.opacity = '1';
-                        }, 500);
+                        // Remove the blur overlay completely
+                        blurOverlay.remove();
                         console.log('Admin access granted');
                         return;
                     }
