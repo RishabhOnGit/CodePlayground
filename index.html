@@ -242,7 +242,7 @@
             transform: translate(-50%, -50%);
             background: rgba(74, 20, 140, 0.95);
             border-radius: 15px;
-            min-width: 320px;
+            min-width: 420px;
             max-width: 90%;
             z-index: 1000;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -287,7 +287,7 @@
         }
 
         .popup-content {
-            padding: 20px;
+            padding: 30px;
             line-height: 1.6;
         }
 
@@ -363,7 +363,7 @@
 
         /* Updated Feedback Popup Styles */
         #feedback-popup .popup-content {
-            padding: 25px;
+            padding: 30px;
         }
 
         #feedback-login-required {
@@ -386,19 +386,19 @@
 
         #feedback-form label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-weight: 500;
             color: #ffd4f7;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
 
         #feedback-form select,
         #feedback-form textarea {
             width: 100%;
-            padding: 12px 15px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.1);
             color: #ffd4f7;
             font-size: 1rem;
             font-family: inherit;
@@ -411,23 +411,33 @@
             background-repeat: no-repeat;
             background-position: calc(100% - 15px) center;
             padding-right: 40px;
+            cursor: pointer;
+        }
+
+        #feedback-form select option {
+            background: #4a148c;
+            color: #ffd4f7;
+            padding: 15px;
+            font-size: 1rem;
+        }
+
+        #feedback-form select:hover,
+        #feedback-form textarea:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         #feedback-form select:focus,
         #feedback-form textarea:focus {
             border-color: #ffd4f7;
             outline: none;
-            box-shadow: 0 0 0 3px rgba(255, 212, 247, 0.1);
-        }
-
-        #feedback-form textarea {
-            min-height: 120px;
-            resize: vertical;
+            box-shadow: 0 0 0 3px rgba(255, 212, 247, 0.2);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         #feedback-form button[type="submit"] {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
             border: none;
             border-radius: 12px;
@@ -440,11 +450,13 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
+            margin-top: 30px;
         }
 
         #feedback-form button[type="submit"]:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #7b1fa2 0%, #6a1b9a 100%);
         }
 
         #feedback-form button[type="submit"].loading {
@@ -470,6 +482,18 @@
             background: rgba(255, 71, 87, 0.15);
             color: #ff4757;
             border: 1px solid rgba(255, 71, 87, 0.3);
+        }
+
+        @media (max-width: 480px) {
+            .popup {
+                min-width: 90%;
+                margin: 0 10px;
+            }
+            
+            #feedback-form select,
+            #feedback-form textarea {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
