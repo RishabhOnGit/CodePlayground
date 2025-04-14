@@ -480,6 +480,53 @@
                 width: 100%;
             }
         }
+
+        /* Add styles for success/error messages */
+        .result-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-message.success {
+            display: block;
+            background-color: rgba(47, 223, 117, 0.2);
+            color: #2fdf75;
+            border: 1px solid rgba(47, 223, 117, 0.3);
+        }
+
+        .result-message.error {
+            display: block;
+            background-color: rgba(255, 77, 77, 0.2);
+            color: #ff4d4d;
+            border: 1px solid rgba(255, 77, 77, 0.3);
+        }
+
+        #submit-button.loading {
+            position: relative;
+            cursor: wait;
+            opacity: 0.8;
+        }
+
+        #submit-button.loading:after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid white;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -554,9 +601,16 @@
         <div class="popup-content">
             <p>We value your feedback! Help us improve Code Playground:</p>
             <form id="feedback-form" onsubmit="submitFeedback(event)">
+                <!-- Add Web3Forms access key -->
+                <input type="hidden" name="access_key" value="84773365-fbe2-45f9-a602-975e98ab43ca">
+                <!-- Add subject -->
+                <input type="hidden" name="subject" value="New Feedback from Code Playground">
+                <!-- Add from_name to show in email -->
+                <input type="hidden" name="from_name" value="Code Playground Feedback">
+
                 <div class="form-group">
                     <label for="feedback-type">Type of Feedback:</label>
-                    <select id="feedback-type">
+                    <select id="feedback-type" name="feedback_type">
                         <option value="suggestion">Suggestion</option>
                         <option value="bug">Bug Report</option>
                         <option value="feature">Feature Request</option>
@@ -565,9 +619,10 @@
                 </div>
                 <div class="form-group">
                     <label for="feedback-message">Your Feedback:</label>
-                    <textarea id="feedback-message" rows="6"></textarea>
+                    <textarea id="feedback-message" name="message" rows="6" required></textarea>
                 </div>
-                <button type="submit">Submit Feedback</button>
+                <button type="submit" id="submit-button">Submit Feedback</button>
+                <div id="result" class="result-message"></div>
             </form>
         </div>
     </div>
@@ -737,45 +792,52 @@
         });
     }
 
-    function submitFeedback(event) {
+    async function submitFeedback(event) {
         event.preventDefault();
         
-        const feedbackType = document.getElementById('feedback-type').value;
-        const feedbackMessage = document.getElementById('feedback-message').value;
+        const form = event.target;
+        const submitButton = form.querySelector('#submit-button');
+        const resultDiv = form.querySelector('#result');
         
-        // Get current user info if logged in
-        const username = localStorage.getItem('github_user_name') || 'Anonymous';
-        
-        // Create feedback object
-        const feedback = {
-            type: feedbackType,
-            message: feedbackMessage,
-            username: username,
-            timestamp: new Date().toISOString(),
-            status: 'new' // For tracking feedback status
-        };
+        // Show loading state
+        submitButton.classList.add('loading');
+        submitButton.disabled = true;
         
         try {
-            // Save to Firebase
-            firebase.database().ref('feedback').push(feedback)
-                .then(() => {
-                    // Show success message
-                    alert('Thank you for your feedback! We appreciate your input.');
-                    
-                    // Clear the form
-                    document.getElementById('feedback-message').value = '';
-                    document.getElementById('feedback-type').value = 'suggestion';
-                    
-                    // Hide the popup
+            const formData = new FormData(form);
+            const response = await fetch('https://api.web3forms.com/submit', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Show success message
+                resultDiv.textContent = 'Thank you for your feedback!';
+                resultDiv.className = 'result-message success';
+                
+                // Clear the form
+                form.reset();
+                
+                // Hide the popup after 2 seconds
+                setTimeout(() => {
                     hidePopups();
-                })
-                .catch(error => {
-                    console.error('Error saving feedback:', error);
-                    alert('There was an error submitting your feedback. Please try again.');
-                });
+                    // Reset the result message
+                    resultDiv.style.display = 'none';
+                    resultDiv.textContent = '';
+                }, 2000);
+            } else {
+                throw new Error('Form submission failed');
+            }
         } catch (error) {
-            console.error('Error:', error);
-            alert('There was an error submitting your feedback. Please try again.');
+            console.error('Submission error:', error);
+            resultDiv.textContent = 'Sorry, there was a problem submitting your feedback. Please try again.';
+            resultDiv.className = 'result-message error';
+        } finally {
+            // Remove loading state
+            submitButton.classList.remove('loading');
+            submitButton.disabled = false;
         }
     }
 

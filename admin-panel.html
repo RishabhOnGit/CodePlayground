@@ -652,70 +652,6 @@
                 justify-content: center;
             }
         }
-
-        /* Feedback Management Styles */
-        #feedback-section {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .feedback-filters {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .feedback-filters select {
-            padding: 8px 15px;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            cursor: pointer;
-        }
-
-        .feedback-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .feedback-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .feedback-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 0.9em;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .feedback-content {
-            margin: 10px 0;
-        }
-
-        .feedback-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .feedback-status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-        }
-
-        .status-new { background: #4a148c; }
-        .status-in-progress { background: #0288d1; }
-        .status-completed { background: #388e3c; }
     </style>
 </head>
 <body>
@@ -962,29 +898,6 @@
                     </div>
                 </div>
             </section>
-
-            <!-- Add this section to your admin panel -->
-            <div class="admin-section" id="feedback-section">
-                <h2>Feedback Management</h2>
-                <div class="feedback-filters">
-                    <select id="status-filter">
-                        <option value="all">All Status</option>
-                        <option value="new">New</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                    <select id="type-filter">
-                        <option value="all">All Types</option>
-                        <option value="suggestion">Suggestions</option>
-                        <option value="bug">Bug Reports</option>
-                        <option value="feature">Feature Requests</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="feedback-list" id="feedback-container">
-                    <!-- Feedback items will be dynamically added here -->
-                </div>
-            </div>
         </div>
     </main>
     
@@ -1085,73 +998,6 @@
             // Commenting this out for now to allow access through localStorage
             // window.location.href = 'index.html';
         }
-
-        function loadFeedback() {
-            const feedbackContainer = document.getElementById('feedback-container');
-            const statusFilter = document.getElementById('status-filter').value;
-            const typeFilter = document.getElementById('type-filter').value;
-
-            // Clear existing feedback
-            feedbackContainer.innerHTML = '';
-
-            // Get feedback from Firebase
-            firebase.database().ref('feedback').orderByChild('timestamp').on('value', snapshot => {
-                const feedbacks = [];
-                snapshot.forEach(child => {
-                    feedbacks.unshift({ id: child.key, ...child.val() });
-                });
-
-                // Apply filters
-                const filteredFeedback = feedbacks.filter(feedback => {
-                    const statusMatch = statusFilter === 'all' || feedback.status === statusFilter;
-                    const typeMatch = typeFilter === 'all' || feedback.type === typeFilter;
-                    return statusMatch && typeMatch;
-                });
-
-                // Display feedback
-                filteredFeedback.forEach(feedback => {
-                    const feedbackEl = document.createElement('div');
-                    feedbackEl.className = 'feedback-item';
-                    feedbackEl.innerHTML = `
-                        <div class="feedback-header">
-                            <span>From: ${feedback.username}</span>
-                            <span>${new Date(feedback.timestamp).toLocaleString()}</span>
-                        </div>
-                        <div class="feedback-type">${feedback.type.toUpperCase()}</div>
-                        <div class="feedback-content">${feedback.message}</div>
-                        <div class="feedback-actions">
-                            <span class="feedback-status status-${feedback.status}">${feedback.status}</span>
-                            <select onchange="updateFeedbackStatus('${feedback.id}', this.value)">
-                                <option value="new" ${feedback.status === 'new' ? 'selected' : ''}>New</option>
-                                <option value="in-progress" ${feedback.status === 'in-progress' ? 'selected' : ''}>In Progress</option>
-                                <option value="completed" ${feedback.status === 'completed' ? 'selected' : ''}>Completed</option>
-                            </select>
-                            <button onclick="deleteFeedback('${feedback.id}')">Delete</button>
-                        </div>
-                    `;
-                    feedbackContainer.appendChild(feedbackEl);
-                });
-            });
-        }
-
-        function updateFeedbackStatus(feedbackId, newStatus) {
-            firebase.database().ref(`feedback/${feedbackId}`).update({
-                status: newStatus
-            });
-        }
-
-        function deleteFeedback(feedbackId) {
-            if (confirm('Are you sure you want to delete this feedback?')) {
-                firebase.database().ref(`feedback/${feedbackId}`).remove();
-            }
-        }
-
-        // Add event listeners for filters
-        document.getElementById('status-filter').addEventListener('change', loadFeedback);
-        document.getElementById('type-filter').addEventListener('change', loadFeedback);
-
-        // Load feedback when admin panel loads
-        document.addEventListener('DOMContentLoaded', loadFeedback);
     </script>
 </body>
 </html> 
