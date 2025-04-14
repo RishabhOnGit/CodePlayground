@@ -1136,23 +1136,52 @@
             // ... existing code ...
         });
         
-        function checkAdminAccess() {
+        async function checkAdminAccess() {
             const blurOverlay = document.getElementById('blur-overlay');
             
-            // Check if user is admin through localStorage
-            if (localStorage.getItem('isAdmin') === 'true') {
-                // User is admin, hide the blur overlay
-                blurOverlay.classList.add('hidden');
-                console.log('Admin access granted through localStorage');
-                return;
+            // Show blur overlay immediately
+            blurOverlay.classList.remove('hidden');
+            
+            try {
+                // Check if user is admin through localStorage
+                if (localStorage.getItem('isAdmin') === 'true') {
+                    // Add a small delay to ensure the blur is visible
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    
+                    // Verify admin status through Firebase
+                    const isAdmin = await verifyAdminStatus();
+                    
+                    if (isAdmin) {
+                        // User is admin, hide the blur overlay with a fade effect
+                        blurOverlay.style.transition = 'opacity 0.5s ease';
+                        blurOverlay.style.opacity = '0';
+                        setTimeout(() => {
+                            blurOverlay.classList.add('hidden');
+                            blurOverlay.style.opacity = '1';
+                        }, 500);
+                        console.log('Admin access granted');
+                        return;
+                    }
+                }
+                
+                // If not admin, redirect to home
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Error verifying admin status:', error);
+                window.location.href = 'index.html';
             }
-            
-            // Check if user is admin through Firebase (this would be your normal code)
-            // This is a placeholder - your actual implementation would vary
-            
-            // If not admin, redirect to home
-            // Commenting this out for now to allow access through localStorage
-            // window.location.href = 'index.html';
+        }
+        
+        async function verifyAdminStatus() {
+            // Simulate a network request to verify admin status
+            // Replace this with your actual Firebase verification
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    // For demo purposes, we'll check localStorage again
+                    // In production, this would be a Firebase call
+                    resolve(localStorage.getItem('isAdmin') === 'true');
+                }, 1500); // Simulate network delay
+            });
         }
     </script>
 </body>
