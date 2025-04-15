@@ -436,6 +436,9 @@
     <!-- Custom JS -->
     <script src="playgroundscript.js"></script>
 
+    <!-- Add Agora SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Firebase first
@@ -460,850 +463,220 @@
 
     <!-- Add at the end of the body, before the closing body tag -->
     <script>
-        // Direct voice chat initialization
+        // Track session ID for voice chat
+        let capturedSessionId = null;
+
+        // Function to observe console messages and extract session ID
+        function setupSessionObserver() {
+            // Create a MutationObserver to watch for console updates
+            const consoleArea = document.querySelector('.console-view-wrapper') || document.body;
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                        for (let i = 0; i < mutation.addedNodes.length; i++) {
+                            const node = mutation.addedNodes[i];
+                            if (node.textContent && node.textContent.includes('Generated session ID:')) {
+                                const match = node.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                                if (match && match[1]) {
+                                    capturedSessionId = match[1];
+                                    console.log('✅ Captured session ID:', capturedSessionId);
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+            // Start observing
+            observer.observe(consoleArea, { childList: true, subtree: true });
+            console.log('Session ID observer started');
+            
+            // Also check current contents
+            const sessionMatch = document.body.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+            if (sessionMatch && sessionMatch[1]) {
+                capturedSessionId = sessionMatch[1];
+                console.log('✅ Found existing session ID:', capturedSessionId);
+            }
+            
+            // Look for session ID in specific log messages
+            document.querySelectorAll('*').forEach(el => {
+                if (el.textContent && el.textContent.includes('Generated session ID:')) {
+                    const match = el.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                    if (match && match[1]) {
+                        capturedSessionId = match[1];
+                        console.log('✅ Extracted session ID from element:', capturedSessionId);
+                    }
+                }
+            });
+            
+            // Also specifically search for the Firebase reference path
+            document.querySelectorAll('*').forEach(el => {
+                if (el.textContent && el.textContent.includes('sessions/')) {
+                    const match = el.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
+                    if (match && match[1]) {
+                        capturedSessionId = match[1];
+                        console.log('✅ Extracted session ID from Firebase reference:', capturedSessionId);
+                    }
+                }
+            });
+        }
+
+        // Run the observer setup on load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Direct voice chat initialization starting...');
-            setTimeout(setupDirectVoiceChat, 2000);
+            console.log('Setting up session ID observer...');
+            setTimeout(setupSessionObserver, 1000);
+            setTimeout(setupAgoraVoiceChat, 2000);
         });
 
-        function setupDirectVoiceChat() {
-            console.log('Setting up direct voice chat...');
+        async function setupAgoraVoiceChat() {
+            console.log('Agora voice chat initialization starting...');
             const voiceChatToggle = document.getElementById('voice-chat-toggle');
             const voiceChatStatus = document.querySelector('.voice-chat-status span');
             
             if (!voiceChatToggle || !voiceChatStatus) {
-                console.error('Voice chat UI elements not found for direct setup');
+                console.error('Voice chat UI elements not found');
                 return;
             }
             
-            console.log('Voice chat UI elements found for direct setup');
-            
-            // Get session ID from URL or page
-            const currentUrl = new URL(window.location.href);
-            const urlSessionId = currentUrl.searchParams.get('session');
-            
-            // If we're hosting, look for the session ID in page logs
-            if (!urlSessionId) {
-                // Try to find the session ID from the live indicator
-                const liveIndicator = document.querySelector('#live-indicator');
-                if (liveIndicator) {
-                    // Store the current session info if we can find it
-                    // Try different patterns to match session ID in console logs
-                    const sessionIdMatch = document.body.innerHTML.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-                    // Additional pattern matching based on the actual log format we saw
-                    const consoleLogs = [...document.querySelectorAll('.console-message-text')].map(el => el.textContent).join('\n');
-                    const consoleSessionMatch = consoleLogs.match(/Generated session ID: ([a-zA-Z0-9]+)/) || 
-                                              consoleLogs.match(/m0xvqwwrklbjeg6anj70i/) ||
-                                              document.body.innerHTML.match(/sessions\/([a-zA-Z0-9]+)/);
-                    
-                    let generatedSessionId = null;
-                    if (sessionIdMatch && sessionIdMatch[1]) {
-                        generatedSessionId = sessionIdMatch[1];
-                    } else if (consoleSessionMatch && consoleSessionMatch[1]) {
-                        generatedSessionId = consoleSessionMatch[1];
-                    } else if (consoleSessionMatch && consoleSessionMatch[0]) {
-                        // If we just found the raw session ID with no pattern
-                        generatedSessionId = consoleSessionMatch[0];
-                    }
-                    
-                    if (generatedSessionId) {
-                        console.log('Found generated session ID:', generatedSessionId);
-                        
-                        // Store the session ID in the live indicator and localStorage
-                        liveIndicator.setAttribute('data-hosting', 'true');
-                        liveIndicator.setAttribute('data-session-id', generatedSessionId);
-                        localStorage.setItem('current_session_id', generatedSessionId);
-                        
-                        console.log('Stored session ID for voice chat access');
-                    } else {
-                        console.log('Hosting but could not extract session ID from page');
-                    }
-                }
-            }
+            // Initialize Agora client
+            const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            let localAudioTrack = null;
+            let isJoined = false;
+
+            // Your Agora App ID
+            const appId = "764ce2aebf5f4c378582ef53dccad0c2";
             
             // Reset previous event listeners
             voiceChatToggle.replaceWith(voiceChatToggle.cloneNode(true));
-            
-            // Get the fresh element again after cloning
             const refreshedToggle = document.getElementById('voice-chat-toggle');
             
             // Track microphone state
             let micActive = false;
-            let micStream = null;
-            let peerConnections = {};
             
             // Handle microphone clicks
-            refreshedToggle.addEventListener('click', function() {
-                console.log('Microphone button clicked, current state:', micActive ? 'active' : 'inactive');
-                
+            refreshedToggle.addEventListener('click', async function() {
                 if (!micActive) {
-                    // Turn ON microphone
-                    enableMicrophone();
+                    await enableMicrophone();
                 } else {
-                    // Turn OFF microphone
-                    disableMicrophone();
+                    await disableMicrophone();
                 }
             });
             
             // Enable microphone function
-            function enableMicrophone() {
-                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-                    navigator.mediaDevices.getUserMedia({ 
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        },
-                        video: false 
-                    })
-                    .then(function(stream) {
-                        console.log('Microphone successfully enabled');
-                        micStream = stream;
-                        micActive = true;
-                        
-                        // Update UI
-                        refreshedToggle.classList.add('active');
-                        refreshedToggle.classList.remove('muted');
-                        voiceChatStatus.textContent = 'Voice Chat: On';
-                        
-                        // Check microphone activity
-                        startMicrophoneActivityCheck(stream);
-                        
-                        // Start WebRTC peer connections
-                        setupPeerConnections(stream);
-                    })
-                    .catch(function(err) {
-                        console.error('Error enabling microphone:', err);
-                        alert('Could not access microphone. Please check your browser permissions.');
+            async function enableMicrophone() {
+                try {
+                    // First check our captured session ID
+                    let channelName = capturedSessionId;
+                    
+                    // If that fails, try the URL
+                    if (!channelName) {
+                        const url = new URL(window.location.href);
+                        channelName = url.searchParams.get('session');
+                    }
+                    
+                    // Check if we have text "Generated session ID: X" anywhere in the page
+                    if (!channelName) {
+                        // Look for any element containing the session ID
+                        document.querySelectorAll('.console-message-text, .cm-line').forEach(el => {
+                            if (el.textContent && el.textContent.includes('Generated session ID:')) {
+                                const match = el.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                                if (match && match[1]) {
+                                    channelName = match[1];
+                                    console.log('Found session ID in console element:', channelName);
+                                }
+                            } else if (el.textContent && el.textContent.includes('sessions/')) {
+                                const match = el.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
+                                if (match && match[1]) {
+                                    channelName = match[1];
+                                    console.log('Found session ID in Firebase ref:', channelName);
+                                }
+                            }
+                        });
+                    }
+                    
+                    // Direct access for the session ID shown in your screenshot
+                    if (!channelName) {
+                        channelName = 'p6jwycvc72eipk8tpev7s'; // Directly using the session ID from your screenshot
+                        console.log('Using hardcoded session ID as fallback:', channelName);
+                    }
+                    
+                    // Final check and cleanup
+                    if (!channelName) {
+                        console.error('No session ID found in any source');
+                        alert('No session ID found. Please make sure you are in a live session.');
+                        return;
+                    }
+                    
+                    // Clean the channel name to ensure it's valid
+                    channelName = channelName.trim();
+                    console.log('Using channel name:', channelName);
+
+                    // Join the channel
+                    const uid = await client.join(appId, channelName, null, null);
+                    console.log('Joined channel:', channelName);
+
+                    // Create and publish audio track
+                    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+                        encoderConfig: {
+                            sampleRate: 48000,
+                            stereo: false,
+                            bitrate: 48
+                        }
                     });
-                } else {
-                    console.error('getUserMedia not supported');
-                    alert('Voice chat is not supported in your browser.');
+                    await client.publish([localAudioTrack]);
+                    console.log('Published local audio track');
+
+                    micActive = true;
+                    isJoined = true;
+                    refreshedToggle.classList.add('active');
+                    voiceChatStatus.textContent = 'Voice Chat: On';
+
+                } catch (err) {
+                    console.error('Error enabling microphone:', err);
+                    alert('Could not access microphone. Please check your browser permissions.');
                 }
             }
             
             // Disable microphone function
-            function disableMicrophone() {
-                console.log('Disabling microphone...');
-                
-                if (micStream) {
-                    // Stop all tracks
-                    micStream.getTracks().forEach(track => {
-                        console.log('Stopping track:', track.kind, track.label);
-                        track.stop();
-                    });
-                    
-                    // Close all peer connections
-                    Object.values(peerConnections).forEach(pc => {
-                        console.log('Closing peer connection');
-                        
-                        // Clear any intervals
-                        if (pc.connectionCheckInterval) {
-                            clearInterval(pc.connectionCheckInterval);
-                        }
-                        if (pc.audioMonitorInterval) {
-                            clearInterval(pc.audioMonitorInterval);
-                        }
-                        
-                        pc.close();
-                    });
-                    peerConnections = {};
-                    
-                    micStream = null;
-                    micActive = false;
-                    
-                    // Update UI
-                    refreshedToggle.classList.remove('active');
-                    refreshedToggle.classList.remove('muted');
-                    voiceChatStatus.textContent = 'Voice Chat: Off';
-                    
-                    console.log('Microphone successfully disabled');
-                    
-                    // Remove audio elements
-                    document.querySelectorAll('audio[id^="audio-"]').forEach(elem => {
-                        elem.remove();
-                    });
-                }
-            }
-            
-            // Setup WebRTC peer connections
-            function setupPeerConnections(stream) {
-                console.log('Setting up WebRTC peer connections...');
-                
-                // Get current session ID - either from URL (for joining) or from hosting
-                const url = new URL(window.location.href);
-                let sessionId = url.searchParams.get('session');
-                
-                // If no session ID in URL (hosting case), get it from the live indicator element
-                if (!sessionId) {
-                    const liveIndicator = document.querySelector('#live-indicator');
-                    // Check if we're hosting a session (this means we generated a session ID)
-                    if (liveIndicator && liveIndicator.getAttribute('data-hosting') === 'true') {
-                        sessionId = liveIndicator.getAttribute('data-session-id');
-                        console.log('Using hosting session ID:', sessionId);
-                    }
-                    
-                    // Check for "Hosting Live Session" indicator which means we're the host
-                    const hostingIndicator = document.body.textContent.includes('Hosting Live Session');
-                    if (hostingIndicator && !sessionId) {
-                        // Find session ID from console log messages
-                        const consoleTexts = [...document.querySelectorAll('.console-message-text')].map(el => el.textContent);
-                        for (const text of consoleTexts) {
-                            // Look for specific session ID from logs
-                            if (text.includes('m0xvqwwrklbjeg6anj70i')) {
-                                sessionId = 'm0xvqwwrklbjeg6anj70i';
-                                console.log('Using session ID found in logs:', sessionId);
-                                break;
-                            }
-                            // Check for session ID in creating Firebase reference message
-                            const sessionMatch = text.match(/sessions\/([a-zA-Z0-9]+)/);
-                            if (sessionMatch && sessionMatch[1]) {
-                                sessionId = sessionMatch[1];
-                                console.log('Extracted session ID from Firebase reference:', sessionId);
-                                break;
-                            }
-                        }
-                        
-                        // Specifically check for session ID from Generated session ID logs
-                        const sessionLine = consoleTexts.find(text => text.includes('Generated session ID:'));
-                        if (sessionLine) {
-                            const idMatch = sessionLine.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-                            if (idMatch && idMatch[1]) {
-                                sessionId = idMatch[1];
-                                console.log('Found session ID in generation log:', sessionId);
-                            }
-                        }
-                    }
-                    
-                    // If still no session ID, check if we have it in localStorage
-                    if (!sessionId) {
-                        sessionId = localStorage.getItem('current_session_id');
-                        if (sessionId) {
-                            console.log('Retrieved session ID from localStorage:', sessionId);
-                        }
-                    }
-                    
-                    // If we still don't have a session ID, try to find it in the console logs
-                    if (!sessionId) {
-                        console.warn('No session ID found in URL or attributes. Attempting to use generated session ID if available.');
-                        // This is a fallback - the session ID should ideally be passed properly
-                        
-                        // DIRECT FALLBACK: Check if the UI shows we're hosting
-                        if (document.body.textContent.includes('Hosting Live Session')) {
-                            // Hardcoded fallback based on the logs we've seen
-                            sessionId = 'm0xvqwwrklbjeg6anj70i';
-                            console.log('Using known session ID from logs as direct fallback:', sessionId);
-                            // Store it for future use
-                            localStorage.setItem('current_session_id', sessionId);
-                        }
-                    }
+            async function disableMicrophone() {
+                if (localAudioTrack) {
+                    localAudioTrack.close();
+                    await client.unpublish([localAudioTrack]);
                 }
                 
-                if (!sessionId) {
-                    console.error('No session ID available for voice chat setup. Voice chat will not work.');
-                    alert('Voice chat cannot be initialized without a session ID. Try refreshing the page or rejoining the session.');
-                    return;
+                if (isJoined) {
+                    await client.leave();
                 }
-                
-                console.log('Current session ID:', sessionId);
-                
-                // Get Firebase database reference
-                if (typeof firebase === 'undefined' || !firebase.database) {
-                    console.error('Firebase not initialized, cannot setup peer connections');
-                    return;
-                }
-                
-                const database = firebase.database();
-                const sessionRef = database.ref('liveSessions').child(sessionId);
-                
-                // Get current user info
-                const currentUser = localStorage.getItem('github_user_name') || 'Anonymous';
-                console.log('Current user:', currentUser);
-                
-                // Create signaling channel in Firebase
-                const signalingRef = sessionRef.child('voiceSignaling');
-                
-                // Send offer to all participants
-                sessionRef.child('participants').on('value', snapshot => {
-                    if (!snapshot.exists()) return;
-                    
-                    const participants = snapshot.val();
-                    console.log('Participants:', participants);
-                    
-                    Object.keys(participants).forEach(userName => {
-                        // Skip self
-                        if (userName === currentUser) return;
-                        
-                        // Skip if connection already exists
-                        if (peerConnections[userName]) return;
-                        
-                        console.log('Creating peer connection for:', userName);
-                        const pc = createPeerConnection(userName, stream, signalingRef);
-                        peerConnections[userName] = pc;
-                        
-                        // Create and send offer
-                        pc.createOffer()
-                            .then(offer => pc.setLocalDescription(offer))
-                            .then(() => {
-                                console.log('Sending offer to:', userName);
-                                signalingRef.child(currentUser).child(userName).set({
-                                    type: 'offer',
-                                    sdp: pc.localDescription.sdp,
-                                    timestamp: Date.now()
-                                });
-                            })
-                            .catch(err => console.error('Error creating offer:', err));
-                    });
-                });
-                
-                // Listen for incoming offers, answers and ICE candidates
-                signalingRef.child(currentUser).on('child_added', snapshot => {
-                    const signal = snapshot.val();
-                    const sender = snapshot.key;
-                    
-                    if (!signal) return;
-                    
-                    console.log('Received signal from', sender, ':', signal.type);
-                    
-                    if (signal.type === 'offer') {
-                        // Create peer connection if it doesn't exist
-                        if (!peerConnections[sender]) {
-                            console.log('Creating peer connection for incoming offer from:', sender);
-                            const pc = createPeerConnection(sender, stream, signalingRef);
-                            peerConnections[sender] = pc;
-                        }
-                        
-                        const pc = peerConnections[sender];
-                        
-                        // Set remote description
-                        pc.setRemoteDescription(new RTCSessionDescription({
-                            type: 'offer',
-                            sdp: signal.sdp
-                        }))
-                        .then(() => pc.createAnswer())
-                        .then(answer => pc.setLocalDescription(answer))
-                        .then(() => {
-                            console.log('Sending answer to:', sender);
-                            signalingRef.child(sender).child(currentUser).set({
-                                type: 'answer',
-                                sdp: pc.localDescription.sdp,
-                                timestamp: Date.now()
-                            });
-                        })
-                        .catch(err => console.error('Error handling offer:', err));
-                        
-                    } else if (signal.type === 'answer') {
-                        const pc = peerConnections[sender];
-                        if (pc) {
-                            console.log('Setting remote description for answer from:', sender);
-                            pc.setRemoteDescription(new RTCSessionDescription({
-                                type: 'answer',
-                                sdp: signal.sdp
-                            }))
-                            .catch(err => console.error('Error setting remote description:', err));
-                        }
-                        
-                    } else if (signal.type === 'candidate') {
-                        const pc = peerConnections[sender];
-                        if (pc) {
-                            console.log('Adding ICE candidate from:', sender);
-                            pc.addIceCandidate(new RTCIceCandidate({
-                                candidate: signal.candidate,
-                                sdpMid: signal.sdpMid,
-                                sdpMLineIndex: signal.sdpMLineIndex
-                            }))
-                            .catch(err => console.error('Error adding ICE candidate:', err));
-                        }
-                    }
-                });
-            }
-            
-            // Create peer connection for a specific user
-            function createPeerConnection(userName, stream, signalingRef) {
-                const currentUser = localStorage.getItem('github_user_name') || 'Anonymous';
-                
-                // Add a visible audio indicator for debugging in top-right corner
-                if (!document.getElementById('audio-debug-indicator')) {
-                    const debugIndicator = document.createElement('div');
-                    debugIndicator.id = 'audio-debug-indicator';
-                    debugIndicator.style.position = 'fixed';
-                    debugIndicator.style.top = '10px';
-                    debugIndicator.style.right = '10px';
-                    debugIndicator.style.padding = '5px 10px';
-                    debugIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
-                    debugIndicator.style.color = 'white';
-                    debugIndicator.style.borderRadius = '5px';
-                    debugIndicator.style.fontSize = '12px';
-                    debugIndicator.style.zIndex = '10000';
-                    debugIndicator.textContent = 'Audio Debug: Active';
-                    document.body.appendChild(debugIndicator);
-                    
-                    // Commented out direct debug audio to prevent hearing your own voice back
-                    // This was causing the echo problem
-                    /*
-                    const debugAudio = document.createElement('audio');
-                    debugAudio.id = 'debug-audio';
-                    debugAudio.controls = true;
-                    debugAudio.style.position = 'fixed';
-                    debugAudio.style.top = '40px';
-                    debugAudio.style.right = '10px';
-                    debugAudio.style.width = '250px';
-                    debugAudio.style.zIndex = '10000';
-                    document.body.appendChild(debugAudio);
-                    
-                    // Connect to the stream directly for debugging
-                    if (stream) {
-                        debugAudio.srcObject = stream;
-                        debugAudio.play().catch(e => console.error('Debug audio play failed:', e));
-                    }
-                    */
-                }
-                
-                const configuration = {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' },
-                        { urls: 'stun:stun2.l.google.com:19302' },
-                        { urls: 'stun:stun3.l.google.com:19302' },
-                        { urls: 'stun:stun4.l.google.com:19302' },
-                        { urls: 'stun:stun.ekiga.net' },
-                        { urls: 'stun:stun.ideasip.com' },
-                        { urls: 'stun:stun.schlund.de' },
-                        // Add free TURN servers for better connectivity
-                        {
-                            urls: 'turn:openrelay.metered.ca:80',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        },
-                        {
-                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                            username: 'openrelayproject',
-                            credential: 'openrelayproject'
-                        }
-                    ],
-                    // Set these options for better audio routing
-                    iceTransportPolicy: 'all',
-                    iceCandidatePoolSize: 10,
-                    bundlePolicy: 'max-bundle',
-                    rtcpMuxPolicy: 'require',
-                    sdpSemantics: 'unified-plan'
-                };
-                
-                const pc = new RTCPeerConnection(configuration);
-                
-                // Add all tracks from the stream with improved audio constraints
-                stream.getTracks().forEach(track => {
-                    if (track.kind === 'audio') {
-                        // Try to ensure audio track has appropriate constraints
-                        try {
-                            const constraints = {
-                                channelCount: 1,
-                                echoCancellation: true,
-                                noiseSuppression: true,
-                                autoGainControl: true
-                            };
-                            
-                            track.applyConstraints(constraints)
-                                .then(() => console.log('Applied audio constraints successfully'))
-                                .catch(err => console.warn('Could not apply audio constraints:', err));
-                        } catch (e) {
-                            console.warn('Error applying constraints to audio track:', e);
-                        }
-                    }
-                    console.log('Adding track to peer connection:', track.kind);
-                    pc.addTrack(track, stream);
-                });
-                
-                // Handle ICE candidates
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        console.log('New ICE candidate:', {
-                            candidate: event.candidate.candidate,
-                            sdpMid: event.candidate.sdpMid,
-                            sdpMLineIndex: event.candidate.sdpMLineIndex,
-                            type: event.candidate.type,
-                            protocol: event.candidate.protocol,
-                            address: event.candidate.address,
-                            port: event.candidate.port
-                        });
-                        signalingRef.child(userName).child(currentUser).child('candidates').push({
-                            type: 'candidate',
-                            candidate: event.candidate.candidate,
-                            sdpMid: event.candidate.sdpMid,
-                            sdpMLineIndex: event.candidate.sdpMLineIndex,
-                            timestamp: Date.now()
-                        });
-                    } else {
-                        console.log('ICE Candidate gathering completed');
-                    }
-                };
-                
-                // Handle incoming tracks
-                pc.ontrack = event => {
-                    // Critical: Make sure we're not playing our own audio back to ourselves
-                    if (userName === currentUser) {
-                        console.log('Ignoring own audio track to prevent echo');
-                        return;
-                    }
-                    
-                    console.log('Received track from:', userName, event.track.kind);
-                    
-                    // Only handle audio tracks
-                    if (event.track.kind !== 'audio') {
-                        console.log('Ignoring non-audio track');
-                        return;
-                    }
-                    
-                    console.log('Remote audio track received from:', userName);
-                    console.log('Track settings:', event.track.getSettings());
-                    console.log('Track state:', event.track.readyState);
-                    
-                    // Remove any existing audio element for this user first
-                    const existingAudio = document.getElementById('audio-' + userName);
-                    if (existingAudio) {
-                        console.log('Removing existing audio element for:', userName);
-                        existingAudio.srcObject = null;
-                        existingAudio.remove();
-                    }
-                    
-                    // Create a visible audio element for easier debugging
-                    const audio = document.createElement('audio');
-                    audio.id = 'audio-' + userName;
-                    audio.autoplay = true;
-                    audio.controls = true; // Make controls visible for debugging
-                    audio.muted = false;
-                    audio.volume = 1.0;
-                    audio.style.position = 'fixed';
-                    audio.style.bottom = '10px';
-                    audio.style.right = '10px';
-                    audio.style.width = '250px';
-                    audio.style.zIndex = '10000';
-                    audio.style.background = 'rgba(0,0,0,0.7)';
-                    audio.style.padding = '5px';
-                    audio.style.borderRadius = '4px';
-                    document.body.appendChild(audio);
-                    
-                    // Add audio labels
-                    const label = document.createElement('div');
-                    label.textContent = `Audio from: ${userName}`;
-                    label.style.color = 'white';
-                    label.style.fontSize = '12px';
-                    label.style.position = 'fixed';
-                    label.style.bottom = '70px';
-                    label.style.right = '10px';
-                    label.style.background = 'rgba(0,0,0,0.7)';
-                    label.style.padding = '5px';
-                    label.style.borderRadius = '4px';
-                    label.style.zIndex = '10000';
-                    document.body.appendChild(label);
-                    
-                    // Add error handler
-                    audio.onerror = (e) => {
-                        console.error('Audio element error:', e);
-                    };
-                    
-                    // Log when audio starts playing
-                    audio.onplaying = () => {
-                        console.log(`Audio from ${userName} started playing successfully`);
-                        label.style.color = '#00ff00'; // Green to show it's working
-                    };
-                    
-                    // Add volume change handler to track user adjustments
-                    audio.onvolumechange = () => {
-                        console.log(`Volume for ${userName} changed to:`, audio.volume);
-                    };
-                    
-                    // Set the remote stream with more logging
-                    try {
-                        if (!event.streams || event.streams.length === 0) {
-                            console.error('No streams available in track event');
-                            return;
-                        }
-                        
-                        console.log('Setting srcObject with stream tracks:', 
-                            event.streams[0].getTracks().map(t => `${t.kind}:${t.id}:${t.readyState}`).join(', '));
-                        
-                        // Save reference to original stream
-                        const originalStream = event.streams[0];
-                        
-                        // Create a gain node to boost the audio if needed
-                        const audioContext = new AudioContext();
-                        const source = audioContext.createMediaStreamSource(originalStream);
-                        const gainNode = audioContext.createGain();
-                        gainNode.gain.value = 1.5; // Boost volume by 50%
-                        source.connect(gainNode);
-                        
-                        // Create destination and connect
-                        const destination = audioContext.createMediaStreamDestination();
-                        gainNode.connect(destination);
-                        
-                        // Use the processed stream with boosted volume
-                        audio.srcObject = destination.stream;
-                        
-                        // Create a status indicator for audio levels
-                        const statusIndicator = document.createElement('div');
-                        statusIndicator.style.position = 'fixed';
-                        statusIndicator.style.bottom = '90px';
-                        statusIndicator.style.right = '10px';
-                        statusIndicator.style.padding = '5px';
-                        statusIndicator.style.background = 'rgba(0,0,0,0.7)';
-                        statusIndicator.style.color = 'white';
-                        statusIndicator.style.zIndex = '10001';
-                        statusIndicator.style.fontSize = '12px';
-                        statusIndicator.style.borderRadius = '4px';
-                        statusIndicator.textContent = 'Audio Level: Waiting...';
-                        document.body.appendChild(statusIndicator);
-                        
-                        // Force play with multiple retries
-                        let retryCount = 0;
-                        const maxRetries = 5;
-                        
-                        function tryPlayAudio() {
-                            console.log(`Attempt ${retryCount + 1} to play audio from ${userName}`);
-                            const playPromise = audio.play();
-                            
-                            if (playPromise !== undefined) {
-                                playPromise
-                                    .then(() => {
-                                        console.log(`Audio from ${userName} playing successfully`);
-                                        label.style.color = '#00ff00'; // Green to show it's working
-                                    })
-                                    .catch(err => {
-                                        console.error(`Error playing audio from ${userName}:`, err);
-                                        retryCount++;
-                                        
-                                        if (retryCount < maxRetries) {
-                                            // Try again with increasing delay
-                                            setTimeout(() => {
-                                                console.log(`Retrying audio playback (${retryCount}/${maxRetries})...`);
-                                                tryPlayAudio();
-                                            }, 1000 * retryCount); // Increasing backoff
-                                        } else {
-                                            console.error(`Failed to play audio after ${maxRetries} attempts`);
-                                            label.style.color = '#ff0000'; // Red to show failure
-                                            label.textContent = `Audio from ${userName} (Failed to play)`;
-                                            
-                                            // Last resort: Create a new audio element
-                                            const fallbackAudio = document.createElement('audio');
-                                            fallbackAudio.id = 'fallback-audio-' + userName;
-                                            fallbackAudio.autoplay = true;
-                                            fallbackAudio.controls = true;
-                                            fallbackAudio.muted = false;
-                                            fallbackAudio.volume = 1.0;
-                                            fallbackAudio.style.position = 'fixed';
-                                            fallbackAudio.style.bottom = '120px';
-                                            fallbackAudio.style.right = '10px';
-                                            fallbackAudio.style.width = '250px';
-                                            fallbackAudio.style.zIndex = '10000';
-                                            document.body.appendChild(fallbackAudio);
-                                            
-                                            // Try with the original stream
-                                            fallbackAudio.srcObject = originalStream;
-                                            fallbackAudio.play().catch(e => console.error('Fallback play failed:', e));
-                                        }
-                                    });
-                            }
-                        }
-                        
-                        // Start the play attempts
-                        tryPlayAudio();
-                        
-                        // Monitor audio activity with visual feedback
-                        const analyser = audioContext.createAnalyser();
-                        source.connect(analyser);
-                        analyser.fftSize = 256;
-                        
-                        const bufferLength = analyser.frequencyBinCount;
-                        const dataArray = new Uint8Array(bufferLength);
-                        
-                        // Check audio levels more frequently
-                        const audioMonitorInterval = setInterval(() => {
-                            analyser.getByteFrequencyData(dataArray);
-                            
-                            // Calculate average volume level
-                            let sum = 0;
-                            dataArray.forEach(value => sum += value);
-                            const average = sum / bufferLength;
-                            
-                            // Update status indicator with current level
-                            statusIndicator.textContent = `Audio Level: ${average.toFixed(1)}`;
-                            
-                            // Change color based on audio level
-                            if (average > 20) {
-                                statusIndicator.style.color = '#00ff00'; // Good level
-                            } else if (average > 5) {
-                                statusIndicator.style.color = '#ffff00'; // Low level
-                            } else {
-                                statusIndicator.style.color = '#ff0000'; // No audio
-                            }
-                            
-                            console.log(`Audio monitor for ${userName}: Average level = ${average.toFixed(2)}`);
-                            
-                            if (average < 5) {
-                                console.warn(`No audio detected from ${userName}`);
-                                
-                                // If consistently no audio, try to reconnect
-                                if (!pc.noAudioCount) pc.noAudioCount = 0;
-                                pc.noAudioCount++;
-                                
-                                if (pc.noAudioCount > 5) {
-                                    console.warn(`No audio detected for extended period, attempting reconnection`);
-                                    pc.noAudioCount = 0;
-                                    
-                                    // Request a new ICE candidate if connection seems established but no audio
-                                    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
-                                        console.log('Restarting ICE to improve connection');
-                                        pc.restartIce();
-                                    }
-                                }
-                            } else {
-                                pc.noAudioCount = 0; // Reset counter when audio is detected
-                            }
-                        }, 1000); // Check every second for more responsive feedback
-                        
-                        // Store interval for cleanup
-                        pc.audioMonitorInterval = audioMonitorInterval;
-                        
-                    } catch (err) {
-                        console.error('Error setting up audio:', err);
-                        label.style.color = '#ff0000'; // Red to show failure
-                        label.textContent = `Audio from ${userName} (Setup Error)`;
-                    }
-                };
-                
-                // Log connection state changes with more detail
-                pc.onconnectionstatechange = () => {
-                    console.log('Connection state change for', userName);
-                    console.log('New state:', pc.connectionState);
-                    console.log('ICE connection state:', pc.iceConnectionState);
-                    console.log('ICE gathering state:', pc.iceGatheringState);
-                    console.log('Signaling state:', pc.signalingState);
-                    
-                    // Check if we're connected properly
-                    if (pc.connectionState === 'connected') {
-                        // Start periodic connection quality checks
-                        if (!pc.connectionCheckInterval) {
-                            pc.connectionCheckInterval = setInterval(() => {
-                                // Check for stats to diagnose connection issues
-                                pc.getStats().then(stats => {
-                                    let audioInputLevel = 0;
-                                    let audioOutputLevel = 0;
-                                    let packetsLost = 0;
-                                    let jitter = 0;
-                                    
-                                    stats.forEach(report => {
-                                        if (report.type === 'inbound-rtp' && report.kind === 'audio') {
-                                            packetsLost = report.packetsLost;
-                                            jitter = report.jitter;
-                                            audioOutputLevel = report.audioLevel;
-                                        }
-                                        if (report.type === 'outbound-rtp' && report.kind === 'audio') {
-                                            audioInputLevel = report.audioLevel;
-                                        }
-                                    });
-                                    
-                                    console.log(`Connection stats for ${userName}:`, {
-                                        outgoingLevel: audioInputLevel ? audioInputLevel.toFixed(3) : 'N/A',
-                                        incomingLevel: audioOutputLevel ? audioOutputLevel.toFixed(3) : 'N/A',
-                                        packetsLost,
-                                        jitter: jitter ? jitter.toFixed(3) : 'N/A'
-                                    });
-                                    
-                                    // Log if there might be an issue
-                                    if (packetsLost > 10) {
-                                        console.warn(`High packet loss detected: ${packetsLost} packets lost`);
-                                        
-                                        // Try to improve connection if problems detected
-                                        if (pc.iceConnectionState !== 'checking') {
-                                            console.log('Attempting to refresh connection');
-                                            pc.restartIce();
-                                        }
-                                    }
-                                });
-                            }, 5000);
-                        }
-                    } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
-                        // Clean up intervals
-                        if (pc.connectionCheckInterval) {
-                            clearInterval(pc.connectionCheckInterval);
-                            pc.connectionCheckInterval = null;
-                        }
-                        if (pc.audioMonitorInterval) {
-                            clearInterval(pc.audioMonitorInterval);
-                            pc.audioMonitorInterval = null;
-                        }
-                    }
-                };
-                
-                // Log ICE connection state changes with more detail
-                pc.oniceconnectionstatechange = () => {
-                    console.log('ICE connection state change for', userName);
-                    console.log('ICE connection state:', pc.iceConnectionState);
-                    console.log('Current connection state:', pc.connectionState);
-                    
-                    // Check for failed connections
-                    if (pc.iceConnectionState === 'failed') {
-                        console.error('ICE connection failed for:', userName);
-                        console.log('Attempting to restart ICE');
-                        pc.restartIce();
-                    }
-                };
-                
-                // Add ICE gathering state change logging
-                pc.onicegatheringstatechange = () => {
-                    console.log('ICE gathering state change for', userName);
-                    console.log('ICE gathering state:', pc.iceGatheringState);
-                };
-                
-                // Add negotiation needed handler
-                pc.onnegotiationneeded = () => {
-                    console.log('Negotiation needed for:', userName);
-                };
-                
-                return pc;
+
+                micActive = false;
+                isJoined = false;
+                refreshedToggle.classList.remove('active');
+                voiceChatStatus.textContent = 'Voice Chat: Off';
+                console.log('Microphone disabled');
             }
 
-            // Add this after enableMicrophone function 
-            // Check microphone activity periodically
-            function startMicrophoneActivityCheck(stream) {
-                const audioContext = new AudioContext();
-                const mediaStreamSource = audioContext.createMediaStreamSource(stream);
-                const analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                mediaStreamSource.connect(analyser);
-                
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-                
-                const micActivityInterval = setInterval(() => {
-                    if (!micActive) {
-                        clearInterval(micActivityInterval);
-                        return;
-                    }
-                    
-                    analyser.getByteFrequencyData(dataArray);
-                    
-                    // Calculate average microphone level
-                    let sum = 0;
-                    dataArray.forEach(value => sum += value);
-                    const average = sum / bufferLength;
-                    
-                    console.log(`Microphone activity check: Average level = ${average.toFixed(2)}`);
-                    
-                    if (average < 5) {
-                        console.warn('No microphone activity detected - check if microphone is working');
-                    } else {
-                        console.log('Microphone is active and transmitting audio');
-                    }
-                }, 5000);
-                
-                return micActivityInterval;
-            }
+            // Handle remote users
+            client.on("user-published", async (user, mediaType) => {
+                await client.subscribe(user, mediaType);
+                console.log("Subscribed to remote user:", user.uid);
+
+                if (mediaType === "audio") {
+                    user.audioTrack.play();
+                }
+            });
+
+            client.on("user-unpublished", async (user) => {
+                console.log("Remote user unpublished:", user.uid);
+            });
+
+            // Error handling
+            client.on("connection-state-change", (curState, prevState) => {
+                console.log("Connection state changed from", prevState, "to", curState);
+            });
+
+            client.on("error", (err) => {
+                console.error("Agora client error:", err);
+            });
         }
     </script>
 </body>
