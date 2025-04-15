@@ -684,7 +684,7 @@
                 }
             });
             
-            // Add long-press handler to force disconnect
+            // Add long-press handler to force disconnect without tooltip
             let pressTimer;
             refreshedToggle.addEventListener('mousedown', function(e) {
                 if (isJoined) {
@@ -694,22 +694,7 @@
                         if (success) {
                             refreshedToggle.classList.remove('active');
                             refreshedToggle.classList.remove('muted');
-                            
-                            // Show tooltip
-                            const tooltip = document.createElement('div');
-                            tooltip.style.position = 'fixed';
-                            tooltip.style.bottom = '100px';
-                            tooltip.style.right = '10px';
-                            tooltip.style.padding = '8px 12px';
-                            tooltip.style.backgroundColor = '#333';
-                            tooltip.style.color = 'white';
-                            tooltip.style.borderRadius = '4px';
-                            tooltip.style.fontSize = '14px';
-                            tooltip.style.zIndex = '10000';
-                            tooltip.textContent = 'Disconnected from voice chat';
-                            document.body.appendChild(tooltip);
-                            
-                            setTimeout(() => tooltip.remove(), 3000);
+                            // No tooltip, just disconnect
                         }
                     }, 1500); // 1.5 second long press
                 }
@@ -725,9 +710,11 @@
             
             // Helper functions
             function updateStatus(message) {
-                if (voiceChatStatus) {
-                    voiceChatStatus.textContent = message;
-                }
+                // Log to console but don't update UI text
+                console.log("Status update:", message);
+                
+                // Keeping this function but not updating UI text
+                // This makes the buttons show status through colors only
             }
             
             async function getSessionId() {
@@ -761,55 +748,23 @@
             
             // Visual indicators for users
             function showLocalUserIndicator() {
-                const indicator = document.createElement('div');
-                indicator.id = 'local-user-indicator';
-                indicator.style.position = 'fixed';
-                indicator.style.bottom = '40px';
-                indicator.style.right = '10px';
-                indicator.style.padding = '8px 12px';
-                indicator.style.backgroundColor = '#4CAF50';
-                indicator.style.color = 'white';
-                indicator.style.borderRadius = '4px';
-                indicator.style.fontSize = '14px';
-                indicator.style.zIndex = '9999';
-                indicator.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-                indicator.textContent = 'Your mic is active';
-                document.body.appendChild(indicator);
+                // No local indicator at all - just rely on the mic button color
             }
             
             function removeLocalUserIndicator() {
-                const indicator = document.getElementById('local-user-indicator');
-                if (indicator) {
-                    indicator.remove();
-                }
+                // Do nothing since we're not showing an indicator
             }
             
             function showRemoteUserIndicator(uid) {
-                const indicator = document.createElement('div');
-                indicator.id = `remote-user-indicator-${uid}`;
-                indicator.style.position = 'fixed';
-                indicator.style.bottom = '70px';
-                indicator.style.right = '10px';
-                indicator.style.padding = '8px 12px';
-                indicator.style.backgroundColor = '#2196F3';
-                indicator.style.color = 'white';
-                indicator.style.borderRadius = '4px';
-                indicator.style.fontSize = '14px';
-                indicator.style.zIndex = '9999';
-                indicator.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-                indicator.textContent = `Remote user ${uid} connected`;
-                document.body.appendChild(indicator);
+                // No remote user indicator - just rely on hearing them
             }
             
             function removeRemoteUserIndicator(uid) {
-                const indicator = document.getElementById(`remote-user-indicator-${uid}`);
-                if (indicator) {
-                    indicator.remove();
-                }
+                // Do nothing since we're not showing an indicator
             }
             
             function removeAllRemoteUserIndicators() {
-                document.querySelectorAll('[id^="remote-user-indicator-"]').forEach(el => el.remove());
+                // Do nothing since we're not showing indicators
             }
             
             // Add Firebase listener to detect when session ends
@@ -832,26 +787,9 @@
                                     console.log("Live session ended, closing microphone");
                                     leaveChannel();
                                     refreshedToggle.classList.remove('active');
+                                    refreshedToggle.classList.remove('muted');
                                     
-                                    // Show notification
-                                    const notification = document.createElement('div');
-                                    notification.style.position = 'fixed';
-                                    notification.style.top = '10px';
-                                    notification.style.left = '50%';
-                                    notification.style.transform = 'translateX(-50%)';
-                                    notification.style.backgroundColor = '#f44336';
-                                    notification.style.color = 'white';
-                                    notification.style.padding = '10px 20px';
-                                    notification.style.borderRadius = '4px';
-                                    notification.style.zIndex = '10000';
-                                    notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
-                                    notification.textContent = 'Live session has ended';
-                                    document.body.appendChild(notification);
-                                    
-                                    // Remove notification after 5 seconds
-                                    setTimeout(() => {
-                                        notification.remove();
-                                    }, 5000);
+                                    // No notification, just quietly disconnect
                                 }
                             });
                             
@@ -875,6 +813,18 @@
                         console.error("Error setting up session end listener:", error);
                     }
                 });
+            }
+            
+            // On DOM load, hide text in voice chat status element
+            const statusElement = document.querySelector('.voice-chat-status span');
+            if (statusElement) {
+                // Hide text but keep the element for the mute/active logic
+                statusElement.style.fontSize = '0';
+                statusElement.style.height = '0';
+                statusElement.style.width = '0';
+                statusElement.style.overflow = 'hidden';
+                statusElement.style.padding = '0';
+                statusElement.style.margin = '0';
             }
             
             console.log("Agora voice chat setup complete");
