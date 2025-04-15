@@ -525,7 +525,16 @@
                 client.on("connection-state-change", (curState, prevState) => {
                     console.log("Connection state changed from", prevState, "to", curState);
                     updateStatus(`Connection: ${curState}`);
+                    
+                    // Auto-disconnect when connection is disconnected
+                    if (curState === "DISCONNECTED") {
+                        console.log("Connection disconnected, auto-closing microphone");
+                        leaveChannel();
+                    }
                 });
+                
+                // Add session end detection - Monitor Firebase for session deletion
+                listenForSessionEnd();
             }
             
             // Create and join channel
@@ -602,9 +611,55 @@
                 }
             }
             
-            // Toggle voice chat on/off
+            // Add new function to just mute the microphone without leaving
+            async function toggleMute() {
+                if (!localAudioTrack) return false;
+                
+                try {
+                    if (localAudioTrack.enabled) {
+                        // Mute the microphone
+                        await localAudioTrack.setEnabled(false);
+                        refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.add('muted');
+                        updateStatus("Voice Chat: Muted");
+                        
+                        // Update indicator
+                        const indicator = document.getElementById('local-user-indicator');
+                        if (indicator) {
+                            indicator.style.backgroundColor = '#FF9800';
+                            indicator.textContent = 'Your mic is muted (still listening)';
+                        }
+                        
+                        console.log("Microphone muted");
+                    } else {
+                        // Unmute the microphone
+                        await localAudioTrack.setEnabled(true);
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                        updateStatus("Voice Chat: On");
+                        
+                        // Update indicator
+                        const indicator = document.getElementById('local-user-indicator');
+                        if (indicator) {
+                            indicator.style.backgroundColor = '#4CAF50';
+                            indicator.textContent = 'Your mic is active';
+                        }
+                        
+                        console.log("Microphone unmuted");
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error toggling mute:", error);
+                    return false;
+                }
+            }
+            
+            // Toggle voice chat on/off/mute
             refreshedToggle.addEventListener('click', async function() {
                 if (!isJoined) {
+                    // Not connected - join channel
+                    
                     // Initialize client if not already
                     if (!client) {
                         initializeClient();
@@ -614,14 +669,58 @@
                     const success = await joinChannel();
                     if (success) {
                         refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
                     }
+                } else if (localAudioTrack) {
+                    // Connected and have microphone - toggle mute
+                    await toggleMute();
                 } else {
-                    // Leave channel
+                    // Connected but no microphone (already muted) - leave channel
                     const success = await leaveChannel();
                     if (success) {
                         refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.remove('muted');
                     }
                 }
+            });
+            
+            // Add long-press handler to force disconnect
+            let pressTimer;
+            refreshedToggle.addEventListener('mousedown', function(e) {
+                if (isJoined) {
+                    pressTimer = setTimeout(async function() {
+                        // Force disconnect on long press
+                        const success = await leaveChannel();
+                        if (success) {
+                            refreshedToggle.classList.remove('active');
+                            refreshedToggle.classList.remove('muted');
+                            
+                            // Show tooltip
+                            const tooltip = document.createElement('div');
+                            tooltip.style.position = 'fixed';
+                            tooltip.style.bottom = '100px';
+                            tooltip.style.right = '10px';
+                            tooltip.style.padding = '8px 12px';
+                            tooltip.style.backgroundColor = '#333';
+                            tooltip.style.color = 'white';
+                            tooltip.style.borderRadius = '4px';
+                            tooltip.style.fontSize = '14px';
+                            tooltip.style.zIndex = '10000';
+                            tooltip.textContent = 'Disconnected from voice chat';
+                            document.body.appendChild(tooltip);
+                            
+                            setTimeout(() => tooltip.remove(), 3000);
+                        }
+                    }, 1500); // 1.5 second long press
+                }
+            });
+            
+            refreshedToggle.addEventListener('mouseup', function() {
+                clearTimeout(pressTimer);
+            });
+            
+            refreshedToggle.addEventListener('mouseleave', function() {
+                clearTimeout(pressTimer);
             });
             
             // Helper functions
@@ -711,6 +810,71 @@
             
             function removeAllRemoteUserIndicators() {
                 document.querySelectorAll('[id^="remote-user-indicator-"]').forEach(el => el.remove());
+            }
+            
+            // Add Firebase listener to detect when session ends
+            function listenForSessionEnd() {
+                getSessionId().then(sessionId => {
+                    if (!sessionId) return;
+                    
+                    try {
+                        // Check if Firebase is available
+                        if (typeof firebase !== 'undefined' && firebase.database) {
+                            console.log("Setting up session end listener for session:", sessionId);
+                            
+                            // Reference to the live session
+                            const sessionRef = firebase.database().ref('liveSessions').child(sessionId);
+                            
+                            // Listen for session value changes
+                            sessionRef.on('value', snapshot => {
+                                // If the session is deleted or becomes null
+                                if (!snapshot.exists()) {
+                                    console.log("Live session ended, closing microphone");
+                                    leaveChannel();
+                                    refreshedToggle.classList.remove('active');
+                                    
+                                    // Show notification
+                                    const notification = document.createElement('div');
+                                    notification.style.position = 'fixed';
+                                    notification.style.top = '10px';
+                                    notification.style.left = '50%';
+                                    notification.style.transform = 'translateX(-50%)';
+                                    notification.style.backgroundColor = '#f44336';
+                                    notification.style.color = 'white';
+                                    notification.style.padding = '10px 20px';
+                                    notification.style.borderRadius = '4px';
+                                    notification.style.zIndex = '10000';
+                                    notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+                                    notification.textContent = 'Live session has ended';
+                                    document.body.appendChild(notification);
+                                    
+                                    // Remove notification after 5 seconds
+                                    setTimeout(() => {
+                                        notification.remove();
+                                    }, 5000);
+                                }
+                            });
+                            
+                            // Also listen for visibility changes - auto-leave when page is hidden
+                            document.addEventListener('visibilitychange', () => {
+                                if (document.visibilityState === 'hidden' && isJoined) {
+                                    console.log("Page hidden, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                            
+                            // Listen for page unload - clean up before page closes
+                            window.addEventListener('beforeunload', () => {
+                                if (isJoined) {
+                                    console.log("Page closing, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error setting up session end listener:", error);
+                    }
+                });
             }
             
             console.log("Agora voice chat setup complete");
