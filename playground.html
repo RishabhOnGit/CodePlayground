@@ -199,6 +199,45 @@
             gap: 15px;
         }
         
+        /* Voice Chat Styles */
+        .voice-chat-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 10px;
+        }
+        
+        #voice-chat-toggle {
+            background-color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            transition: background-color 0.2s;
+        }
+        
+        #voice-chat-toggle:hover {
+            background-color: #444;
+        }
+        
+        #voice-chat-toggle.active {
+            background-color: #0366d6;
+        }
+        
+        #voice-chat-toggle.muted {
+            background-color: #cf222e;
+        }
+        
+        .voice-chat-status {
+            font-size: 0.8rem;
+            color: #888;
+        }
+        
         /* Navbar Styles - REMOVED */
     </style>
 </head>
@@ -227,6 +266,15 @@
                         <div id="participants-list">
                             <!-- Participants will be listed here -->
                         </div>
+                    </div>
+                </div>
+                <!-- Voice Chat Controls -->
+                <div class="voice-chat-controls">
+                    <button id="voice-chat-toggle" title="Toggle Voice Chat">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <div class="voice-chat-status">
+                        <span>Voice Chat: Off</span>
                     </div>
                 </div>
             </div>
