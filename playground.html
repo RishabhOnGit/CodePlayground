@@ -827,6 +827,92 @@
                 statusElement.style.margin = '0';
             }
             
+            // Also hide "Hosting Live Session" text
+            document.addEventListener('DOMContentLoaded', function() {
+                // Hide all text in the live indicator area
+                hideTextInLiveSessionUI();
+                
+                // Set up a mutation observer to keep hiding text that might be dynamically added
+                const observer = new MutationObserver(hideTextInLiveSessionUI);
+                observer.observe(document.body, { 
+                    childList: true, 
+                    subtree: true,
+                    characterData: true
+                });
+                
+                // Also run it after a short delay to catch any text added by other scripts
+                setTimeout(hideTextInLiveSessionUI, 500);
+                setTimeout(hideTextInLiveSessionUI, 1000);
+                setTimeout(hideTextInLiveSessionUI, 2000);
+            });
+            
+            // Function to hide text in the live session UI
+            function hideTextInLiveSessionUI() {
+                // Hide "Hosting Live Session" text
+                const liveIndicator = document.querySelector('#live-indicator');
+                if (liveIndicator) {
+                    // Preserve the icons but hide the text
+                    Array.from(liveIndicator.childNodes).forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            node.textContent = '';
+                        } else if (node.nodeType === Node.ELEMENT_NODE && !node.querySelector('i.fa')) {
+                            // If it's not an icon, hide the text
+                            if (node.tagName !== 'I' && !node.classList.contains('fas')) {
+                                node.style.fontSize = '0';
+                                node.style.width = '0';
+                                node.style.overflow = 'hidden';
+                                node.style.margin = '0';
+                                node.style.padding = '0';
+                            }
+                        }
+                    });
+                }
+                
+                // Also try direct approach by hiding specific element containing the text
+                const hostingSessionElement = document.querySelector('.live-indicator > span:first-child');
+                if (hostingSessionElement) {
+                    hostingSessionElement.style.display = 'none';
+                }
+                
+                // Alternative: inject CSS to hide all spans in the live indicator
+                const style = document.createElement('style');
+                style.textContent = `
+                    #live-indicator > span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    #live-indicator span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    .live-indicator > span:first-child { 
+                        display: none !important; 
+                    }
+                    .live-indicator span:not(:has(i)) { 
+                        display: none !important; 
+                    }
+                    /* Also hide participants text */
+                    #participant-count {
+                        display: none !important;
+                    }
+                    .participants-container > span {
+                        display: none !important;
+                    }
+                    /* Voice chat text */
+                    .voice-chat-status {
+                        font-size: 0 !important;
+                        overflow: hidden !important;
+                    }
+                    .voice-chat-status span {
+                        font-size: 0 !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        overflow: hidden !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
             console.log("Agora voice chat setup complete");
         });
     </script>
