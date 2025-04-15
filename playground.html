@@ -538,8 +538,23 @@
                 return;
             }
             
-            // Initialize Agora client
-            const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+            // Initialize Agora client with enhanced settings
+            const clientConfig = { 
+                mode: "rtc", 
+                codec: "vp8",
+                proxyServer: 'auto',
+                turnServer: {
+                    turnServerURL: 'turn:relay.backups.cz',
+                    username: 'webrtc',
+                    password: 'webrtc',
+                    udpport: '3478'
+                }
+            };
+            const client = AgoraRTC.createClient(clientConfig);
+            
+            // Enable cloudproxy to bypass network restrictions
+            client.startProxyServer(3);
+            
             let localAudioTrack = null;
             let isJoined = false;
 
@@ -615,16 +630,31 @@
                     const uid = await client.join(appId, channelName, null, null);
                     console.log('Joined channel:', channelName);
 
-                    // Create and publish audio track
+                    // Create and publish audio track with enhanced settings
                     localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
                         encoderConfig: {
                             sampleRate: 48000,
                             stereo: false,
-                            bitrate: 48
-                        }
+                            bitrate: 128
+                        },
+                        microphoneId: undefined, // Use default microphone
+                        AEC: true,  // Enable Acoustic Echo Cancellation
+                        AGC: true,  // Enable Automatic Gain Control
+                        ANS: true,  // Enable Automatic Noise Suppression
                     });
+                    
+                    // Set volume higher
+                    localAudioTrack.setVolume(150); // 150% volume
+                    
+                    // Modify the transmission quality to ensure better delivery
+                    client.setLowStreamParameter({
+                        audioBitrate: 64,
+                        audioSampleRate: 48000,
+                        audioChannels: 1
+                    });
+                    
+                    // Try publishing with higher priority
                     await client.publish([localAudioTrack]);
-                    console.log('Published local audio track');
 
                     micActive = true;
                     isJoined = true;
