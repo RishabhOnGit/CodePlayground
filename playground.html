@@ -538,22 +538,15 @@
                 return;
             }
             
-            // Initialize Agora client with enhanced settings
+            // Initialize Agora client with simplified settings
             const clientConfig = { 
                 mode: "rtc", 
-                codec: "vp8",
-                proxyServer: 'auto',
-                turnServer: {
-                    turnServerURL: 'turn:relay.backups.cz',
-                    username: 'webrtc',
-                    password: 'webrtc',
-                    udpport: '3478'
-                }
+                codec: "vp8"
             };
             const client = AgoraRTC.createClient(clientConfig);
             
-            // Enable cloudproxy to bypass network restrictions
-            client.startProxyServer(3);
+            // Skip cloud proxy to avoid configuration errors
+            // client.startProxyServer(3);
             
             let localAudioTrack = null;
             let isJoined = false;
@@ -568,12 +561,37 @@
             // Track microphone state
             let micActive = false;
             
-            // Handle microphone clicks
-            refreshedToggle.addEventListener('click', async function() {
-                if (!micActive) {
-                    await enableMicrophone();
-                } else {
-                    await disableMicrophone();
+            // Handle microphone clicks - with both left and right click support
+            refreshedToggle.addEventListener('click', async function(e) {
+                e.preventDefault(); // Prevent default behavior
+                console.log('Mic button clicked');
+                
+                try {
+                    if (!micActive) {
+                        await enableMicrophone();
+                    } else {
+                        await disableMicrophone();
+                    }
+                } catch (err) {
+                    console.error('Error toggling microphone:', err);
+                    alert('Error toggling microphone: ' + err.message);
+                }
+            });
+            
+            // Also handle mousedown event to catch all types of clicks
+            refreshedToggle.addEventListener('mousedown', async function(e) {
+                e.preventDefault(); // Prevent default behavior
+                console.log('Mic button pressed with button:', e.button);
+                
+                try {
+                    if (!micActive) {
+                        await enableMicrophone();
+                    } else {
+                        await disableMicrophone();
+                    }
+                } catch (err) {
+                    console.error('Error toggling microphone on mousedown:', err);
+                    alert('Error toggling microphone: ' + err.message);
                 }
             });
             
