@@ -1,0 +1,420 @@
+{
+  "realms": [
+    {
+      "id": 1,
+      "name": "Controlonia",
+      "title": "The Branching Path",
+      "theme": "Control Flow (if/else)",
+      "story": "The gates of Controlonia are guarded by ancient logic spirits. Each choice reveals your strength.",
+      "challenges": [
+        {
+          "id": 1,
+          "title": "The Stone Guardian",
+          "prompt": "Return \"Yes\" if number is positive, else \"No\"",
+          "visibleTests": [
+            {"input": "3", "output": "Yes"},
+            {"input": "-1", "output": "No"}
+          ],
+          "hiddenTests": [
+            {"input": "0", "output": "No"},
+            {"input": "-5", "output": "No"},
+            {"input": "10", "output": "Yes"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 2,
+          "title": "Judgment of the Twin Rivers",
+          "prompt": "Return the greater of two numbers",
+          "visibleTests": [
+            {"input": "4 6", "output": "6"},
+            {"input": "10 2", "output": "10"}
+          ],
+          "hiddenTests": [
+            {"input": "-5 -9", "output": "-5"},
+            {"input": "100 100", "output": "100"},
+            {"input": "0 -1", "output": "0"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 3,
+          "title": "Age of Decision",
+          "prompt": "Check if age is eligible to vote (>=18)",
+          "visibleTests": [
+            {"input": "20", "output": "Yes"},
+            {"input": "17", "output": "No"}
+          ],
+          "hiddenTests": [
+            {"input": "18", "output": "Yes"},
+            {"input": "0", "output": "No"},
+            {"input": "100", "output": "Yes"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 4,
+          "title": "Scroll of Grades",
+          "prompt": "Return \"A\" if score ≥ 90, \"B\" if ≥ 80, else \"C\"",
+          "visibleTests": [
+            {"input": "92", "output": "A"},
+            {"input": "85", "output": "B"}
+          ],
+          "hiddenTests": [
+            {"input": "75", "output": "C"},
+            {"input": "100", "output": "A"},
+            {"input": "88", "output": "B"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 5,
+          "title": "The Whispering Word",
+          "prompt": "Return True if string contains \"code\"",
+          "visibleTests": [
+            {"input": "\"I love code\"", "output": "True"},
+            {"input": "\"hello world\"", "output": "False"}
+          ],
+          "hiddenTests": [
+            {"input": "\"code crafter\"", "output": "True"},
+            {"input": "\"CODE\"", "output": "False"},
+            {"input": "\"de code\"", "output": "True"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Loopadia",
+      "title": "The Spinning Caves",
+      "theme": "Loops & Iterations",
+      "story": "Echoes bounce forever unless your logic breaks the curse of repetition.",
+      "challenges": [
+        {
+          "id": 6,
+          "title": "Echo Count",
+          "prompt": "Sum all numbers from 1 to n",
+          "visibleTests": [
+            {"input": "5", "output": "15"},
+            {"input": "1", "output": "1"}
+          ],
+          "hiddenTests": [
+            {"input": "100", "output": "5050"},
+            {"input": "10", "output": "55"},
+            {"input": "50", "output": "1275"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 7,
+          "title": "Vowel Watcher",
+          "prompt": "Count vowels in a string",
+          "visibleTests": [
+            {"input": "\"hello\"", "output": "2"},
+            {"input": "\"sky\"", "output": "0"}
+          ],
+          "hiddenTests": [
+            {"input": "\"aeiou\"", "output": "5"},
+            {"input": "\"banana\"", "output": "3"},
+            {"input": "\"\"", "output": "0"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 8,
+          "title": "Table of Time",
+          "prompt": "Return multiplication table of n up to 10",
+          "visibleTests": [
+            {"input": "2", "output": "[2,4,6,8,10,12,14,16,18,20]"},
+            {"input": "3", "output": "[3,6,9,12,15,18,21,24,27,30]"}
+          ],
+          "hiddenTests": [
+            {"input": "0", "output": "[0,0,0,0,0,0,0,0,0,0]"},
+            {"input": "1", "output": "[1,2,3,4,5,6,7,8,9,10]"},
+            {"input": "5", "output": "[5,10,15,20,25,30,35,40,45,50]"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 9,
+          "title": "Loop of Fate",
+          "prompt": "Find factorial of n using loop",
+          "visibleTests": [
+            {"input": "3", "output": "6"},
+            {"input": "5", "output": "120"}
+          ],
+          "hiddenTests": [
+            {"input": "0", "output": "1"},
+            {"input": "7", "output": "5040"},
+            {"input": "10", "output": "3628800"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 10,
+          "title": "Even Hunter",
+          "prompt": "Count even numbers in list",
+          "visibleTests": [
+            {"input": "[1,2,3,4]", "output": "2"},
+            {"input": "[2,4,6]", "output": "3"}
+          ],
+          "hiddenTests": [
+            {"input": "[]", "output": "0"},
+            {"input": "[1,3,5]", "output": "0"},
+            {"input": "[0,2,4,6]", "output": "4"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Recursia",
+      "title": "Tower of Mirrors",
+      "theme": "Recursion",
+      "story": "In a place where time folds, your function must call itself to ascend.",
+      "challenges": [
+        {
+          "id": 11,
+          "title": "Call of the Ancients",
+          "prompt": "Recursively return factorial",
+          "visibleTests": [
+            {"input": "4", "output": "24"},
+            {"input": "1", "output": "1"}
+          ],
+          "hiddenTests": [
+            {"input": "0", "output": "1"},
+            {"input": "6", "output": "720"},
+            {"input": "10", "output": "3628800"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 12,
+          "title": "Golden Fibers",
+          "prompt": "Return nth Fibonacci number",
+          "visibleTests": [
+            {"input": "5", "output": "5"},
+            {"input": "0", "output": "0"}
+          ],
+          "hiddenTests": [
+            {"input": "1", "output": "1"},
+            {"input": "10", "output": "55"},
+            {"input": "15", "output": "610"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 13,
+          "title": "Palindrome Echo",
+          "prompt": "Recursively check if a string is palindrome",
+          "visibleTests": [
+            {"input": "\"madam\"", "output": "True"},
+            {"input": "\"hello\"", "output": "False"}
+          ],
+          "hiddenTests": [
+            {"input": "\"racecar\"", "output": "True"},
+            {"input": "\"\"", "output": "True"},
+            {"input": "\"abcba\"", "output": "True"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 14,
+          "title": "Digit Whisper",
+          "prompt": "Recursively sum digits of number",
+          "visibleTests": [
+            {"input": "123", "output": "6"},
+            {"input": "999", "output": "27"}
+          ],
+          "hiddenTests": [
+            {"input": "0", "output": "0"},
+            {"input": "1111", "output": "4"},
+            {"input": "1001", "output": "2"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 15,
+          "title": "Flatten Light",
+          "prompt": "Recursively flatten a 1-level nested list",
+          "visibleTests": [
+            {"input": "[1,[2],3]", "output": "[1,2,3]"},
+            {"input": "[[],4]", "output": "[4]"}
+          ],
+          "hiddenTests": [
+            {"input": "[1,[],[2,3]]", "output": "[1,2,3]"},
+            {"input": "[[]]", "output": "[]"},
+            {"input": "[1,[2,[3]]]", "output": "incorrect"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Structurium",
+      "title": "Forest of Forms",
+      "theme": "Arrays, Lists, Objects",
+      "story": "Data twists like vines; only structure tames chaos.",
+      "challenges": [
+        {
+          "id": 16,
+          "title": "Crown of Arrays",
+          "prompt": "Return max value in list",
+          "visibleTests": [
+            {"input": "[1,2,3]", "output": "3"},
+            {"input": "[10,5,2]", "output": "10"}
+          ],
+          "hiddenTests": [
+            {"input": "[-1,-5,-10]", "output": "-1"},
+            {"input": "[0]", "output": "0"},
+            {"input": "[100,100,99]", "output": "100"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 17,
+          "title": "Mirror Twins",
+          "prompt": "Return list of unique items",
+          "visibleTests": [
+            {"input": "[1,2,2,3]", "output": "[1,2,3]"},
+            {"input": "[4,4,4]", "output": "[4]"}
+          ],
+          "hiddenTests": [
+            {"input": "[]", "output": "[]"},
+            {"input": "[1,1,1,2,2]", "output": "[1,2]"},
+            {"input": "[3,2,1]", "output": "[3,2,1]"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 18,
+          "title": "Word Count Grove",
+          "prompt": "Return word counts as dictionary",
+          "visibleTests": [
+            {"input": "\"a a b\"", "output": "{\"a\":2,\"b\":1}"},
+            {"input": "\"hi hi hi\"", "output": "{\"hi\":3}"}
+          ],
+          "hiddenTests": [
+            {"input": "\"\"", "output": "{}"},
+            {"input": "\"the quick the\"", "output": "{\"the\":2,\"quick\":1}"},
+            {"input": "\"x y x z\"", "output": "{\"x\":2,\"y\":1,\"z\":1}"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 19,
+          "title": "Reverse Wind",
+          "prompt": "Reverse list without using built-ins",
+          "visibleTests": [
+            {"input": "[1,2,3]", "output": "[3,2,1]"},
+            {"input": "[5]", "output": "[5]"}
+          ],
+          "hiddenTests": [
+            {"input": "[]", "output": "[]"},
+            {"input": "[1,1,1]", "output": "[1,1,1]"},
+            {"input": "[1,2,3,4]", "output": "[4,3,2,1]"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 20,
+          "title": "Second Peak",
+          "prompt": "Return 2nd largest number",
+          "visibleTests": [
+            {"input": "[1,2,3]", "output": "2"},
+            {"input": "[10,5,10]", "output": "5"}
+          ],
+          "hiddenTests": [
+            {"input": "[1,1,1]", "output": "None"},
+            {"input": "[7,8]", "output": "7"},
+            {"input": "[5]", "output": "None"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Testaria",
+      "title": "The Invisible War",
+      "theme": "Random edge cases with hidden tests only",
+      "story": "Final boss fights — monsters hidden in the dark.",
+      "challenges": [
+        {
+          "id": 21,
+          "title": "Cloaked Password",
+          "prompt": "Validate password (≥8 chars, 1 upper, 1 lower, 1 digit)",
+          "visibleTests": [
+            {"input": "\"Code1234\"", "output": "Valid"},
+            {"input": "\"noDigits\"", "output": "Invalid"}
+          ],
+          "hiddenTests": [
+            {"input": "\"ValidPass9\"", "output": "Valid"},
+            {"input": "\"nocapital123\"", "output": "Invalid"},
+            {"input": "\"Short1\"", "output": "Invalid"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 22,
+          "title": "Twins of Chaos",
+          "prompt": "Check if two lists are anagrams",
+          "visibleTests": [
+            {"input": "[1,2,3] [3,2,1]", "output": "True"},
+            {"input": "[1,2] [1,1]", "output": "False"}
+          ],
+          "hiddenTests": [
+            {"input": "[5,6,7] [7,6,5]", "output": "True"},
+            {"input": "[1] [2]", "output": "False"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 23,
+          "title": "Merge of Minds",
+          "prompt": "Merge two dicts; second overrides first",
+          "visibleTests": [
+            {"input": "{\"a\":1} {\"a\":2}", "output": "{\"a\":2}"},
+            {"input": "{\"x\":1} {\"y\":2}", "output": "{\"x\":1,\"y\":2}"}
+          ],
+          "hiddenTests": [
+            {"input": "{} {}", "output": "{}"},
+            {"input": "{\"z\":9} {}", "output": "{\"z\":9}"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 24,
+          "title": "Unique Object Trail",
+          "prompt": "Remove duplicates from list of dicts based on 'id'",
+          "visibleTests": [
+            {"input": "[{\"id\":1}, {\"id\":1}]", "output": "[{\"id\":1}]"},
+            {"input": "[{\"id\":1},{\"id\":2}]", "output": "[{\"id\":1},{\"id\":2}]"}
+          ],
+          "hiddenTests": [
+            {"input": "[{\"id\":3},{\"id\":3},{\"id\":4}]", "output": "[{\"id\":3},{\"id\":4}]"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        },
+        {
+          "id": 25,
+          "title": "The Deep Flattening",
+          "prompt": "Deep flatten a nested list of any depth",
+          "visibleTests": [
+            {"input": "[1,[2,[3]]]", "output": "[1,2,3]"},
+            {"input": "[[[]]]", "output": "[]"}
+          ],
+          "hiddenTests": [
+            {"input": "[1,[2,[3,[4]]]]", "output": "[1,2,3,4]"},
+            {"input": "[]", "output": "[]"},
+            {"input": "[1,[],2]", "output": "[1,2]"}
+          ],
+          "allowedLanguages": ["python", "javascript", "java", "cpp"]
+        }
+      ]
+    }
+  ]
+} 
