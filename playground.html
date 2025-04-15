@@ -241,7 +241,7 @@
         /* Navbar Styles - REMOVED */
     </style>
 </head>
-<body onload="init()">
+<body>
     <!-- Navbar REMOVED -->
 
     <!-- Notification Popup -->
@@ -268,7 +268,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Voice Chat Controls -->
                 <div class="voice-chat-controls">
                     <button id="voice-chat-toggle" title="Toggle Voice Chat">
                         <i class="fas fa-microphone"></i>
@@ -438,12 +437,325 @@
     <script src="playgroundscript.js"></script>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check for admin status
-        if (localStorage.getItem('isAdmin') === 'true') {
-            document.getElementById('admin-link').style.display = 'inline-block';
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Firebase first
+            if (typeof firebase !== 'undefined') {
+                // Initialize Firebase app if not already initialized
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                console.log('Firebase initialized');
+                
+                // Initialize the rest of the application
+                if (typeof initializeLiveSharing === 'function') {
+                    initializeLiveSharing();
+                } else {
+                    console.error('Live sharing initialization function not found');
+                }
+            } else {
+                console.error('Firebase SDK not loaded');
+            }
+        });
+    </script>
+
+    <!-- Add at the end of the body, before the closing body tag -->
+    <script>
+        // Direct voice chat initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Direct voice chat initialization starting...');
+            setTimeout(setupDirectVoiceChat, 2000);
+        });
+
+        function setupDirectVoiceChat() {
+            console.log('Setting up direct voice chat...');
+            const voiceChatToggle = document.getElementById('voice-chat-toggle');
+            const voiceChatStatus = document.querySelector('.voice-chat-status span');
+            
+            if (!voiceChatToggle || !voiceChatStatus) {
+                console.error('Voice chat UI elements not found for direct setup');
+                return;
+            }
+            
+            console.log('Voice chat UI elements found for direct setup');
+            
+            // Reset previous event listeners
+            voiceChatToggle.replaceWith(voiceChatToggle.cloneNode(true));
+            
+            // Get the fresh element again after cloning
+            const refreshedToggle = document.getElementById('voice-chat-toggle');
+            
+            // Track microphone state
+            let micActive = false;
+            let micStream = null;
+            let peerConnections = {};
+            
+            // Handle microphone clicks
+            refreshedToggle.addEventListener('click', function() {
+                console.log('Microphone button clicked, current state:', micActive ? 'active' : 'inactive');
+                
+                if (!micActive) {
+                    // Turn ON microphone
+                    enableMicrophone();
+                } else {
+                    // Turn OFF microphone
+                    disableMicrophone();
+                }
+            });
+            
+            // Enable microphone function
+            function enableMicrophone() {
+                if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                    navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true
+                        },
+                        video: false 
+                    })
+                    .then(function(stream) {
+                        console.log('Microphone successfully enabled');
+                        micStream = stream;
+                        micActive = true;
+                        
+                        // Update UI
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                        voiceChatStatus.textContent = 'Voice Chat: On';
+                        
+                        // Start WebRTC peer connections
+                        setupPeerConnections(stream);
+                    })
+                    .catch(function(err) {
+                        console.error('Error enabling microphone:', err);
+                        alert('Could not access microphone. Please check your browser permissions.');
+                    });
+                } else {
+                    console.error('getUserMedia not supported');
+                    alert('Voice chat is not supported in your browser.');
+                }
+            }
+            
+            // Disable microphone function
+            function disableMicrophone() {
+                console.log('Disabling microphone...');
+                
+                if (micStream) {
+                    // Stop all tracks
+                    micStream.getTracks().forEach(track => {
+                        console.log('Stopping track:', track.kind, track.label);
+                        track.stop();
+                    });
+                    
+                    // Close all peer connections
+                    Object.values(peerConnections).forEach(pc => {
+                        console.log('Closing peer connection');
+                        pc.close();
+                    });
+                    peerConnections = {};
+                    
+                    micStream = null;
+                    micActive = false;
+                    
+                    // Update UI
+                    refreshedToggle.classList.remove('active');
+                    refreshedToggle.classList.remove('muted');
+                    voiceChatStatus.textContent = 'Voice Chat: Off';
+                    
+                    console.log('Microphone successfully disabled');
+                }
+            }
+            
+            // Setup WebRTC peer connections
+            function setupPeerConnections(stream) {
+                console.log('Setting up WebRTC peer connections...');
+                
+                // Get current session ID from URL
+                const url = new URL(window.location.href);
+                const sessionId = url.searchParams.get('session');
+                
+                if (!sessionId) {
+                    console.error('No session ID found in URL, cannot setup peer connections');
+                    return;
+                }
+                
+                console.log('Current session ID:', sessionId);
+                
+                // Get Firebase database reference
+                if (typeof firebase === 'undefined' || !firebase.database) {
+                    console.error('Firebase not initialized, cannot setup peer connections');
+                    return;
+                }
+                
+                const database = firebase.database();
+                const sessionRef = database.ref('liveSessions').child(sessionId);
+                
+                // Get current user info
+                const currentUser = localStorage.getItem('github_user_name') || 'Anonymous';
+                console.log('Current user:', currentUser);
+                
+                // Create signaling channel in Firebase
+                const signalingRef = sessionRef.child('voiceSignaling');
+                
+                // Send offer to all participants
+                sessionRef.child('participants').on('value', snapshot => {
+                    if (!snapshot.exists()) return;
+                    
+                    const participants = snapshot.val();
+                    console.log('Participants:', participants);
+                    
+                    Object.keys(participants).forEach(userName => {
+                        // Skip self
+                        if (userName === currentUser) return;
+                        
+                        // Skip if connection already exists
+                        if (peerConnections[userName]) return;
+                        
+                        console.log('Creating peer connection for:', userName);
+                        const pc = createPeerConnection(userName, stream, signalingRef);
+                        peerConnections[userName] = pc;
+                        
+                        // Create and send offer
+                        pc.createOffer()
+                            .then(offer => pc.setLocalDescription(offer))
+                            .then(() => {
+                                console.log('Sending offer to:', userName);
+                                signalingRef.child(currentUser).child(userName).set({
+                                    type: 'offer',
+                                    sdp: pc.localDescription.sdp,
+                                    timestamp: Date.now()
+                                });
+                            })
+                            .catch(err => console.error('Error creating offer:', err));
+                    });
+                });
+                
+                // Listen for incoming offers, answers and ICE candidates
+                signalingRef.child(currentUser).on('child_added', snapshot => {
+                    const signal = snapshot.val();
+                    const sender = snapshot.key;
+                    
+                    if (!signal) return;
+                    
+                    console.log('Received signal from', sender, ':', signal.type);
+                    
+                    if (signal.type === 'offer') {
+                        // Create peer connection if it doesn't exist
+                        if (!peerConnections[sender]) {
+                            console.log('Creating peer connection for incoming offer from:', sender);
+                            const pc = createPeerConnection(sender, stream, signalingRef);
+                            peerConnections[sender] = pc;
+                        }
+                        
+                        const pc = peerConnections[sender];
+                        
+                        // Set remote description
+                        pc.setRemoteDescription(new RTCSessionDescription({
+                            type: 'offer',
+                            sdp: signal.sdp
+                        }))
+                        .then(() => pc.createAnswer())
+                        .then(answer => pc.setLocalDescription(answer))
+                        .then(() => {
+                            console.log('Sending answer to:', sender);
+                            signalingRef.child(sender).child(currentUser).set({
+                                type: 'answer',
+                                sdp: pc.localDescription.sdp,
+                                timestamp: Date.now()
+                            });
+                        })
+                        .catch(err => console.error('Error handling offer:', err));
+                        
+                    } else if (signal.type === 'answer') {
+                        const pc = peerConnections[sender];
+                        if (pc) {
+                            console.log('Setting remote description for answer from:', sender);
+                            pc.setRemoteDescription(new RTCSessionDescription({
+                                type: 'answer',
+                                sdp: signal.sdp
+                            }))
+                            .catch(err => console.error('Error setting remote description:', err));
+                        }
+                        
+                    } else if (signal.type === 'candidate') {
+                        const pc = peerConnections[sender];
+                        if (pc) {
+                            console.log('Adding ICE candidate from:', sender);
+                            pc.addIceCandidate(new RTCIceCandidate({
+                                candidate: signal.candidate,
+                                sdpMid: signal.sdpMid,
+                                sdpMLineIndex: signal.sdpMLineIndex
+                            }))
+                            .catch(err => console.error('Error adding ICE candidate:', err));
+                        }
+                    }
+                });
+            }
+            
+            // Create a peer connection for a specific user
+            function createPeerConnection(userName, stream, signalingRef) {
+                const currentUser = localStorage.getItem('github_user_name') || 'Anonymous';
+                
+                const configuration = {
+                    iceServers: [
+                        { urls: 'stun:stun.l.google.com:19302' },
+                        { urls: 'stun:stun1.l.google.com:19302' }
+                    ]
+                };
+                
+                const pc = new RTCPeerConnection(configuration);
+                
+                // Add all tracks from the stream
+                stream.getTracks().forEach(track => {
+                    console.log('Adding track to peer connection:', track.kind);
+                    pc.addTrack(track, stream);
+                });
+                
+                // Handle ICE candidates
+                pc.onicecandidate = event => {
+                    if (event.candidate) {
+                        console.log('New ICE candidate for', userName);
+                        signalingRef.child(userName).child(currentUser).child('candidates').push({
+                            type: 'candidate',
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            timestamp: Date.now()
+                        });
+                    }
+                };
+                
+                // Handle incoming tracks
+                pc.ontrack = event => {
+                    console.log('Received track from:', userName, event.track.kind);
+                    
+                    // Create audio element to play the remote audio
+                    const audio = document.createElement('audio');
+                    audio.id = 'audio-' + userName;
+                    audio.autoplay = true;
+                    audio.style.display = 'none';
+                    document.body.appendChild(audio);
+                    
+                    // Set the remote stream
+                    if (!audio.srcObject) {
+                        audio.srcObject = event.streams[0];
+                        console.log('Started playing audio from:', userName);
+                    }
+                };
+                
+                // Log connection state changes
+                pc.onconnectionstatechange = () => {
+                    console.log('Connection state with', userName, ':', pc.connectionState);
+                };
+                
+                // Log ICE connection state changes
+                pc.oniceconnectionstatechange = () => {
+                    console.log('ICE connection state with', userName, ':', pc.iceConnectionState);
+                };
+                
+                return pc;
+            }
         }
-    });
     </script>
 </body>
 </html>

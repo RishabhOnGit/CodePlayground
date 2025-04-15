@@ -25,15 +25,11 @@ let voiceChat = {
 
 // Initialize the Live Sharing functionality
 function initializeLiveSharing() {
+    console.log('Initializing live sharing...');
+    
     // Check if Firebase is available
     if (typeof firebase === 'undefined') {
         console.error('Firebase SDK not available for live sharing');
-        return;
-    }
-    
-    // Check if user is authenticated
-    if (!window.githubUtils || !window.githubUtils.isGithubAuthenticated()) {
-        console.warn('User not authenticated for live sharing');
         return;
     }
     
@@ -44,25 +40,74 @@ function initializeLiveSharing() {
     // Setup live indicator
     setupLiveIndicator();
     
-    // Setup voice chat
-    setupVoiceChat();
+    // Initialize voice chat
+    setupVoiceChat().then(() => {
+        console.log('Voice chat setup completed');
+        
+        // Check URL for session ID
+        const sessionId = getSessionIdFromUrl();
+        if (sessionId) {
+            // Join existing session
+            joinSession(sessionId, userName, userAvatar);
+        }
+    }).catch(error => {
+        console.error('Voice chat setup failed:', error);
+    });
+}
+
+// Setup voice chat functionality
+async function setupVoiceChat() {
+    console.log('Setting up voice chat...');
     
-    // Check URL for session ID
-    const sessionId = getSessionIdFromUrl();
-    if (sessionId) {
-        // Join existing session
-        joinSession(sessionId, userName, userAvatar);
-    } else {
-        // Show create/join session options
-        showSessionOptions(userName, userAvatar);
+    const voiceChatToggle = document.getElementById('voice-chat-toggle');
+    const voiceChatStatus = document.querySelector('.voice-chat-status span');
+    
+    if (!voiceChatToggle || !voiceChatStatus) {
+        console.error('Voice chat UI elements not found');
+        return;
     }
     
-    // Setup window unload handler to leave session
-    window.addEventListener('beforeunload', function() {
-        if (currentSession.id) {
-            leaveSession(currentSession.id, userName);
+    try {
+        // Check if browser supports getUserMedia
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Browser does not support getUserMedia');
         }
-    });
+        
+        // Request microphone access immediately
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: false
+        });
+        
+        console.log('Microphone access granted');
+        voiceChat.localStream = stream;
+        voiceChat.isEnabled = true;
+        
+        // Update UI
+        voiceChatToggle.classList.add('active');
+        voiceChatStatus.textContent = 'Voice Chat: On';
+        
+        // Add click handler for mute/unmute
+        voiceChatToggle.addEventListener('click', () => {
+            voiceChat.isMuted = !voiceChat.isMuted;
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = !voiceChat.isMuted;
+            });
+            
+            voiceChatToggle.classList.toggle('muted', voiceChat.isMuted);
+            voiceChatStatus.textContent = voiceChat.isMuted ? 'Voice Chat: Muted' : 'Voice Chat: On';
+            console.log('Voice chat mute state:', voiceChat.isMuted ? 'muted' : 'unmuted');
+        });
+        
+    } catch (error) {
+        console.error('Error setting up voice chat:', error);
+        voiceChatStatus.textContent = 'Voice Chat: Error';
+        throw error;
+    }
 }
 
 // Set up live indicator UI
@@ -322,6 +367,12 @@ function joinSession(sessionId, userName, userAvatar) {
                     
                     // Update UI to show that we're in a session
                     updateSessionUI(sessionId, false);
+                    
+                    // Initialize voice chat if not already enabled
+                    if (!voiceChat.isEnabled) {
+                        console.log('Initializing voice chat after joining session');
+                        setupVoiceChat();
+                    }
                     
                     // Setup data synchronization
                     setupDataSync(sessionId, session.type, userName);
@@ -589,363 +640,6 @@ function logActivity(userName, userAvatar, action, projectName, status) {
     });
 }
 
-// Setup voice chat functionality
-function setupVoiceChat() {
-    const voiceChatToggle = document.getElementById('voice-chat-toggle');
-    const voiceChatStatus = document.querySelector('.voice-chat-status span');
-    
-    if (!voiceChatToggle || !voiceChatStatus) {
-        console.error('Voice chat UI elements not found');
-        return;
-    }
-    
-    // Add right-click context menu
-    voiceChatToggle.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        
-        // Remove any existing context menu
-        const existingMenu = document.querySelector('.voice-chat-context-menu');
-        if (existingMenu) {
-            existingMenu.remove();
-        }
-        
-        // Create context menu
-        const contextMenu = document.createElement('div');
-        contextMenu.className = 'voice-chat-context-menu';
-        contextMenu.innerHTML = `
-            <div class="menu-item" data-action="enable">Enable Voice Chat</div>
-            <div class="menu-item" data-action="mute">Mute Microphone</div>
-            <div class="menu-item" data-action="settings">Audio Settings</div>
-        `;
-        
-        // Position the menu
-        contextMenu.style.position = 'fixed';
-        contextMenu.style.left = e.clientX + 'px';
-        contextMenu.style.top = e.clientY + 'px';
-        
-        // Add styles
-        const style = document.createElement('style');
-        style.textContent = `
-            .voice-chat-context-menu {
-                background: #252526;
-                border: 1px solid #454545;
-                border-radius: 4px;
-                padding: 4px 0;
-                min-width: 150px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                z-index: 1000;
-            }
-            .voice-chat-context-menu .menu-item {
-                padding: 8px 12px;
-                color: #ffffff;
-                cursor: pointer;
-                font-size: 13px;
-            }
-            .voice-chat-context-menu .menu-item:hover {
-                background: #0366d6;
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Add menu to document
-        document.body.appendChild(contextMenu);
-        
-        // Handle menu item clicks
-        contextMenu.addEventListener('click', async (event) => {
-            const action = event.target.dataset.action;
-            if (action === 'enable') {
-                try {
-                    console.log('Requesting microphone access...');
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            autoGainControl: true
-                        },
-                        video: false
-                    });
-                    voiceChat.localStream = stream;
-                    voiceChat.isEnabled = true;
-                    voiceChatToggle.classList.add('active');
-                    voiceChatStatus.textContent = 'Voice Chat: On';
-                    shareAudioStream();
-                } catch (error) {
-                    console.error('Microphone access error:', error);
-                    alert('Could not access microphone. Please check your permissions.');
-                }
-            } else if (action === 'mute') {
-                if (voiceChat.localStream) {
-                    voiceChat.isMuted = !voiceChat.isMuted;
-                    voiceChat.localStream.getAudioTracks().forEach(track => {
-                        track.enabled = !voiceChat.isMuted;
-                    });
-                    voiceChatToggle.classList.toggle('muted', voiceChat.isMuted);
-                    voiceChatStatus.textContent = voiceChat.isMuted ? 'Voice Chat: Muted' : 'Voice Chat: On';
-                }
-            } else if (action === 'settings') {
-                // Show audio settings dialog
-                showAudioSettings();
-            }
-            contextMenu.remove();
-        });
-        
-        // Close menu when clicking outside
-        document.addEventListener('click', function closeMenu() {
-            contextMenu.remove();
-            document.removeEventListener('click', closeMenu);
-        });
-    });
-    
-    // Regular click handler remains the same
-    voiceChatToggle.addEventListener('click', async () => {
-        if (!voiceChat.isEnabled) {
-            try {
-                console.log('Requesting microphone access...');
-                // First check if the browser supports the constraints
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const hasAudioInput = devices.some(device => device.kind === 'audioinput');
-                
-                if (!hasAudioInput) {
-                    throw new Error('No microphone found');
-                }
-                
-                // Request microphone access with explicit error handling
-                voiceChat.localStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        echoCancellation: true,
-                        noiseSuppression: true,
-                        autoGainControl: true
-                    },
-                    video: false
-                });
-                
-                console.log('Microphone access granted');
-                voiceChat.isEnabled = true;
-                voiceChatToggle.classList.add('active');
-                voiceChatStatus.textContent = 'Voice Chat: On';
-                
-                // Share audio stream with other participants
-                shareAudioStream();
-            } catch (error) {
-                console.error('Detailed microphone error:', error);
-                let errorMessage = 'Could not access microphone. ';
-                
-                if (error.name === 'NotAllowedError') {
-                    errorMessage += 'Please allow microphone access in your browser settings.';
-                } else if (error.name === 'NotFoundError') {
-                    errorMessage += 'No microphone device found. Please connect a microphone.';
-                } else if (error.name === 'NotReadableError') {
-                    errorMessage += 'Your microphone is busy or not responding. Please try again.';
-                } else {
-                    errorMessage += error.message || 'Unknown error occurred.';
-                }
-                
-                alert(errorMessage);
-                voiceChatToggle.classList.remove('active');
-                voiceChatStatus.textContent = 'Voice Chat: Error';
-            }
-        } else {
-            // Toggle mute with error handling
-            try {
-                voiceChat.isMuted = !voiceChat.isMuted;
-                if (voiceChat.localStream) {
-                    voiceChat.localStream.getAudioTracks().forEach(track => {
-                        track.enabled = !voiceChat.isMuted;
-                        console.log('Audio track mute state:', track.enabled ? 'unmuted' : 'muted');
-                    });
-                }
-                
-                if (voiceChat.isMuted) {
-                    voiceChatToggle.classList.add('muted');
-                    voiceChatStatus.textContent = 'Voice Chat: Muted';
-                } else {
-                    voiceChatToggle.classList.remove('muted');
-                    voiceChatStatus.textContent = 'Voice Chat: On';
-                }
-            } catch (error) {
-                console.error('Error toggling mute:', error);
-                alert('Error toggling microphone mute state. Please try again.');
-            }
-        }
-    });
-}
-
-// Show audio settings dialog
-function showAudioSettings() {
-    // Create settings dialog
-    const dialog = document.createElement('div');
-    dialog.className = 'audio-settings-dialog';
-    dialog.innerHTML = `
-        <div class="dialog-header">
-            <h3>Audio Settings</h3>
-            <button class="close-button">&times;</button>
-        </div>
-        <div class="dialog-content">
-            <div class="setting-item">
-                <label>Input Device</label>
-                <select id="audio-input-select"></select>
-            </div>
-            <div class="setting-item">
-                <label>Input Volume</label>
-                <input type="range" id="input-volume" min="0" max="100" value="100">
-            </div>
-            <div class="setting-item">
-                <label>Echo Cancellation</label>
-                <input type="checkbox" id="echo-cancellation" checked>
-            </div>
-            <div class="setting-item">
-                <label>Noise Suppression</label>
-                <input type="checkbox" id="noise-suppression" checked>
-            </div>
-        </div>
-    `;
-    
-    // Add styles
-    const style = document.createElement('style');
-    style.textContent = `
-        .audio-settings-dialog {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #252526;
-            border-radius: 8px;
-            padding: 16px;
-            min-width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            z-index: 1001;
-        }
-        .dialog-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-        .dialog-header h3 {
-            margin: 0;
-            color: #ffffff;
-        }
-        .close-button {
-            background: none;
-            border: none;
-            color: #ffffff;
-            font-size: 20px;
-            cursor: pointer;
-        }
-        .setting-item {
-            margin-bottom: 12px;
-        }
-        .setting-item label {
-            display: block;
-            margin-bottom: 4px;
-            color: #ffffff;
-        }
-        .setting-item select, .setting-item input[type="range"] {
-            width: 100%;
-            padding: 4px;
-            background: #333333;
-            border: 1px solid #454545;
-            color: #ffffff;
-            border-radius: 4px;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Add dialog to document
-    document.body.appendChild(dialog);
-    
-    // Populate input devices
-    navigator.mediaDevices.enumerateDevices()
-        .then(devices => {
-            const select = dialog.querySelector('#audio-input-select');
-            devices.filter(device => device.kind === 'audioinput')
-                .forEach(device => {
-                    const option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `Microphone ${select.length + 1}`;
-                    select.appendChild(option);
-                });
-        });
-    
-    // Handle close button
-    dialog.querySelector('.close-button').addEventListener('click', () => {
-        dialog.remove();
-    });
-    
-    // Handle settings changes
-    dialog.querySelector('#audio-input-select').addEventListener('change', async (e) => {
-        if (voiceChat.localStream) {
-            try {
-                const newStream = await navigator.mediaDevices.getUserMedia({
-                    audio: {
-                        deviceId: { exact: e.target.value },
-                        echoCancellation: dialog.querySelector('#echo-cancellation').checked,
-                        noiseSuppression: dialog.querySelector('#noise-suppression').checked
-                    }
-                });
-                voiceChat.localStream.getAudioTracks().forEach(track => track.stop());
-                voiceChat.localStream = newStream;
-                shareAudioStream();
-            } catch (error) {
-                console.error('Error changing audio device:', error);
-                alert('Could not switch audio device');
-            }
-        }
-    });
-}
-
-// Share audio stream with other participants
-function shareAudioStream() {
-    if (!voiceChat.localStream || !currentSession.id) return;
-    
-    const database = firebase.database();
-    const sessionRef = database.ref('liveSessions').child(currentSession.id);
-    
-    // Create a unique ID for this audio stream
-    const streamId = 'audio_' + Date.now();
-    
-    // Store stream information in Firebase
-    sessionRef.child('audioStreams').child(streamId).set({
-        userId: localStorage.getItem('github_user_name') || 'Anonymous User',
-        timestamp: Date.now()
-    });
-    
-    // Listen for new participants
-    sessionRef.child('participants').on('child_added', (snapshot) => {
-        const participant = snapshot.val();
-        if (participant.name !== (localStorage.getItem('github_user_name') || 'Anonymous User')) {
-            setupPeerConnection(participant.name);
-        }
-    });
-}
-
-// Setup peer connection for voice chat
-function setupPeerConnection(participantName) {
-    if (voiceChat.peerConnections[participantName]) return;
-    
-    const peerConnection = new RTCPeerConnection({
-        iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' }
-        ]
-    });
-    
-    // Add local stream to peer connection
-    if (voiceChat.localStream) {
-        voiceChat.localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, voiceChat.localStream);
-        });
-    }
-    
-    // Handle incoming audio tracks
-    peerConnection.ontrack = (event) => {
-        const audio = new Audio();
-        audio.srcObject = event.streams[0];
-        audio.play();
-    };
-    
-    voiceChat.peerConnections[participantName] = peerConnection;
-}
-
 // Clean up voice chat when leaving session
 function cleanupVoiceChat() {
     if (voiceChat.localStream) {
@@ -979,4 +673,185 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wait a bit for other scripts to load
         setTimeout(initializeLiveSharing, 1000);
     }
-}); 
+});
+
+// Voice chat functionality
+async function initializeVoiceChat() {
+    console.log('%c[Voice Chat] Starting initialization...', 'color: #4CAF50; font-weight: bold');
+    
+    // Wait for DOM elements
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    async function waitForElements() {
+        console.log(`[Voice Chat] Attempt ${attempts + 1}/${maxAttempts} to find UI elements...`);
+        const voiceChatButton = document.querySelector('#voice-chat-toggle');
+        const voiceChatStatus = document.querySelector('.voice-chat-status span');
+        
+        console.log('[Voice Chat] Elements found:', {
+            button: voiceChatButton ? 'Found' : 'Not found',
+            status: voiceChatStatus ? 'Found' : 'Not found'
+        });
+        
+        if (voiceChatButton && voiceChatStatus) {
+            console.log('[Voice Chat] All UI elements found successfully');
+            return { voiceChatButton, voiceChatStatus };
+        }
+        
+        if (attempts++ >= maxAttempts) {
+            console.error('[Voice Chat] Failed to find UI elements after maximum attempts');
+            throw new Error('Voice chat elements not found after maximum attempts');
+        }
+        
+        console.log('[Voice Chat] Waiting 500ms before next attempt...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        return waitForElements();
+    }
+    
+    try {
+        console.log('[Voice Chat] Checking browser compatibility...');
+        if (!navigator.mediaDevices) {
+            console.error('[Voice Chat] navigator.mediaDevices not available');
+            throw new Error('Browser does not support media devices');
+        }
+        
+        if (!navigator.mediaDevices.getUserMedia) {
+            console.error('[Voice Chat] getUserMedia not available');
+            throw new Error('Browser does not support getUserMedia');
+        }
+        
+        console.log('[Voice Chat] Browser compatibility check passed');
+        
+        // Wait for UI elements
+        const { voiceChatButton, voiceChatStatus } = await waitForElements();
+        console.log('[Voice Chat] Successfully retrieved UI elements');
+        
+        console.log('[Voice Chat] Requesting microphone access...');
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            },
+            video: false
+        });
+        
+        console.log('[Voice Chat] Microphone access granted!', {
+            tracks: stream.getAudioTracks().map(track => ({
+                label: track.label,
+                enabled: track.enabled,
+                muted: track.muted
+            }))
+        });
+        
+        window.localStream = stream;
+        
+        // Update UI
+        voiceChatButton.classList.add('active');
+        voiceChatStatus.textContent = 'Voice Chat: On';
+        console.log('[Voice Chat] UI updated to show active state');
+        
+        // Setup mute/unmute toggle
+        voiceChatButton.addEventListener('click', () => {
+            const isMuted = !stream.getAudioTracks()[0].enabled;
+            console.log(`[Voice Chat] Toggling mute state to: ${isMuted ? 'unmuted' : 'muted'}`);
+            
+            stream.getAudioTracks().forEach(track => {
+                track.enabled = isMuted;
+                console.log(`[Voice Chat] Track "${track.label}" enabled: ${track.enabled}`);
+            });
+            
+            voiceChatButton.classList.toggle('muted', !isMuted);
+            voiceChatStatus.textContent = isMuted ? 'Voice Chat: On' : 'Voice Chat: Muted';
+        });
+        
+        // Setup WebRTC
+        console.log('[Voice Chat] Setting up WebRTC peer connection...');
+        setupVoicePeerConnection(stream);
+        
+        console.log('%c[Voice Chat] Initialization completed successfully!', 'color: #4CAF50; font-weight: bold');
+        
+    } catch (error) {
+        console.error('[Voice Chat] Initialization failed:', {
+            error: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        const status = document.querySelector('.voice-chat-status span');
+        if (status) {
+            status.textContent = 'Voice Chat: Error';
+            console.log('[Voice Chat] Updated status to show error');
+        }
+    }
+}
+
+function setupVoicePeerConnection(stream) {
+    console.log('[WebRTC] Setting up peer connection...');
+    
+    const configuration = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' }
+        ]
+    };
+    
+    try {
+        const peerConnection = new RTCPeerConnection(configuration);
+        console.log('[WebRTC] Peer connection created');
+        
+        // Add local stream tracks
+        stream.getTracks().forEach(track => {
+            peerConnection.addTrack(track, stream);
+            console.log('[WebRTC] Added track:', track.kind, track.label);
+        });
+        
+        // Handle ICE candidates
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                console.log('[WebRTC] New ICE candidate:', event.candidate.candidate);
+            }
+        };
+        
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = () => {
+            console.log('[WebRTC] Connection state changed:', peerConnection.connectionState);
+        };
+        
+        // Handle ICE connection state changes
+        peerConnection.oniceconnectionstatechange = () => {
+            console.log('[WebRTC] ICE connection state:', peerConnection.iceConnectionState);
+        };
+        
+        window.voicePeerConnection = peerConnection;
+        console.log('[WebRTC] Setup completed successfully');
+        
+    } catch (error) {
+        console.error('[WebRTC] Setup failed:', error);
+        throw error;
+    }
+}
+
+// Modify the live sharing initialization
+const originalInitializeLiveSharing = window.initializeLiveSharing || function() {};
+window.initializeLiveSharing = function() {
+    console.log('%c[Live Share] Starting with voice chat...', 'color: #2196F3; font-weight: bold');
+    originalInitializeLiveSharing();
+    
+    // Initialize voice chat with delay to ensure DOM is ready
+    setTimeout(() => {
+        console.log('[Live Share] Triggering voice chat initialization...');
+        initializeVoiceChat().catch(error => {
+            console.error('[Live Share] Voice chat initialization failed:', error);
+        });
+    }, 1000);
+};
+
+// Also initialize voice chat when joining a session
+const originalJoinSession = window.joinSession || function() {};
+window.joinSession = function(sessionId, userName, userAvatar) {
+    console.log('Joining session with auto voice chat...');
+    originalJoinSession(sessionId, userName, userAvatar);
+    initializeVoiceChat().catch(error => {
+        console.error('Failed to initialize voice chat during join:', error);
+    });
+}; 
