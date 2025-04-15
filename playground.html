@@ -838,7 +838,9 @@
                     debugIndicator.textContent = 'Audio Debug: Active';
                     document.body.appendChild(debugIndicator);
                     
-                    // Add a visible audio element for direct testing
+                    // Commented out direct debug audio to prevent hearing your own voice back
+                    // This was causing the echo problem
+                    /*
                     const debugAudio = document.createElement('audio');
                     debugAudio.id = 'debug-audio';
                     debugAudio.controls = true;
@@ -854,6 +856,7 @@
                         debugAudio.srcObject = stream;
                         debugAudio.play().catch(e => console.error('Debug audio play failed:', e));
                     }
+                    */
                 }
                 
                 const configuration = {
@@ -865,8 +868,30 @@
                         { urls: 'stun:stun4.l.google.com:19302' },
                         { urls: 'stun:stun.ekiga.net' },
                         { urls: 'stun:stun.ideasip.com' },
-                        { urls: 'stun:stun.schlund.de' }
-                    ]
+                        { urls: 'stun:stun.schlund.de' },
+                        // Add free TURN servers for better connectivity
+                        {
+                            urls: 'turn:openrelay.metered.ca:80',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        },
+                        {
+                            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                            username: 'openrelayproject',
+                            credential: 'openrelayproject'
+                        }
+                    ],
+                    // Set these options for better audio routing
+                    iceTransportPolicy: 'all',
+                    iceCandidatePoolSize: 10,
+                    bundlePolicy: 'max-bundle',
+                    rtcpMuxPolicy: 'require',
+                    sdpSemantics: 'unified-plan'
                 };
                 
                 const pc = new RTCPeerConnection(configuration);
@@ -920,26 +945,62 @@
                 
                 // Handle incoming tracks
                 pc.ontrack = event => {
+                    // Critical: Make sure we're not playing our own audio back to ourselves
+                    if (userName === currentUser) {
+                        console.log('Ignoring own audio track to prevent echo');
+                        return;
+                    }
+                    
                     console.log('Received track from:', userName, event.track.kind);
+                    
+                    // Only handle audio tracks
+                    if (event.track.kind !== 'audio') {
+                        console.log('Ignoring non-audio track');
+                        return;
+                    }
+                    
+                    console.log('Remote audio track received from:', userName);
                     console.log('Track settings:', event.track.getSettings());
-                    console.log('Track constraints:', event.track.getConstraints());
                     console.log('Track state:', event.track.readyState);
                     
                     // Remove any existing audio element for this user first
                     const existingAudio = document.getElementById('audio-' + userName);
                     if (existingAudio) {
+                        console.log('Removing existing audio element for:', userName);
+                        existingAudio.srcObject = null;
                         existingAudio.remove();
                     }
                     
-                    // Create audio element to play the remote audio with more explicit properties
+                    // Create a visible audio element for easier debugging
                     const audio = document.createElement('audio');
                     audio.id = 'audio-' + userName;
                     audio.autoplay = true;
-                    audio.controls = false; // No controls needed
-                    audio.muted = false; // IMPORTANT: Ensure not muted
-                    audio.volume = 1.0; // Set volume to maximum
-                    audio.style.display = 'none';
+                    audio.controls = true; // Make controls visible for debugging
+                    audio.muted = false;
+                    audio.volume = 1.0;
+                    audio.style.position = 'fixed';
+                    audio.style.bottom = '10px';
+                    audio.style.right = '10px';
+                    audio.style.width = '250px';
+                    audio.style.zIndex = '10000';
+                    audio.style.background = 'rgba(0,0,0,0.7)';
+                    audio.style.padding = '5px';
+                    audio.style.borderRadius = '4px';
                     document.body.appendChild(audio);
+                    
+                    // Add audio labels
+                    const label = document.createElement('div');
+                    label.textContent = `Audio from: ${userName}`;
+                    label.style.color = 'white';
+                    label.style.fontSize = '12px';
+                    label.style.position = 'fixed';
+                    label.style.bottom = '70px';
+                    label.style.right = '10px';
+                    label.style.background = 'rgba(0,0,0,0.7)';
+                    label.style.padding = '5px';
+                    label.style.borderRadius = '4px';
+                    label.style.zIndex = '10000';
+                    document.body.appendChild(label);
                     
                     // Add error handler
                     audio.onerror = (e) => {
@@ -949,55 +1010,118 @@
                     // Log when audio starts playing
                     audio.onplaying = () => {
                         console.log(`Audio from ${userName} started playing successfully`);
+                        label.style.color = '#00ff00'; // Green to show it's working
+                    };
+                    
+                    // Add volume change handler to track user adjustments
+                    audio.onvolumechange = () => {
+                        console.log(`Volume for ${userName} changed to:`, audio.volume);
                     };
                     
                     // Set the remote stream with more logging
                     try {
-                        console.log('Setting srcObject with stream tracks:', event.streams[0].getTracks().map(t => t.kind).join(', '));
-                        audio.srcObject = event.streams[0];
-                        
-                        // Set audio output to default device if supported (Chrome)
-                        if (typeof audio.setSinkId === 'function') {
-                            // Try to use default audio output device
-                            audio.setSinkId('')
-                                .then(() => console.log('Using default audio output device'))
-                                .catch(err => console.error('Error setting audio output device:', err));
-                        } else {
-                            console.log('setSinkId not supported in this browser');
+                        if (!event.streams || event.streams.length === 0) {
+                            console.error('No streams available in track event');
+                            return;
                         }
                         
-                        // Force play with retry
-                        const playPromise = audio.play();
-                        if (playPromise !== undefined) {
-                            playPromise
-                                .then(() => {
-                                    console.log(`Audio from ${userName} playing successfully`);
-                                })
-                                .catch(err => {
-                                    console.error(`Error playing audio from ${userName}:`, err);
-                                    // Try again after a moment
-                                    setTimeout(() => {
-                                        console.log('Retrying audio playback...');
-                                        audio.play().catch(e => console.error('Retry failed:', e));
-                                    }, 1000);
-                                });
-                        }
-                    } catch (err) {
-                        console.error('Error setting audio source:', err);
-                    }
-                    
-                    // Monitor audio activity
-                    try {
+                        console.log('Setting srcObject with stream tracks:', 
+                            event.streams[0].getTracks().map(t => `${t.kind}:${t.id}:${t.readyState}`).join(', '));
+                        
+                        // Save reference to original stream
+                        const originalStream = event.streams[0];
+                        
+                        // Create a gain node to boost the audio if needed
                         const audioContext = new AudioContext();
-                        const mediaStreamSource = audioContext.createMediaStreamSource(event.streams[0]);
+                        const source = audioContext.createMediaStreamSource(originalStream);
+                        const gainNode = audioContext.createGain();
+                        gainNode.gain.value = 1.5; // Boost volume by 50%
+                        source.connect(gainNode);
+                        
+                        // Create destination and connect
+                        const destination = audioContext.createMediaStreamDestination();
+                        gainNode.connect(destination);
+                        
+                        // Use the processed stream with boosted volume
+                        audio.srcObject = destination.stream;
+                        
+                        // Create a status indicator for audio levels
+                        const statusIndicator = document.createElement('div');
+                        statusIndicator.style.position = 'fixed';
+                        statusIndicator.style.bottom = '90px';
+                        statusIndicator.style.right = '10px';
+                        statusIndicator.style.padding = '5px';
+                        statusIndicator.style.background = 'rgba(0,0,0,0.7)';
+                        statusIndicator.style.color = 'white';
+                        statusIndicator.style.zIndex = '10001';
+                        statusIndicator.style.fontSize = '12px';
+                        statusIndicator.style.borderRadius = '4px';
+                        statusIndicator.textContent = 'Audio Level: Waiting...';
+                        document.body.appendChild(statusIndicator);
+                        
+                        // Force play with multiple retries
+                        let retryCount = 0;
+                        const maxRetries = 5;
+                        
+                        function tryPlayAudio() {
+                            console.log(`Attempt ${retryCount + 1} to play audio from ${userName}`);
+                            const playPromise = audio.play();
+                            
+                            if (playPromise !== undefined) {
+                                playPromise
+                                    .then(() => {
+                                        console.log(`Audio from ${userName} playing successfully`);
+                                        label.style.color = '#00ff00'; // Green to show it's working
+                                    })
+                                    .catch(err => {
+                                        console.error(`Error playing audio from ${userName}:`, err);
+                                        retryCount++;
+                                        
+                                        if (retryCount < maxRetries) {
+                                            // Try again with increasing delay
+                                            setTimeout(() => {
+                                                console.log(`Retrying audio playback (${retryCount}/${maxRetries})...`);
+                                                tryPlayAudio();
+                                            }, 1000 * retryCount); // Increasing backoff
+                                        } else {
+                                            console.error(`Failed to play audio after ${maxRetries} attempts`);
+                                            label.style.color = '#ff0000'; // Red to show failure
+                                            label.textContent = `Audio from ${userName} (Failed to play)`;
+                                            
+                                            // Last resort: Create a new audio element
+                                            const fallbackAudio = document.createElement('audio');
+                                            fallbackAudio.id = 'fallback-audio-' + userName;
+                                            fallbackAudio.autoplay = true;
+                                            fallbackAudio.controls = true;
+                                            fallbackAudio.muted = false;
+                                            fallbackAudio.volume = 1.0;
+                                            fallbackAudio.style.position = 'fixed';
+                                            fallbackAudio.style.bottom = '120px';
+                                            fallbackAudio.style.right = '10px';
+                                            fallbackAudio.style.width = '250px';
+                                            fallbackAudio.style.zIndex = '10000';
+                                            document.body.appendChild(fallbackAudio);
+                                            
+                                            // Try with the original stream
+                                            fallbackAudio.srcObject = originalStream;
+                                            fallbackAudio.play().catch(e => console.error('Fallback play failed:', e));
+                                        }
+                                    });
+                            }
+                        }
+                        
+                        // Start the play attempts
+                        tryPlayAudio();
+                        
+                        // Monitor audio activity with visual feedback
                         const analyser = audioContext.createAnalyser();
+                        source.connect(analyser);
                         analyser.fftSize = 256;
-                        mediaStreamSource.connect(analyser);
                         
                         const bufferLength = analyser.frequencyBinCount;
                         const dataArray = new Uint8Array(bufferLength);
                         
-                        // Check audio levels every 5 seconds
+                        // Check audio levels more frequently
                         const audioMonitorInterval = setInterval(() => {
                             analyser.getByteFrequencyData(dataArray);
                             
@@ -1006,17 +1130,49 @@
                             dataArray.forEach(value => sum += value);
                             const average = sum / bufferLength;
                             
+                            // Update status indicator with current level
+                            statusIndicator.textContent = `Audio Level: ${average.toFixed(1)}`;
+                            
+                            // Change color based on audio level
+                            if (average > 20) {
+                                statusIndicator.style.color = '#00ff00'; // Good level
+                            } else if (average > 5) {
+                                statusIndicator.style.color = '#ffff00'; // Low level
+                            } else {
+                                statusIndicator.style.color = '#ff0000'; // No audio
+                            }
+                            
                             console.log(`Audio monitor for ${userName}: Average level = ${average.toFixed(2)}`);
                             
                             if (average < 5) {
-                                console.warn(`No audio detected from ${userName} for 5 seconds`);
+                                console.warn(`No audio detected from ${userName}`);
+                                
+                                // If consistently no audio, try to reconnect
+                                if (!pc.noAudioCount) pc.noAudioCount = 0;
+                                pc.noAudioCount++;
+                                
+                                if (pc.noAudioCount > 5) {
+                                    console.warn(`No audio detected for extended period, attempting reconnection`);
+                                    pc.noAudioCount = 0;
+                                    
+                                    // Request a new ICE candidate if connection seems established but no audio
+                                    if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+                                        console.log('Restarting ICE to improve connection');
+                                        pc.restartIce();
+                                    }
+                                }
+                            } else {
+                                pc.noAudioCount = 0; // Reset counter when audio is detected
                             }
-                        }, 5000);
+                        }, 1000); // Check every second for more responsive feedback
                         
                         // Store interval for cleanup
                         pc.audioMonitorInterval = audioMonitorInterval;
+                        
                     } catch (err) {
-                        console.error('Error setting up audio monitoring:', err);
+                        console.error('Error setting up audio:', err);
+                        label.style.color = '#ff0000'; // Red to show failure
+                        label.textContent = `Audio from ${userName} (Setup Error)`;
                     }
                 };
                 
