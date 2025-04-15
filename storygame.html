@@ -60,6 +60,65 @@
             opacity: 0.1;
         }
 
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .header-buttons.left {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+        }
+
+        .header-buttons.right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .back-home-btn {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .back-home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: var(--accent-color);
+        }
+
+        .back-home-btn i {
+            font-size: 1.2em;
+        }
+
+        .story-collection-btn {
+            background: var(--secondary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .story-collection-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            background: var(--accent-color);
+        }
+
         h1 {
             font-size: 3rem;
             margin-bottom: 15px;
@@ -404,207 +463,6 @@
             }
         }
 
-        .story-sidebar {
-            position: fixed;
-            right: 0;
-            top: 0;
-            width: 400px;
-            height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), #1a1a2e);
-            padding: 20px;
-            overflow-y: auto;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            border-left: 2px solid var(--secondary-color);
-        }
-
-        .story-sidebar.active {
-            transform: translateX(0);
-        }
-
-        .story-sections {
-            margin: 20px 0;
-        }
-
-        .story-section {
-            position: relative;
-            background: var(--card-background);
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .story-section.locked {
-            background: linear-gradient(135deg, var(--primary-color), #1a1a2e);
-        }
-
-        .story-lock {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: var(--text-color);
-            font-size: 1.2rem;
-            gap: 10px;
-            transition: all 0.3s ease;
-        }
-
-        .story-section.unlocked .story-lock {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .story-section.unlocked {
-            background: var(--card-background);
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .story-content {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .story-section.unlocked .story-content {
-            opacity: 1;
-        }
-
-        .story-content h3 {
-            color: var(--secondary-color);
-            margin-bottom: 10px;
-            font-size: 1.3rem;
-        }
-
-        .story-content p {
-            color: var(--text-color);
-            line-height: 1.6;
-        }
-
-        .story-lock i {
-            font-size: 2rem;
-            color: var(--accent-color);
-        }
-
-        .story-lock span {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        @keyframes unlockStory {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        @media (max-width: 768px) {
-            .story-sidebar {
-                width: 100%;
-                height: auto;
-                max-height: 300px;
-                bottom: 0;
-                top: auto;
-                transform: translateY(100%);
-            }
-
-            .story-sidebar.active {
-                transform: translateY(0);
-            }
-        }
-
-        .hero-card {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) scale(0.8);
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            border-radius: 20px;
-            padding: 2rem;
-            width: 400px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            z-index: 1000;
-            border: 2px solid var(--accent-color);
-        }
-
-        .hero-card.active {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-
-        .hero-card::before {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(45deg, var(--accent-color), transparent);
-            border-radius: 22px;
-            z-index: -1;
-            animation: borderGlow 2s infinite;
-        }
-
-        @keyframes borderGlow {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
-
-        .hero-image {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s ease;
-        }
-
-        .hero-image:hover {
-            transform: scale(1.05);
-        }
-
-        .hero-title {
-            font-size: 1.5rem;
-            color: var(--accent-color);
-            margin-bottom: 1rem;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-
-        .hero-description {
-            color: var(--text-color);
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
-        .hero-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--accent-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-
-        .hero-close:hover {
-            transform: rotate(90deg);
-        }
-
-        /* Add overlay when hero card is active */
         .hero-overlay {
             position: fixed;
             top: 0;
@@ -639,24 +497,6 @@
             to {
                 box-shadow: 0 0 20px rgba(231, 76, 60, 0.8);
             }
-        }
-
-        .toggle-sidebar {
-            position: fixed;
-            right: 20px;
-            top: 20px;
-            background: var(--secondary-color);
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 1001;
-            transition: all 0.3s ease;
-        }
-
-        .toggle-sidebar:hover {
-            transform: scale(1.1);
         }
 
         .story-card {
@@ -721,8 +561,18 @@
 </head>
 <body>
     <header>
+        <div class="header-buttons left">
+            <a href="index.html" class="back-home-btn">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
         <h1>Code of the Realms</h1>
         <p>Embark on a coding adventure through mystical realms!</p>
+        <div class="header-buttons right">
+            <a href="storycollection.html" class="story-collection-btn">
+                <i class="fas fa-book"></i> Story Collection
+            </a>
+        </div>
     </header>
 
     <div class="container">
@@ -781,69 +631,6 @@
 
                 <div class="output-panel" id="outputPanel">
                     <!-- Output will be displayed here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <button class="toggle-sidebar" id="toggleSidebar">
-        <i class="fas fa-book"></i> Story
-    </button>
-
-    <div class="story-sidebar" id="storySidebar">
-        <div class="story-sections">
-            <div class="story-section locked" data-challenge="stone-guardian-1">
-                <div class="story-lock">
-                    <i class="fas fa-lock"></i>
-                    <span>Complete Challenge 1 to unlock</span>
-                </div>
-                <div class="story-content">
-                    <h3>Chapter 1: The Stone Guardian</h3>
-                    <p>In the digital realm of Elyndor, where code is magic and algorithms shape reality, a young programmer begins their journey...</p>
-                </div>
-            </div>
-
-            <div class="story-section locked" data-challenge="stone-guardian-2">
-                <div class="story-lock">
-                    <i class="fas fa-lock"></i>
-                    <span>Complete Challenge 2 to unlock</span>
-                </div>
-                <div class="story-content">
-                    <h3>Chapter 2: The Guardian's Test</h3>
-                    <p>The Stone Guardian stands before you, its ancient circuits pulsing with binary wisdom. 'Prove your understanding of numbers,' it commands...</p>
-                </div>
-            </div>
-
-            <div class="story-section locked" data-challenge="stone-guardian-3">
-                <div class="story-lock">
-                    <i class="fas fa-lock"></i>
-                    <span>Complete Challenge 3 to unlock</span>
-                </div>
-                <div class="story-content">
-                    <h3>Chapter 3: The First Victory</h3>
-                    <p>As you solve the Guardian's puzzles, the first glimmer of hope appears in the darkened realm...</p>
-                </div>
-            </div>
-
-            <div class="story-section locked" data-challenge="stone-guardian-4">
-                <div class="story-lock">
-                    <i class="fas fa-lock"></i>
-                    <span>Complete Challenge 4 to unlock</span>
-                </div>
-                <div class="story-content">
-                    <h3>Chapter 4: The Hidden Truth</h3>
-                    <p>The Guardian's stone heart softens, revealing the first fragment of the corrupted code...</p>
-                </div>
-            </div>
-
-            <div class="story-section locked" data-challenge="stone-guardian-5">
-                <div class="story-lock">
-                    <i class="fas fa-lock"></i>
-                    <span>Complete Challenge 5 to unlock</span>
-                </div>
-                <div class="story-content">
-                    <h3>Chapter 5: The Final Test</h3>
-                    <p>With the Stone Guardian's blessing, you gain the power to manipulate numbers at will...</p>
                 </div>
             </div>
         </div>
