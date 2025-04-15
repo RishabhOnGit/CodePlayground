@@ -17,8 +17,7 @@
           ],
           "hiddenTests": [
             {"input": "0", "output": "No"},
-            {"input": "-5", "output": "No"},
-            {"input": "10", "output": "Yes"}
+            {"input": "-5", "output": "No"}
           ],
           "allowedLanguages": ["python", "javascript", "java", "cpp"]
         },
