@@ -699,7 +699,13 @@
                 const configuration = {
                     iceServers: [
                         { urls: 'stun:stun.l.google.com:19302' },
-                        { urls: 'stun:stun1.l.google.com:19302' }
+                        { urls: 'stun:stun1.l.google.com:19302' },
+                        { urls: 'stun:stun2.l.google.com:19302' },
+                        { urls: 'stun:stun3.l.google.com:19302' },
+                        { urls: 'stun:stun4.l.google.com:19302' },
+                        { urls: 'stun:stun.ekiga.net' },
+                        { urls: 'stun:stun.ideasip.com' },
+                        { urls: 'stun:stun.schlund.de' }
                     ]
                 };
                 
@@ -712,9 +718,17 @@
                 });
                 
                 // Handle ICE candidates
-                pc.onicecandidate = event => {
+                pc.onicecandidate = (event) => {
                     if (event.candidate) {
-                        console.log('New ICE candidate for', userName);
+                        console.log('New ICE candidate:', {
+                            candidate: event.candidate.candidate,
+                            sdpMid: event.candidate.sdpMid,
+                            sdpMLineIndex: event.candidate.sdpMLineIndex,
+                            type: event.candidate.type,
+                            protocol: event.candidate.protocol,
+                            address: event.candidate.address,
+                            port: event.candidate.port
+                        });
                         signalingRef.child(userName).child(currentUser).child('candidates').push({
                             type: 'candidate',
                             candidate: event.candidate.candidate,
@@ -722,12 +736,17 @@
                             sdpMLineIndex: event.candidate.sdpMLineIndex,
                             timestamp: Date.now()
                         });
+                    } else {
+                        console.log('ICE Candidate gathering completed');
                     }
                 };
                 
                 // Handle incoming tracks
                 pc.ontrack = event => {
                     console.log('Received track from:', userName, event.track.kind);
+                    console.log('Track settings:', event.track.getSettings());
+                    console.log('Track constraints:', event.track.getConstraints());
+                    console.log('Track state:', event.track.readyState);
                     
                     // Create audio element to play the remote audio
                     const audio = document.createElement('audio');
@@ -740,17 +759,48 @@
                     if (!audio.srcObject) {
                         audio.srcObject = event.streams[0];
                         console.log('Started playing audio from:', userName);
+                        
+                        // Add volume and play success logging
+                        audio.onplay = () => console.log('Audio element started playing for:', userName);
+                        audio.onvolumechange = () => console.log('Volume changed for:', userName, 'Volume:', audio.volume);
+                        
+                        // Ensure audio is playing
+                        audio.play().catch(err => console.error('Error playing audio:', err));
                     }
                 };
                 
-                // Log connection state changes
+                // Log connection state changes with more detail
                 pc.onconnectionstatechange = () => {
-                    console.log('Connection state with', userName, ':', pc.connectionState);
+                    console.log('Connection state change for', userName);
+                    console.log('New state:', pc.connectionState);
+                    console.log('ICE connection state:', pc.iceConnectionState);
+                    console.log('ICE gathering state:', pc.iceGatheringState);
+                    console.log('Signaling state:', pc.signalingState);
                 };
                 
-                // Log ICE connection state changes
+                // Log ICE connection state changes with more detail
                 pc.oniceconnectionstatechange = () => {
-                    console.log('ICE connection state with', userName, ':', pc.iceConnectionState);
+                    console.log('ICE connection state change for', userName);
+                    console.log('ICE connection state:', pc.iceConnectionState);
+                    console.log('Current connection state:', pc.connectionState);
+                    
+                    // Check for failed connections
+                    if (pc.iceConnectionState === 'failed') {
+                        console.error('ICE connection failed for:', userName);
+                        console.log('Attempting to restart ICE');
+                        pc.restartIce();
+                    }
+                };
+                
+                // Add ICE gathering state change logging
+                pc.onicegatheringstatechange = () => {
+                    console.log('ICE gathering state change for', userName);
+                    console.log('ICE gathering state:', pc.iceGatheringState);
+                };
+                
+                // Add negotiation needed handler
+                pc.onnegotiationneeded = () => {
+                    console.log('Negotiation needed for:', userName);
                 };
                 
                 return pc;
