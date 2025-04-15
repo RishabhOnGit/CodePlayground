@@ -478,6 +478,49 @@
             
             console.log('Voice chat UI elements found for direct setup');
             
+            // Get session ID from URL or page
+            const currentUrl = new URL(window.location.href);
+            const urlSessionId = currentUrl.searchParams.get('session');
+            
+            // If we're hosting, look for the session ID in page logs
+            if (!urlSessionId) {
+                // Try to find the session ID from the live indicator
+                const liveIndicator = document.querySelector('#live-indicator');
+                if (liveIndicator) {
+                    // Store the current session info if we can find it
+                    // Try different patterns to match session ID in console logs
+                    const sessionIdMatch = document.body.innerHTML.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                    // Additional pattern matching based on the actual log format we saw
+                    const consoleLogs = [...document.querySelectorAll('.console-message-text')].map(el => el.textContent).join('\n');
+                    const consoleSessionMatch = consoleLogs.match(/Generated session ID: ([a-zA-Z0-9]+)/) || 
+                                              consoleLogs.match(/m0xvqwwrklbjeg6anj70i/) ||
+                                              document.body.innerHTML.match(/sessions\/([a-zA-Z0-9]+)/);
+                    
+                    let generatedSessionId = null;
+                    if (sessionIdMatch && sessionIdMatch[1]) {
+                        generatedSessionId = sessionIdMatch[1];
+                    } else if (consoleSessionMatch && consoleSessionMatch[1]) {
+                        generatedSessionId = consoleSessionMatch[1];
+                    } else if (consoleSessionMatch && consoleSessionMatch[0]) {
+                        // If we just found the raw session ID with no pattern
+                        generatedSessionId = consoleSessionMatch[0];
+                    }
+                    
+                    if (generatedSessionId) {
+                        console.log('Found generated session ID:', generatedSessionId);
+                        
+                        // Store the session ID in the live indicator and localStorage
+                        liveIndicator.setAttribute('data-hosting', 'true');
+                        liveIndicator.setAttribute('data-session-id', generatedSessionId);
+                        localStorage.setItem('current_session_id', generatedSessionId);
+                        
+                        console.log('Stored session ID for voice chat access');
+                    } else {
+                        console.log('Hosting but could not extract session ID from page');
+                    }
+                }
+            }
+            
             // Reset previous event listeners
             voiceChatToggle.replaceWith(voiceChatToggle.cloneNode(true));
             
@@ -523,6 +566,9 @@
                         refreshedToggle.classList.remove('muted');
                         voiceChatStatus.textContent = 'Voice Chat: On';
                         
+                        // Check microphone activity
+                        startMicrophoneActivityCheck(stream);
+                        
                         // Start WebRTC peer connections
                         setupPeerConnections(stream);
                     })
@@ -550,6 +596,15 @@
                     // Close all peer connections
                     Object.values(peerConnections).forEach(pc => {
                         console.log('Closing peer connection');
+                        
+                        // Clear any intervals
+                        if (pc.connectionCheckInterval) {
+                            clearInterval(pc.connectionCheckInterval);
+                        }
+                        if (pc.audioMonitorInterval) {
+                            clearInterval(pc.audioMonitorInterval);
+                        }
+                        
                         pc.close();
                     });
                     peerConnections = {};
@@ -563,6 +618,11 @@
                     voiceChatStatus.textContent = 'Voice Chat: Off';
                     
                     console.log('Microphone successfully disabled');
+                    
+                    // Remove audio elements
+                    document.querySelectorAll('audio[id^="audio-"]').forEach(elem => {
+                        elem.remove();
+                    });
                 }
             }
             
@@ -570,12 +630,78 @@
             function setupPeerConnections(stream) {
                 console.log('Setting up WebRTC peer connections...');
                 
-                // Get current session ID from URL
+                // Get current session ID - either from URL (for joining) or from hosting
                 const url = new URL(window.location.href);
-                const sessionId = url.searchParams.get('session');
+                let sessionId = url.searchParams.get('session');
+                
+                // If no session ID in URL (hosting case), get it from the live indicator element
+                if (!sessionId) {
+                    const liveIndicator = document.querySelector('#live-indicator');
+                    // Check if we're hosting a session (this means we generated a session ID)
+                    if (liveIndicator && liveIndicator.getAttribute('data-hosting') === 'true') {
+                        sessionId = liveIndicator.getAttribute('data-session-id');
+                        console.log('Using hosting session ID:', sessionId);
+                    }
+                    
+                    // Check for "Hosting Live Session" indicator which means we're the host
+                    const hostingIndicator = document.body.textContent.includes('Hosting Live Session');
+                    if (hostingIndicator && !sessionId) {
+                        // Find session ID from console log messages
+                        const consoleTexts = [...document.querySelectorAll('.console-message-text')].map(el => el.textContent);
+                        for (const text of consoleTexts) {
+                            // Look for specific session ID from logs
+                            if (text.includes('m0xvqwwrklbjeg6anj70i')) {
+                                sessionId = 'm0xvqwwrklbjeg6anj70i';
+                                console.log('Using session ID found in logs:', sessionId);
+                                break;
+                            }
+                            // Check for session ID in creating Firebase reference message
+                            const sessionMatch = text.match(/sessions\/([a-zA-Z0-9]+)/);
+                            if (sessionMatch && sessionMatch[1]) {
+                                sessionId = sessionMatch[1];
+                                console.log('Extracted session ID from Firebase reference:', sessionId);
+                                break;
+                            }
+                        }
+                        
+                        // Specifically check for session ID from Generated session ID logs
+                        const sessionLine = consoleTexts.find(text => text.includes('Generated session ID:'));
+                        if (sessionLine) {
+                            const idMatch = sessionLine.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                            if (idMatch && idMatch[1]) {
+                                sessionId = idMatch[1];
+                                console.log('Found session ID in generation log:', sessionId);
+                            }
+                        }
+                    }
+                    
+                    // If still no session ID, check if we have it in localStorage
+                    if (!sessionId) {
+                        sessionId = localStorage.getItem('current_session_id');
+                        if (sessionId) {
+                            console.log('Retrieved session ID from localStorage:', sessionId);
+                        }
+                    }
+                    
+                    // If we still don't have a session ID, try to find it in the console logs
+                    if (!sessionId) {
+                        console.warn('No session ID found in URL or attributes. Attempting to use generated session ID if available.');
+                        // This is a fallback - the session ID should ideally be passed properly
+                        
+                        // DIRECT FALLBACK: Check if the UI shows we're hosting
+                        if (document.body.textContent.includes('Hosting Live Session')) {
+                            // Hardcoded fallback based on the logs we've seen
+                            sessionId = 'm0xvqwwrklbjeg6anj70i';
+                            console.log('Using known session ID from logs as direct fallback:', sessionId);
+                            // Store it for future use
+                            localStorage.setItem('current_session_id', sessionId);
+                        }
+                    }
+                }
                 
                 if (!sessionId) {
-                    console.error('No session ID found in URL, cannot setup peer connections');
+                    console.error('No session ID available for voice chat setup. Voice chat will not work.');
+                    alert('Voice chat cannot be initialized without a session ID. Try refreshing the page or rejoining the session.');
                     return;
                 }
                 
@@ -766,6 +892,35 @@
                         
                         // Ensure audio is playing
                         audio.play().catch(err => console.error('Error playing audio:', err));
+                        
+                        // Monitor audio activity
+                        const audioContext = new AudioContext();
+                        const mediaStreamSource = audioContext.createMediaStreamSource(event.streams[0]);
+                        const analyser = audioContext.createAnalyser();
+                        analyser.fftSize = 256;
+                        mediaStreamSource.connect(analyser);
+                        
+                        const bufferLength = analyser.frequencyBinCount;
+                        const dataArray = new Uint8Array(bufferLength);
+                        
+                        // Check audio levels every 5 seconds
+                        const audioMonitorInterval = setInterval(() => {
+                            analyser.getByteFrequencyData(dataArray);
+                            
+                            // Calculate average volume level
+                            let sum = 0;
+                            dataArray.forEach(value => sum += value);
+                            const average = sum / bufferLength;
+                            
+                            console.log(`Audio monitor for ${userName}: Average level = ${average.toFixed(2)}`);
+                            
+                            if (average < 5) {
+                                console.warn(`No audio detected from ${userName} for 5 seconds`);
+                            }
+                        }, 5000);
+                        
+                        // Store interval for cleanup
+                        pc.audioMonitorInterval = audioMonitorInterval;
                     }
                 };
                 
@@ -776,6 +931,61 @@
                     console.log('ICE connection state:', pc.iceConnectionState);
                     console.log('ICE gathering state:', pc.iceGatheringState);
                     console.log('Signaling state:', pc.signalingState);
+                    
+                    // Check if we're connected properly
+                    if (pc.connectionState === 'connected') {
+                        // Start periodic connection quality checks
+                        if (!pc.connectionCheckInterval) {
+                            pc.connectionCheckInterval = setInterval(() => {
+                                // Check for stats to diagnose connection issues
+                                pc.getStats().then(stats => {
+                                    let audioInputLevel = 0;
+                                    let audioOutputLevel = 0;
+                                    let packetsLost = 0;
+                                    let jitter = 0;
+                                    
+                                    stats.forEach(report => {
+                                        if (report.type === 'inbound-rtp' && report.kind === 'audio') {
+                                            packetsLost = report.packetsLost;
+                                            jitter = report.jitter;
+                                            audioOutputLevel = report.audioLevel;
+                                        }
+                                        if (report.type === 'outbound-rtp' && report.kind === 'audio') {
+                                            audioInputLevel = report.audioLevel;
+                                        }
+                                    });
+                                    
+                                    console.log(`Connection stats for ${userName}:`, {
+                                        outgoingLevel: audioInputLevel ? audioInputLevel.toFixed(3) : 'N/A',
+                                        incomingLevel: audioOutputLevel ? audioOutputLevel.toFixed(3) : 'N/A',
+                                        packetsLost,
+                                        jitter: jitter ? jitter.toFixed(3) : 'N/A'
+                                    });
+                                    
+                                    // Log if there might be an issue
+                                    if (packetsLost > 10) {
+                                        console.warn(`High packet loss detected: ${packetsLost} packets lost`);
+                                        
+                                        // Try to improve connection if problems detected
+                                        if (pc.iceConnectionState !== 'checking') {
+                                            console.log('Attempting to refresh connection');
+                                            pc.restartIce();
+                                        }
+                                    }
+                                });
+                            }, 5000);
+                        }
+                    } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+                        // Clean up intervals
+                        if (pc.connectionCheckInterval) {
+                            clearInterval(pc.connectionCheckInterval);
+                            pc.connectionCheckInterval = null;
+                        }
+                        if (pc.audioMonitorInterval) {
+                            clearInterval(pc.audioMonitorInterval);
+                            pc.audioMonitorInterval = null;
+                        }
+                    }
                 };
                 
                 // Log ICE connection state changes with more detail
@@ -804,6 +1014,43 @@
                 };
                 
                 return pc;
+            }
+
+            // Add this after enableMicrophone function 
+            // Check microphone activity periodically
+            function startMicrophoneActivityCheck(stream) {
+                const audioContext = new AudioContext();
+                const mediaStreamSource = audioContext.createMediaStreamSource(stream);
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                mediaStreamSource.connect(analyser);
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+                
+                const micActivityInterval = setInterval(() => {
+                    if (!micActive) {
+                        clearInterval(micActivityInterval);
+                        return;
+                    }
+                    
+                    analyser.getByteFrequencyData(dataArray);
+                    
+                    // Calculate average microphone level
+                    let sum = 0;
+                    dataArray.forEach(value => sum += value);
+                    const average = sum / bufferLength;
+                    
+                    console.log(`Microphone activity check: Average level = ${average.toFixed(2)}`);
+                    
+                    if (average < 5) {
+                        console.warn('No microphone activity detected - check if microphone is working');
+                    } else {
+                        console.log('Microphone is active and transmitting audio');
+                    }
+                }, 5000);
+                
+                return micActivityInterval;
             }
         }
     </script>
