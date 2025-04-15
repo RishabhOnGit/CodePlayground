@@ -818,9 +818,43 @@
                 });
             }
             
-            // Create a peer connection for a specific user
+            // Create peer connection for a specific user
             function createPeerConnection(userName, stream, signalingRef) {
                 const currentUser = localStorage.getItem('github_user_name') || 'Anonymous';
+                
+                // Add a visible audio indicator for debugging in top-right corner
+                if (!document.getElementById('audio-debug-indicator')) {
+                    const debugIndicator = document.createElement('div');
+                    debugIndicator.id = 'audio-debug-indicator';
+                    debugIndicator.style.position = 'fixed';
+                    debugIndicator.style.top = '10px';
+                    debugIndicator.style.right = '10px';
+                    debugIndicator.style.padding = '5px 10px';
+                    debugIndicator.style.background = 'rgba(0, 0, 0, 0.7)';
+                    debugIndicator.style.color = 'white';
+                    debugIndicator.style.borderRadius = '5px';
+                    debugIndicator.style.fontSize = '12px';
+                    debugIndicator.style.zIndex = '10000';
+                    debugIndicator.textContent = 'Audio Debug: Active';
+                    document.body.appendChild(debugIndicator);
+                    
+                    // Add a visible audio element for direct testing
+                    const debugAudio = document.createElement('audio');
+                    debugAudio.id = 'debug-audio';
+                    debugAudio.controls = true;
+                    debugAudio.style.position = 'fixed';
+                    debugAudio.style.top = '40px';
+                    debugAudio.style.right = '10px';
+                    debugAudio.style.width = '250px';
+                    debugAudio.style.zIndex = '10000';
+                    document.body.appendChild(debugAudio);
+                    
+                    // Connect to the stream directly for debugging
+                    if (stream) {
+                        debugAudio.srcObject = stream;
+                        debugAudio.play().catch(e => console.error('Debug audio play failed:', e));
+                    }
+                }
                 
                 const configuration = {
                     iceServers: [
@@ -837,8 +871,25 @@
                 
                 const pc = new RTCPeerConnection(configuration);
                 
-                // Add all tracks from the stream
+                // Add all tracks from the stream with improved audio constraints
                 stream.getTracks().forEach(track => {
+                    if (track.kind === 'audio') {
+                        // Try to ensure audio track has appropriate constraints
+                        try {
+                            const constraints = {
+                                channelCount: 1,
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                autoGainControl: true
+                            };
+                            
+                            track.applyConstraints(constraints)
+                                .then(() => console.log('Applied audio constraints successfully'))
+                                .catch(err => console.warn('Could not apply audio constraints:', err));
+                        } catch (e) {
+                            console.warn('Error applying constraints to audio track:', e);
+                        }
+                    }
                     console.log('Adding track to peer connection:', track.kind);
                     pc.addTrack(track, stream);
                 });
@@ -874,26 +925,69 @@
                     console.log('Track constraints:', event.track.getConstraints());
                     console.log('Track state:', event.track.readyState);
                     
-                    // Create audio element to play the remote audio
+                    // Remove any existing audio element for this user first
+                    const existingAudio = document.getElementById('audio-' + userName);
+                    if (existingAudio) {
+                        existingAudio.remove();
+                    }
+                    
+                    // Create audio element to play the remote audio with more explicit properties
                     const audio = document.createElement('audio');
                     audio.id = 'audio-' + userName;
                     audio.autoplay = true;
+                    audio.controls = false; // No controls needed
+                    audio.muted = false; // IMPORTANT: Ensure not muted
+                    audio.volume = 1.0; // Set volume to maximum
                     audio.style.display = 'none';
                     document.body.appendChild(audio);
                     
-                    // Set the remote stream
-                    if (!audio.srcObject) {
+                    // Add error handler
+                    audio.onerror = (e) => {
+                        console.error('Audio element error:', e);
+                    };
+                    
+                    // Log when audio starts playing
+                    audio.onplaying = () => {
+                        console.log(`Audio from ${userName} started playing successfully`);
+                    };
+                    
+                    // Set the remote stream with more logging
+                    try {
+                        console.log('Setting srcObject with stream tracks:', event.streams[0].getTracks().map(t => t.kind).join(', '));
                         audio.srcObject = event.streams[0];
-                        console.log('Started playing audio from:', userName);
                         
-                        // Add volume and play success logging
-                        audio.onplay = () => console.log('Audio element started playing for:', userName);
-                        audio.onvolumechange = () => console.log('Volume changed for:', userName, 'Volume:', audio.volume);
+                        // Set audio output to default device if supported (Chrome)
+                        if (typeof audio.setSinkId === 'function') {
+                            // Try to use default audio output device
+                            audio.setSinkId('')
+                                .then(() => console.log('Using default audio output device'))
+                                .catch(err => console.error('Error setting audio output device:', err));
+                        } else {
+                            console.log('setSinkId not supported in this browser');
+                        }
                         
-                        // Ensure audio is playing
-                        audio.play().catch(err => console.error('Error playing audio:', err));
-                        
-                        // Monitor audio activity
+                        // Force play with retry
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise
+                                .then(() => {
+                                    console.log(`Audio from ${userName} playing successfully`);
+                                })
+                                .catch(err => {
+                                    console.error(`Error playing audio from ${userName}:`, err);
+                                    // Try again after a moment
+                                    setTimeout(() => {
+                                        console.log('Retrying audio playback...');
+                                        audio.play().catch(e => console.error('Retry failed:', e));
+                                    }, 1000);
+                                });
+                        }
+                    } catch (err) {
+                        console.error('Error setting audio source:', err);
+                    }
+                    
+                    // Monitor audio activity
+                    try {
                         const audioContext = new AudioContext();
                         const mediaStreamSource = audioContext.createMediaStreamSource(event.streams[0]);
                         const analyser = audioContext.createAnalyser();
@@ -921,6 +1015,8 @@
                         
                         // Store interval for cleanup
                         pc.audioMonitorInterval = audioMonitorInterval;
+                    } catch (err) {
+                        console.error('Error setting up audio monitoring:', err);
                     }
                 };
                 
