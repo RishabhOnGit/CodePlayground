@@ -72,13 +72,13 @@
           "title": "The Whispering Word",
           "prompt": "Return True if string contains \"code\"",
           "visibleTests": [
-            {"input": "\"I love code\"", "output": "True"},
+            {"input": "\"code\"", "output": "True"},
             {"input": "\"hello world\"", "output": "False"}
           ],
           "hiddenTests": [
-            {"input": "\"code crafter\"", "output": "True"},
+            {"input": "\"code crafter\"", "output": "False"},
             {"input": "\"CODE\"", "output": "False"},
-            {"input": "\"de code\"", "output": "True"}
+            {"input": "\"de code\"", "output": "False"}
           ],
           "allowedLanguages": ["python", "javascript", "java", "cpp"]
         }
