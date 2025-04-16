@@ -61,20 +61,11 @@
         }
 
         .header-buttons {
-            display: flex;
-            gap: 10px;
-        }
-
-        .header-buttons.left {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-        }
-
-        .header-buttons.right {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 10px;
         }
 
         .back-home-btn {
@@ -117,6 +108,10 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             background: var(--accent-color);
+        }
+
+        .story-collection-btn i {
+            font-size: 1.2em;
         }
 
         h1 {
@@ -561,14 +556,12 @@
 </head>
 <body>
     <header>
-        <div class="header-buttons left">
+        <h1>Code of the Realms</h1>
+        <p>Embark on a coding adventure through mystical realms!</p>
+        <div class="header-buttons">
             <a href="index.html" class="back-home-btn">
                 <i class="fas fa-home"></i> Back to Home
             </a>
-        </div>
-        <h1>Code of the Realms</h1>
-        <p>Embark on a coding adventure through mystical realms!</p>
-        <div class="header-buttons right">
             <a href="storycollection.html" class="story-collection-btn">
                 <i class="fas fa-book"></i> Story Collection
             </a>

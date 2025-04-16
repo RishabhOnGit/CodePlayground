@@ -579,63 +579,37 @@ function showStoryCard(challengeId) {
     }
 }
 
-function markChallengeCompleted() {
-    if (!currentChallenge) return;
-
-    // Mark the challenge as completed
-    currentChallenge.completed = true;
-    progress.completedChallenges[currentRealm.id].push(currentChallenge.id);
-
-    // Update the challenge item in the UI
-    const challengeItem = document.querySelector(`.challenge-item[data-id="${currentChallenge.id}"]`);
-    if (challengeItem) {
-        challengeItem.classList.add('completed');
-    }
-
-    // Update the challenge number
-    const challengeNumber = document.querySelector(`.challenge-number[data-id="${currentChallenge.id}"]`);
-    if (challengeNumber) {
-        challengeNumber.classList.add('completed');
-    }
+async function markChallengeCompleted() {
+    if (!currentRealm || !currentChallenge) return;
 
     // Update progress
+    if (!progress.completedChallenges[currentRealm.id]) {
+        progress.completedChallenges[currentRealm.id] = [];
+    }
+
+    if (!progress.completedChallenges[currentRealm.id].includes(currentChallenge.id)) {
+        progress.completedChallenges[currentRealm.id].push(currentChallenge.id);
+        localStorage.setItem('codeOfTheRealmsProgress', JSON.stringify(progress));
+
+        // Add story to collection
+        const story = {
+            realm: currentRealm.id,
+            title: currentChallenge.title,
+            content: currentChallenge.story,
+            challengeId: currentChallenge.id
+        };
+
+        // Add to story collection
+        const storyCollection = JSON.parse(localStorage.getItem('storyCollection') || '[]');
+        storyCollection.push(story);
+        localStorage.setItem('storyCollection', JSON.stringify(storyCollection));
+
+        // Show story card
+        showStoryCard(currentChallenge.id);
+    }
+
     updateProgressBar();
-
-    // Unlock the story section
-    const storySection = document.querySelector(`.story-section[data-challenge="${currentChallenge.id}"]`);
-    if (storySection) {
-        storySection.classList.remove('locked');
-        storySection.classList.add('unlocked');
-    }
-
-    // Show the story card
-    showStoryCard(currentChallenge.id);
-
-    // Check if all challenges in the current realm are completed
-    const currentRealmChallenges = currentRealm.challenges.filter(c => c.id === currentChallenge.id);
-    const allCompleted = currentRealmChallenges.every(c => progress.completedChallenges[currentRealm.id].includes(c.id));
-
-    if (allCompleted) {
-        // Mark the current realm as completed
-        const realmCard = document.querySelector(`.realm-card[data-id="${currentRealm.id}"]`);
-        if (realmCard) {
-            realmCard.classList.add('completed');
-        }
-
-        // Unlock the next realm
-        const nextRealmIndex = gameData.realms.findIndex(r => r.id === currentRealm.id) + 1;
-        if (nextRealmIndex < gameData.realms.length) {
-            const nextRealm = gameData.realms[nextRealmIndex];
-            const nextRealmCard = document.querySelector(`.realm-card[data-id="${nextRealm.id}"]`);
-            if (nextRealmCard) {
-                nextRealmCard.classList.remove('locked');
-                nextRealmCard.classList.add('unlocked');
-            }
-        }
-    }
-
-    // Save progress
-    localStorage.setItem('codeOfTheRealmsProgress', JSON.stringify(progress));
+    renderRealmSelector();
 }
 
 function updateProgressBar() {
