@@ -233,6 +233,48 @@
             border-radius: 4px;
             font-size: 0.9rem;
         }
+        
+        /* Voice Chat Styles */
+        .voice-chat-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 10px;
+        }
+        
+        #voice-chat-toggle {
+            background-color: #333;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            transition: background-color 0.2s;
+        }
+        
+        #voice-chat-toggle:hover {
+            background-color: #444;
+        }
+        
+        #voice-chat-toggle.active {
+            background-color: #4CAF50; /* Green */
+        }
+        
+        #voice-chat-toggle.muted {
+            background-color: #FF9800; /* Orange */
+        }
+        
+        .voice-chat-status {
+            font-size: 0;
+            color: transparent;
+            height: 0;
+            width: 0;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -261,6 +303,14 @@
                             <div id="participants-list">
                                 <!-- Participants will be listed here -->
                             </div>
+                        </div>
+                    </div>
+                    <div class="voice-chat-controls">
+                        <button id="voice-chat-toggle" title="Toggle Voice Chat">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <div class="voice-chat-status">
+                            <span>Voice Chat: Off</span>
                         </div>
                     </div>
                 </div>
@@ -416,5 +466,420 @@
 
     <!-- Custom JS -->
     <script src="languagescript.js"></script>
+
+    <!-- Add Agora SDK -->
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
+    <!-- Add Voice Chat Implementation -->
+    <script>
+        // Simple direct voice chat implementation with Agora
+        document.addEventListener('DOMContentLoaded', function() {
+            // Agora client and track variables
+            let client = null;
+            let localAudioTrack = null;
+            let isJoined = false;
+            
+            // Your Agora App ID - using the same as playground.html
+            const appId = "764ce2aebf5f4c378582ef53dccad0c2";
+            
+            // Voice chat UI elements
+            const voiceChatToggle = document.getElementById('voice-chat-toggle');
+            const voiceChatStatus = document.querySelector('.voice-chat-status span');
+            
+            if (!voiceChatToggle || !voiceChatStatus) {
+                console.error('Voice chat UI elements not found');
+                return;
+            }
+            
+            // Remove all previous listeners and set up new ones
+            voiceChatToggle.replaceWith(voiceChatToggle.cloneNode(true));
+            const refreshedToggle = document.getElementById('voice-chat-toggle');
+            
+            // Initialize client
+            function initializeClient() {
+                // Create RTC client
+                client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+                
+                // Set up event listeners for remote users
+                client.on("user-published", async (user, mediaType) => {
+                    console.log("Remote user published:", user.uid, mediaType);
+                    
+                    // Subscribe to the remote user's audio
+                    await client.subscribe(user, mediaType);
+                    
+                    if (mediaType === "audio") {
+                        // Get the remote audio track
+                        const remoteAudioTrack = user.audioTrack;
+                        
+                        // Play the remote audio
+                        remoteAudioTrack.play();
+                    }
+                });
+                
+                // Handle user unpublishing
+                client.on("user-unpublished", async (user) => {
+                    console.log("Remote user unpublished:", user.uid);
+                });
+                
+                // Handle connection state changes
+                client.on("connection-state-change", (curState, prevState) => {
+                    console.log("Connection state changed from", prevState, "to", curState);
+                    
+                    // Auto-disconnect when connection is disconnected
+                    if (curState === "DISCONNECTED") {
+                        console.log("Connection disconnected, auto-closing microphone");
+                        leaveChannel();
+                    }
+                });
+                
+                // Add session end detection - Monitor Firebase for session deletion
+                listenForSessionEnd();
+            }
+            
+            // Create and join channel
+            async function joinChannel() {
+                try {
+                    // Get session ID for channel name
+                    const channelName = await getSessionId();
+                    if (!channelName) {
+                        throw new Error("Cannot find session ID");
+                    }
+                    
+                    console.log("Joining channel:", channelName);
+                    
+                    // Join the channel (token set to null for testing only)
+                    await client.join(appId, channelName, null, null);
+                    console.log("Joined channel:", channelName);
+                    
+                    // Create local audio track
+                    localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+                        encoderConfig: {
+                            sampleRate: 48000,
+                            stereo: false,
+                            bitrate: 128
+                        }
+                    });
+                    
+                    // Publish local audio track
+                    await client.publish([localAudioTrack]);
+                    console.log("Published local audio");
+                    
+                    isJoined = true;
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error joining channel:", error);
+                    return false;
+                }
+            }
+            
+            // Leave channel and clean up
+            async function leaveChannel() {
+                try {
+                    // Close local audio track
+                    if (localAudioTrack) {
+                        localAudioTrack.close();
+                        localAudioTrack = null;
+                    }
+                    
+                    // Leave the channel
+                    if (isJoined) {
+                        await client.leave();
+                        isJoined = false;
+                    }
+                    
+                    console.log("Left channel");
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error leaving channel:", error);
+                    return false;
+                }
+            }
+            
+            // Add new function to just mute the microphone without leaving
+            async function toggleMute() {
+                if (!localAudioTrack) return false;
+                
+                try {
+                    if (localAudioTrack.enabled) {
+                        // Mute the microphone
+                        await localAudioTrack.setEnabled(false);
+                        refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.add('muted');
+                        
+                        console.log("Microphone muted");
+                    } else {
+                        // Unmute the microphone
+                        await localAudioTrack.setEnabled(true);
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                        
+                        console.log("Microphone unmuted");
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error toggling mute:", error);
+                    return false;
+                }
+            }
+            
+            // Toggle voice chat on/off/mute
+            refreshedToggle.addEventListener('click', async function() {
+                if (!isJoined) {
+                    // Not connected - join channel
+                    
+                    // Initialize client if not already
+                    if (!client) {
+                        initializeClient();
+                    }
+                    
+                    // Join channel
+                    const success = await joinChannel();
+                    if (success) {
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                    }
+                } else if (localAudioTrack) {
+                    // Connected and have microphone - toggle mute
+                    await toggleMute();
+                } else {
+                    // Connected but no microphone (already muted) - leave channel
+                    const success = await leaveChannel();
+                    if (success) {
+                        refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.remove('muted');
+                    }
+                }
+            });
+            
+            // Add long-press handler to force disconnect without tooltip
+            let pressTimer;
+            refreshedToggle.addEventListener('mousedown', function(e) {
+                if (isJoined) {
+                    pressTimer = setTimeout(async function() {
+                        // Force disconnect on long press
+                        const success = await leaveChannel();
+                        if (success) {
+                            refreshedToggle.classList.remove('active');
+                            refreshedToggle.classList.remove('muted');
+                        }
+                    }, 1500); // 1.5 second long press
+                }
+            });
+            
+            refreshedToggle.addEventListener('mouseup', function() {
+                clearTimeout(pressTimer);
+            });
+            
+            refreshedToggle.addEventListener('mouseleave', function() {
+                clearTimeout(pressTimer);
+            });
+            
+            async function getSessionId() {
+                // Try URL first
+                const url = new URL(window.location.href);
+                let sessionId = url.searchParams.get('session');
+                
+                if (!sessionId) {
+                    // Try to extract from page content
+                    const matches = document.body.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                    if (matches && matches[1]) {
+                        sessionId = matches[1];
+                    }
+                }
+                
+                if (!sessionId) {
+                    // Look for Firebase reference
+                    const firebaseMatches = document.body.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
+                    if (firebaseMatches && firebaseMatches[1]) {
+                        sessionId = firebaseMatches[1];
+                    }
+                }
+                
+                // Fallback to fixed name if all else fails
+                if (!sessionId) {
+                    sessionId = "language-playground-voice-channel";
+                }
+                
+                return sessionId;
+            }
+            
+            // Add Firebase listener to detect when session ends
+            function listenForSessionEnd() {
+                getSessionId().then(sessionId => {
+                    if (!sessionId) return;
+                    
+                    try {
+                        // Check if Firebase is available
+                        if (typeof firebase !== 'undefined' && firebase.database) {
+                            console.log("Setting up session end listener for session:", sessionId);
+                            
+                            // Reference to the live session
+                            const sessionRef = firebase.database().ref('liveSessions').child(sessionId);
+                            
+                            // Listen for session value changes
+                            sessionRef.on('value', snapshot => {
+                                // If the session is deleted or becomes null
+                                if (!snapshot.exists()) {
+                                    console.log("Live session ended, closing microphone");
+                                    
+                                    // Force immediate closure of the audio track
+                                    if (localAudioTrack) {
+                                        localAudioTrack.close();
+                                        localAudioTrack = null;
+                                    }
+                                    
+                                    // Leave the channel which disconnects from all participants
+                                    if (isJoined && client) {
+                                        client.leave().then(() => {
+                                            console.log("Successfully left the channel after session end");
+                                            isJoined = false;
+                                        }).catch(error => {
+                                            console.error("Error leaving channel after session end:", error);
+                                            // Still mark as left even if there was an error
+                                            isJoined = false;
+                                        });
+                                    }
+                                    
+                                    // Update UI to show disconnected state
+                                    refreshedToggle.classList.remove('active');
+                                    refreshedToggle.classList.remove('muted');
+                                    
+                                    // Also unsubscribe from all remote participants explicitly
+                                    if (client) {
+                                        client.remoteUsers.forEach(user => {
+                                            client.unsubscribe(user).catch(err => {
+                                                console.log("Error unsubscribing from user:", err);
+                                            });
+                                        });
+                                    }
+                                }
+                            });
+                            
+                            // Also listen for visibility changes - auto-leave when page is hidden
+                            document.addEventListener('visibilitychange', () => {
+                                if (document.visibilityState === 'hidden' && isJoined) {
+                                    console.log("Page hidden, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                            
+                            // Listen for page unload - clean up before page closes
+                            window.addEventListener('beforeunload', () => {
+                                if (isJoined) {
+                                    console.log("Page closing, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error setting up session end listener:", error);
+                    }
+                });
+            }
+            
+            // On DOM load, hide text in voice chat status element
+            const statusElement = document.querySelector('.voice-chat-status span');
+            if (statusElement) {
+                // Hide text but keep the element for the mute/active logic
+                statusElement.style.fontSize = '0';
+                statusElement.style.height = '0';
+                statusElement.style.width = '0';
+                statusElement.style.overflow = 'hidden';
+                statusElement.style.padding = '0';
+                statusElement.style.margin = '0';
+            }
+            
+            // Also hide "Hosting Live Session" text
+            document.addEventListener('DOMContentLoaded', function() {
+                // Hide all text in the live indicator area
+                hideTextInLiveSessionUI();
+                
+                // Set up a mutation observer to keep hiding text that might be dynamically added
+                const observer = new MutationObserver(hideTextInLiveSessionUI);
+                observer.observe(document.body, { 
+                    childList: true, 
+                    subtree: true,
+                    characterData: true
+                });
+                
+                // Also run it after a short delay to catch any text added by other scripts
+                setTimeout(hideTextInLiveSessionUI, 500);
+                setTimeout(hideTextInLiveSessionUI, 1000);
+                setTimeout(hideTextInLiveSessionUI, 2000);
+            });
+            
+            // Function to hide text in the live session UI
+            function hideTextInLiveSessionUI() {
+                // Hide "Live Session" text
+                const liveIndicator = document.querySelector('#live-indicator');
+                if (liveIndicator) {
+                    // Preserve the icons but hide the text
+                    Array.from(liveIndicator.childNodes).forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            node.textContent = '';
+                        } else if (node.nodeType === Node.ELEMENT_NODE && !node.querySelector('i.fa')) {
+                            // If it's not an icon, hide the text
+                            if (node.tagName !== 'I' && !node.classList.contains('fas')) {
+                                node.style.fontSize = '0';
+                                node.style.width = '0';
+                                node.style.overflow = 'hidden';
+                                node.style.margin = '0';
+                                node.style.padding = '0';
+                            }
+                        }
+                    });
+                }
+                
+                // Also try direct approach by hiding specific element containing the text
+                const hostingSessionElement = document.querySelector('.live-indicator > span:first-child');
+                if (hostingSessionElement) {
+                    hostingSessionElement.style.display = 'none';
+                }
+                
+                // Alternative: inject CSS to hide all spans in the live indicator
+                const style = document.createElement('style');
+                style.textContent = `
+                    #live-indicator > span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    #live-indicator span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    .live-indicator > span:first-child { 
+                        display: none !important; 
+                    }
+                    .live-indicator span:not(:has(i)) { 
+                        display: none !important; 
+                    }
+                    /* Also hide participants text */
+                    #participant-count {
+                        display: none !important;
+                    }
+                    .participants-container > span {
+                        display: none !important;
+                    }
+                    /* Voice chat text */
+                    .voice-chat-status {
+                        font-size: 0 !important;
+                        overflow: hidden !important;
+                    }
+                    .voice-chat-status span {
+                        font-size: 0 !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        overflow: hidden !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            console.log("Agora voice chat setup complete");
+        });
+    </script>
 </body>
 </html> 

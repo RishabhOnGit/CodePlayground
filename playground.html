@@ -436,6 +436,9 @@
     <!-- Custom JS -->
     <script src="playgroundscript.js"></script>
 
+    <!-- Add PeerJS for simple WebRTC -->
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+
     <!-- Add Agora SDK -->
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
 
@@ -463,73 +466,17 @@
 
     <!-- Add at the end of the body, before the closing body tag -->
     <script>
-        // Track session ID for voice chat
-        let capturedSessionId = null;
-
-        // Function to observe console messages and extract session ID
-        function setupSessionObserver() {
-            // Create a MutationObserver to watch for console updates
-            const consoleArea = document.querySelector('.console-view-wrapper') || document.body;
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                        for (let i = 0; i < mutation.addedNodes.length; i++) {
-                            const node = mutation.addedNodes[i];
-                            if (node.textContent && node.textContent.includes('Generated session ID:')) {
-                                const match = node.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-                                if (match && match[1]) {
-                                    capturedSessionId = match[1];
-                                    console.log('✅ Captured session ID:', capturedSessionId);
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-
-            // Start observing
-            observer.observe(consoleArea, { childList: true, subtree: true });
-            console.log('Session ID observer started');
-            
-            // Also check current contents
-            const sessionMatch = document.body.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-            if (sessionMatch && sessionMatch[1]) {
-                capturedSessionId = sessionMatch[1];
-                console.log('✅ Found existing session ID:', capturedSessionId);
-            }
-            
-            // Look for session ID in specific log messages
-            document.querySelectorAll('*').forEach(el => {
-                if (el.textContent && el.textContent.includes('Generated session ID:')) {
-                    const match = el.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-                    if (match && match[1]) {
-                        capturedSessionId = match[1];
-                        console.log('✅ Extracted session ID from element:', capturedSessionId);
-                    }
-                }
-            });
-            
-            // Also specifically search for the Firebase reference path
-            document.querySelectorAll('*').forEach(el => {
-                if (el.textContent && el.textContent.includes('sessions/')) {
-                    const match = el.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
-                    if (match && match[1]) {
-                        capturedSessionId = match[1];
-                        console.log('✅ Extracted session ID from Firebase reference:', capturedSessionId);
-                    }
-                }
-            });
-        }
-
-        // Run the observer setup on load
+        // Simple direct voice chat implementation with Agora
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Setting up session ID observer...');
-            setTimeout(setupSessionObserver, 1000);
-            setTimeout(setupAgoraVoiceChat, 2000);
-        });
-
-        async function setupAgoraVoiceChat() {
-            console.log('Agora voice chat initialization starting...');
+            // Agora client and track variables
+            let client = null;
+            let localAudioTrack = null;
+            let isJoined = false;
+            
+            // Your Agora App ID
+            const appId = "764ce2aebf5f4c378582ef53dccad0c2";
+            
+            // Voice chat UI elements
             const voiceChatToggle = document.getElementById('voice-chat-toggle');
             const voiceChatStatus = document.querySelector('.voice-chat-status span');
             
@@ -538,176 +485,436 @@
                 return;
             }
             
-            // Initialize Agora client with enhanced settings
-            const clientConfig = { 
-                mode: "rtc", 
-                codec: "vp8",
-                proxyServer: 'auto',
-                turnServer: {
-                    turnServerURL: 'turn:relay.backups.cz',
-                    username: 'webrtc',
-                    password: 'webrtc',
-                    udpport: '3478'
-                }
-            };
-            const client = AgoraRTC.createClient(clientConfig);
-            
-            // Enable cloudproxy to bypass network restrictions
-            client.startProxyServer(3);
-            
-            let localAudioTrack = null;
-            let isJoined = false;
-
-            // Your Agora App ID
-            const appId = "764ce2aebf5f4c378582ef53dccad0c2";
-            
-            // Reset previous event listeners
+            // Remove all previous listeners and set up new ones
             voiceChatToggle.replaceWith(voiceChatToggle.cloneNode(true));
             const refreshedToggle = document.getElementById('voice-chat-toggle');
             
-            // Track microphone state
-            let micActive = false;
+            // Initialize client
+            function initializeClient() {
+                // Create RTC client
+                client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+                
+                // Set up event listeners for remote users
+                client.on("user-published", async (user, mediaType) => {
+                    console.log("Remote user published:", user.uid, mediaType);
+                    
+                    // Subscribe to the remote user's audio
+                    await client.subscribe(user, mediaType);
+                    
+                    if (mediaType === "audio") {
+                        // Get the remote audio track
+                        const remoteAudioTrack = user.audioTrack;
+                        
+                        // Play the remote audio
+                        remoteAudioTrack.play();
+                        
+                        // Show visual indicator for remote user
+                        showRemoteUserIndicator(user.uid);
+                    }
+                });
+                
+                // Handle user unpublishing
+                client.on("user-unpublished", async (user) => {
+                    console.log("Remote user unpublished:", user.uid);
+                    
+                    // Remove visual indicator
+                    removeRemoteUserIndicator(user.uid);
+                });
+                
+                // Handle connection state changes
+                client.on("connection-state-change", (curState, prevState) => {
+                    console.log("Connection state changed from", prevState, "to", curState);
+                    updateStatus(`Connection: ${curState}`);
+                    
+                    // Auto-disconnect when connection is disconnected
+                    if (curState === "DISCONNECTED") {
+                        console.log("Connection disconnected, auto-closing microphone");
+                        leaveChannel();
+                    }
+                });
+                
+                // Add session end detection - Monitor Firebase for session deletion
+                listenForSessionEnd();
+            }
             
-            // Handle microphone clicks
-            refreshedToggle.addEventListener('click', async function() {
-                if (!micActive) {
-                    await enableMicrophone();
-                } else {
-                    await disableMicrophone();
-                }
-            });
-            
-            // Enable microphone function
-            async function enableMicrophone() {
+            // Create and join channel
+            async function joinChannel() {
                 try {
-                    // First check our captured session ID
-                    let channelName = capturedSessionId;
+                    updateStatus("Joining channel...");
                     
-                    // If that fails, try the URL
+                    // Get session ID for channel name
+                    const channelName = await getSessionId();
                     if (!channelName) {
-                        const url = new URL(window.location.href);
-                        channelName = url.searchParams.get('session');
+                        throw new Error("Cannot find session ID");
                     }
                     
-                    // Check if we have text "Generated session ID: X" anywhere in the page
-                    if (!channelName) {
-                        // Look for any element containing the session ID
-                        document.querySelectorAll('.console-message-text, .cm-line').forEach(el => {
-                            if (el.textContent && el.textContent.includes('Generated session ID:')) {
-                                const match = el.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
-                                if (match && match[1]) {
-                                    channelName = match[1];
-                                    console.log('Found session ID in console element:', channelName);
-                                }
-                            } else if (el.textContent && el.textContent.includes('sessions/')) {
-                                const match = el.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
-                                if (match && match[1]) {
-                                    channelName = match[1];
-                                    console.log('Found session ID in Firebase ref:', channelName);
-                                }
-                            }
-                        });
-                    }
+                    console.log("Joining channel:", channelName);
                     
-                    // Direct access for the session ID shown in your screenshot
-                    if (!channelName) {
-                        channelName = 'p6jwycvc72eipk8tpev7s'; // Directly using the session ID from your screenshot
-                        console.log('Using hardcoded session ID as fallback:', channelName);
-                    }
+                    // Join the channel (token set to null for testing only)
+                    await client.join(appId, channelName, null, null);
+                    console.log("Joined channel:", channelName);
                     
-                    // Final check and cleanup
-                    if (!channelName) {
-                        console.error('No session ID found in any source');
-                        alert('No session ID found. Please make sure you are in a live session.');
-                        return;
-                    }
-                    
-                    // Clean the channel name to ensure it's valid
-                    channelName = channelName.trim();
-                    console.log('Using channel name:', channelName);
-
-                    // Join the channel
-                    const uid = await client.join(appId, channelName, null, null);
-                    console.log('Joined channel:', channelName);
-
-                    // Create and publish audio track with enhanced settings
+                    // Create local audio track
                     localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
                         encoderConfig: {
                             sampleRate: 48000,
                             stereo: false,
                             bitrate: 128
-                        },
-                        microphoneId: undefined, // Use default microphone
-                        AEC: true,  // Enable Acoustic Echo Cancellation
-                        AGC: true,  // Enable Automatic Gain Control
-                        ANS: true,  // Enable Automatic Noise Suppression
+                        }
                     });
                     
-                    // Set volume higher
-                    localAudioTrack.setVolume(150); // 150% volume
-                    
-                    // Modify the transmission quality to ensure better delivery
-                    client.setLowStreamParameter({
-                        audioBitrate: 64,
-                        audioSampleRate: 48000,
-                        audioChannels: 1
-                    });
-                    
-                    // Try publishing with higher priority
+                    // Publish local audio track
                     await client.publish([localAudioTrack]);
-
-                    micActive = true;
+                    console.log("Published local audio");
+                    
                     isJoined = true;
-                    refreshedToggle.classList.add('active');
-                    voiceChatStatus.textContent = 'Voice Chat: On';
-
-                } catch (err) {
-                    console.error('Error enabling microphone:', err);
-                    alert('Could not access microphone. Please check your browser permissions.');
+                    updateStatus("Voice Chat: On");
+                    
+                    // Show status indicator
+                    showLocalUserIndicator();
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error joining channel:", error);
+                    updateStatus(`Error: ${error.message}`);
+                    return false;
                 }
             }
             
-            // Disable microphone function
-            async function disableMicrophone() {
-                if (localAudioTrack) {
-                    localAudioTrack.close();
-                    await client.unpublish([localAudioTrack]);
+            // Leave channel and clean up
+            async function leaveChannel() {
+                try {
+                    // Close local audio track
+                    if (localAudioTrack) {
+                        localAudioTrack.close();
+                        localAudioTrack = null;
+                    }
+                    
+                    // Leave the channel
+                    if (isJoined) {
+                        await client.leave();
+                        isJoined = false;
+                    }
+                    
+                    // Remove indicators
+                    removeLocalUserIndicator();
+                    removeAllRemoteUserIndicators();
+                    
+                    updateStatus("Voice Chat: Off");
+                    console.log("Left channel");
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error leaving channel:", error);
+                    updateStatus(`Error: ${error.message}`);
+                    return false;
+                }
+            }
+            
+            // Add new function to just mute the microphone without leaving
+            async function toggleMute() {
+                if (!localAudioTrack) return false;
+                
+                try {
+                    if (localAudioTrack.enabled) {
+                        // Mute the microphone
+                        await localAudioTrack.setEnabled(false);
+                        refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.add('muted');
+                        updateStatus("Voice Chat: Muted");
+                        
+                        // Update indicator
+                        const indicator = document.getElementById('local-user-indicator');
+                        if (indicator) {
+                            indicator.style.backgroundColor = '#FF9800';
+                            indicator.textContent = 'Your mic is muted (still listening)';
+                        }
+                        
+                        console.log("Microphone muted");
+                    } else {
+                        // Unmute the microphone
+                        await localAudioTrack.setEnabled(true);
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                        updateStatus("Voice Chat: On");
+                        
+                        // Update indicator
+                        const indicator = document.getElementById('local-user-indicator');
+                        if (indicator) {
+                            indicator.style.backgroundColor = '#4CAF50';
+                            indicator.textContent = 'Your mic is active';
+                        }
+                        
+                        console.log("Microphone unmuted");
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    console.error("Error toggling mute:", error);
+                    return false;
+                }
+            }
+            
+            // Toggle voice chat on/off/mute
+            refreshedToggle.addEventListener('click', async function() {
+                if (!isJoined) {
+                    // Not connected - join channel
+                    
+                    // Initialize client if not already
+                    if (!client) {
+                        initializeClient();
+                    }
+                    
+                    // Join channel
+                    const success = await joinChannel();
+                    if (success) {
+                        refreshedToggle.classList.add('active');
+                        refreshedToggle.classList.remove('muted');
+                    }
+                } else if (localAudioTrack) {
+                    // Connected and have microphone - toggle mute
+                    await toggleMute();
+                } else {
+                    // Connected but no microphone (already muted) - leave channel
+                    const success = await leaveChannel();
+                    if (success) {
+                        refreshedToggle.classList.remove('active');
+                        refreshedToggle.classList.remove('muted');
+                    }
+                }
+            });
+            
+            // Add long-press handler to force disconnect without tooltip
+            let pressTimer;
+            refreshedToggle.addEventListener('mousedown', function(e) {
+                if (isJoined) {
+                    pressTimer = setTimeout(async function() {
+                        // Force disconnect on long press
+                        const success = await leaveChannel();
+                        if (success) {
+                            refreshedToggle.classList.remove('active');
+                            refreshedToggle.classList.remove('muted');
+                            // No tooltip, just disconnect
+                        }
+                    }, 1500); // 1.5 second long press
+                }
+            });
+            
+            refreshedToggle.addEventListener('mouseup', function() {
+                clearTimeout(pressTimer);
+            });
+            
+            refreshedToggle.addEventListener('mouseleave', function() {
+                clearTimeout(pressTimer);
+            });
+            
+            // Helper functions
+            function updateStatus(message) {
+                // Log to console but don't update UI text
+                console.log("Status update:", message);
+                
+                // Keeping this function but not updating UI text
+                // This makes the buttons show status through colors only
+            }
+            
+            async function getSessionId() {
+                // Try URL first
+                const url = new URL(window.location.href);
+                let sessionId = url.searchParams.get('session');
+                
+                if (!sessionId) {
+                    // Try to extract from page content
+                    const matches = document.body.textContent.match(/Generated session ID: ([a-zA-Z0-9]+)/);
+                    if (matches && matches[1]) {
+                        sessionId = matches[1];
+                    }
                 }
                 
-                if (isJoined) {
-                    await client.leave();
+                if (!sessionId) {
+                    // Look for Firebase reference
+                    const firebaseMatches = document.body.textContent.match(/sessions\/([a-zA-Z0-9]+)/);
+                    if (firebaseMatches && firebaseMatches[1]) {
+                        sessionId = firebaseMatches[1];
+                    }
                 }
-
-                micActive = false;
-                isJoined = false;
-                refreshedToggle.classList.remove('active');
-                voiceChatStatus.textContent = 'Voice Chat: Off';
-                console.log('Microphone disabled');
+                
+                // Fallback to fixed name if all else fails
+                if (!sessionId) {
+                    sessionId = "playground-voice-channel";
+                }
+                
+                return sessionId;
             }
-
-            // Handle remote users
-            client.on("user-published", async (user, mediaType) => {
-                await client.subscribe(user, mediaType);
-                console.log("Subscribed to remote user:", user.uid);
-
-                if (mediaType === "audio") {
-                    user.audioTrack.play();
+            
+            // Visual indicators for users
+            function showLocalUserIndicator() {
+                // No local indicator at all - just rely on the mic button color
+            }
+            
+            function removeLocalUserIndicator() {
+                // Do nothing since we're not showing an indicator
+            }
+            
+            function showRemoteUserIndicator(uid) {
+                // No remote user indicator - just rely on hearing them
+            }
+            
+            function removeRemoteUserIndicator(uid) {
+                // Do nothing since we're not showing an indicator
+            }
+            
+            function removeAllRemoteUserIndicators() {
+                // Do nothing since we're not showing indicators
+            }
+            
+            // Add Firebase listener to detect when session ends
+            function listenForSessionEnd() {
+                getSessionId().then(sessionId => {
+                    if (!sessionId) return;
+                    
+                    try {
+                        // Check if Firebase is available
+                        if (typeof firebase !== 'undefined' && firebase.database) {
+                            console.log("Setting up session end listener for session:", sessionId);
+                            
+                            // Reference to the live session
+                            const sessionRef = firebase.database().ref('liveSessions').child(sessionId);
+                            
+                            // Listen for session value changes
+                            sessionRef.on('value', snapshot => {
+                                // If the session is deleted or becomes null
+                                if (!snapshot.exists()) {
+                                    console.log("Live session ended, closing microphone");
+                                    leaveChannel();
+                                    refreshedToggle.classList.remove('active');
+                                    refreshedToggle.classList.remove('muted');
+                                    
+                                    // No notification, just quietly disconnect
+                                }
+                            });
+                            
+                            // Also listen for visibility changes - auto-leave when page is hidden
+                            document.addEventListener('visibilitychange', () => {
+                                if (document.visibilityState === 'hidden' && isJoined) {
+                                    console.log("Page hidden, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                            
+                            // Listen for page unload - clean up before page closes
+                            window.addEventListener('beforeunload', () => {
+                                if (isJoined) {
+                                    console.log("Page closing, leaving voice channel");
+                                    leaveChannel();
+                                }
+                            });
+                        }
+                    } catch (error) {
+                        console.error("Error setting up session end listener:", error);
+                    }
+                });
+            }
+            
+            // On DOM load, hide text in voice chat status element
+            const statusElement = document.querySelector('.voice-chat-status span');
+            if (statusElement) {
+                // Hide text but keep the element for the mute/active logic
+                statusElement.style.fontSize = '0';
+                statusElement.style.height = '0';
+                statusElement.style.width = '0';
+                statusElement.style.overflow = 'hidden';
+                statusElement.style.padding = '0';
+                statusElement.style.margin = '0';
+            }
+            
+            // Also hide "Hosting Live Session" text
+            document.addEventListener('DOMContentLoaded', function() {
+                // Hide all text in the live indicator area
+                hideTextInLiveSessionUI();
+                
+                // Set up a mutation observer to keep hiding text that might be dynamically added
+                const observer = new MutationObserver(hideTextInLiveSessionUI);
+                observer.observe(document.body, { 
+                    childList: true, 
+                    subtree: true,
+                    characterData: true
+                });
+                
+                // Also run it after a short delay to catch any text added by other scripts
+                setTimeout(hideTextInLiveSessionUI, 500);
+                setTimeout(hideTextInLiveSessionUI, 1000);
+                setTimeout(hideTextInLiveSessionUI, 2000);
+            });
+            
+            // Function to hide text in the live session UI
+            function hideTextInLiveSessionUI() {
+                // Hide "Hosting Live Session" text
+                const liveIndicator = document.querySelector('#live-indicator');
+                if (liveIndicator) {
+                    // Preserve the icons but hide the text
+                    Array.from(liveIndicator.childNodes).forEach(node => {
+                        if (node.nodeType === Node.TEXT_NODE) {
+                            node.textContent = '';
+                        } else if (node.nodeType === Node.ELEMENT_NODE && !node.querySelector('i.fa')) {
+                            // If it's not an icon, hide the text
+                            if (node.tagName !== 'I' && !node.classList.contains('fas')) {
+                                node.style.fontSize = '0';
+                                node.style.width = '0';
+                                node.style.overflow = 'hidden';
+                                node.style.margin = '0';
+                                node.style.padding = '0';
+                            }
+                        }
+                    });
                 }
-            });
-
-            client.on("user-unpublished", async (user) => {
-                console.log("Remote user unpublished:", user.uid);
-            });
-
-            // Error handling
-            client.on("connection-state-change", (curState, prevState) => {
-                console.log("Connection state changed from", prevState, "to", curState);
-            });
-
-            client.on("error", (err) => {
-                console.error("Agora client error:", err);
-            });
-        }
+                
+                // Also try direct approach by hiding specific element containing the text
+                const hostingSessionElement = document.querySelector('.live-indicator > span:first-child');
+                if (hostingSessionElement) {
+                    hostingSessionElement.style.display = 'none';
+                }
+                
+                // Alternative: inject CSS to hide all spans in the live indicator
+                const style = document.createElement('style');
+                style.textContent = `
+                    #live-indicator > span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    #live-indicator span:not(.fas):not(.fa) { 
+                        display: none !important; 
+                    }
+                    .live-indicator > span:first-child { 
+                        display: none !important; 
+                    }
+                    .live-indicator span:not(:has(i)) { 
+                        display: none !important; 
+                    }
+                    /* Also hide participants text */
+                    #participant-count {
+                        display: none !important;
+                    }
+                    .participants-container > span {
+                        display: none !important;
+                    }
+                    /* Voice chat text */
+                    .voice-chat-status {
+                        font-size: 0 !important;
+                        overflow: hidden !important;
+                    }
+                    .voice-chat-status span {
+                        font-size: 0 !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        overflow: hidden !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            console.log("Agora voice chat setup complete");
+        });
     </script>
 </body>
 </html>
